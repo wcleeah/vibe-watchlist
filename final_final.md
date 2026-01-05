@@ -36,14 +36,14 @@ This plan outlines the complete mobile optimization and metadata enhancement for
 - [x] **Time Estimate**: 10 minutes
 
 ### 1.4 Card Action Buttons Mobile Layout
-- [ ] **Objective**: Stack action buttons vertically on mobile
-- [ ] **Files**: `components/video-preview/preview-card.tsx`
-- [ ] **Changes**:
+- [x] **Objective**: Stack action buttons vertically on mobile
+- [x] **Files**: `components/video-preview/preview-card.tsx`
+- [x] **Changes**:
   - Change container to `flex flex-col md:flex-row`
   - Add `w-full` to buttons
-- [ ] **Testing**: Buttons stack vertically on mobile
-- [ ] **Status**: Pending
-- [ ] **Time Estimate**: 15 minutes
+- [x] **Testing**: Buttons stack vertically on mobile
+- [x] **Status**: Completed
+- [x] **Time Estimate**: 15 minutes
 
 ### 1.5 Watchlist Page Controls Optimization
 - [ ] **Objective**: Full-width dropdown, reduced spacing on mobile

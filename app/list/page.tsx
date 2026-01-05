@@ -236,7 +236,7 @@ export default function ListPage() {
                 <span className="font-medium text-gray-900 dark:text-gray-100">
                   {selectedVideoIds.length} of {filteredVideos.length} videos selected
                 </span>
-                <div className="flex gap-2">
+            <div className="w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="sm"
@@ -305,7 +305,7 @@ export default function ListPage() {
         {/* Advanced Filters */}
         <div className="mb-6 space-y-4">
           {/* Search and Sort Row */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
             {/* Search Input */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
