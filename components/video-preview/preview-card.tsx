@@ -46,7 +46,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
       {/* 2-column grid layout: 8:2 ratio when actions shown, 1 column when not */}
       <div className={`min-h-[240px] ${showActions ? 'grid grid-cols-[8fr_2fr]' : ''}`}>
         {/* Content Column (full width when no actions, 80% when actions shown) */}
-        <div className="p-4 space-y-2">
+        <div className="px-4 pt-4 pb-2 space-y-2">
           {/* Title Section */}
           <div className="pb-2 border-b border-black dark:border-white">
             <h3 className="text-lg font-semibold text-black dark:text-white font-mono">
@@ -82,7 +82,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
 
         {/* Action Column (20%) - Full height */}
         {showActions && (
-          <div className="p-4 flex flex-col gap-2 border-l border-black dark:border-white">
+          <div className="px-4 pt-4 pb-2 flex flex-col gap-2 border-l border-black dark:border-white">
             <a
               href={video.url}
               target="_blank"
