@@ -54,7 +54,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
         {/* Bottom: Horizontal split */}
         <div className="flex gap-4">
           {/* Thumbnail */}
-          <div className="flex-shrink-0 w-32 h-20">
+          <div className="flex-shrink-0 w-48 h-28">
             {video.thumbnailUrl ? (
               <ThumbnailDisplay video={video} />
             ) : (
