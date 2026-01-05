@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { UrlInput } from './url-input';
 import { TagInput } from './tag-input';
 import { SubmitButton } from './submit-button';
@@ -15,6 +16,8 @@ interface FormLayoutProps {
 }
 
 export function FormLayout({ url, setUrl, parsedUrl, onVideoAdded, className, showTags = true }: FormLayoutProps) {
+  const [isAdding, setIsAdding] = useState(false);
+
   const {
     selectedTags,
     setTagInput,
@@ -23,8 +26,6 @@ export function FormLayout({ url, setUrl, parsedUrl, onVideoAdded, className, sh
     filteredSuggestions,
     isLoadingTags,
     tagError,
-    isAdding,
-    handleAddVideo,
     handleTagInputChange,
     handleTagKeyDown,
     removeTag,
@@ -35,6 +36,38 @@ export function FormLayout({ url, setUrl, parsedUrl, onVideoAdded, className, sh
   const urlError = parsedUrl && !parsedUrl.isValid && url.trim()
     ? "Please enter a valid YouTube, Netflix, Nebula, or Twitch URL"
     : null;
+
+  // Custom handleAddVideo that uses external URL state
+  const handleAddVideo = async () => {
+    if (!url.trim() || !parsedUrl?.isValid) return;
+
+    setIsAdding(true);
+    try {
+      const videoData = {
+        url: url.trim(),
+        platform: parsedUrl.platform,
+        tagIds: selectedTags.map(tag => tag.id),
+      };
+
+      const response = await fetch('/api/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(videoData),
+      });
+
+      if (response.ok) {
+        onVideoAdded?.();
+        // Reset form
+        setUrl('');
+      } else {
+        console.error('Failed to add video');
+      }
+    } catch (error) {
+      console.error('Error adding video:', error);
+    } finally {
+      setIsAdding(false);
+    }
+  };
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -70,7 +103,7 @@ export function FormLayout({ url, setUrl, parsedUrl, onVideoAdded, className, sh
       {showTags && (
         <SubmitButton
           onClick={handleAddVideo}
-          isLoading={isAdding}
+          isLoading={false}
           disabled={!hasValidUrl}
         />
       )}
