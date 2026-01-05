@@ -75,13 +75,12 @@ export function ThumbnailDisplay({ video, className }: ThumbnailDisplayProps) {
   }
 
   return (
-    <div className={`relative w-full max-w-xs mx-auto ${className}`}>
+    <div className={`relative w-full h-full ${className}`}>
       <Image
         src={video.thumbnailUrl}
         alt={video.title || 'Video thumbnail'}
-        width={320}
-        height={180}
-        className="w-full h-auto rounded border border-gray-200 dark:border-gray-700"
+        fill
+        className="object-contain rounded border border-gray-200 dark:border-gray-700"
       />
     </div>
   );
