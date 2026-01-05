@@ -3,13 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { VideoIcon, ListVideo, Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { Button } from '@/components/ui/button';
+import { VideoIcon, ListVideo } from 'lucide-react';
+import { PreferencesDialog } from '@/components/preferences-dialog';
 
 export function NavigationTabs() {
   const pathname = usePathname();
-  const { setTheme, theme } = useTheme();
 
   return (
     <nav className="border-b border-gray-200 dark:border-gray-800 mb-8">
@@ -42,17 +40,8 @@ export function NavigationTabs() {
             </Link>
           </div>
 
-          {/* Dark mode toggle aligned to the right */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            className="w-9 h-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
+          {/* Preferences dialog aligned to the right */}
+          <PreferencesDialog />
         </div>
       </div>
     </nav>

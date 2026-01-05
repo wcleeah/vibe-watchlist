@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
+import { PreferencesProvider } from "@/lib/preferences-context";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 import "@fontsource/jetbrains-mono/600.css";
@@ -23,16 +23,11 @@ export default function RootLayout({
       <body
         className="antialiased"
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <PreferencesProvider>
           <div className="min-h-screen bg-white dark:bg-black">
             {children}
           </div>
-        </ThemeProvider>
+        </PreferencesProvider>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Video } from '@/lib/db/schema';
 import { TagList } from '@/components/ui/tag';
 import { ExternalLink, CheckCircle, Trash2, Youtube, Tv, Gamepad2, Copy } from 'lucide-react';
+import { usePreferences } from '@/lib/preferences-context';
 
 interface VideoWithTags extends Video {
   tags?: Array<{
@@ -42,6 +43,7 @@ export function VideoCard({
   isSelected = false,
   onSelectionChange
 }: VideoCardProps) {
+  const { preferences } = usePreferences();
   const handleMarkWatched = () => {
     onMarkWatched?.(video.id);
   };
@@ -77,7 +79,7 @@ export function VideoCard({
       {/* Code result content */}
       <div className="p-4">
         <div className="flex gap-4">
-          {video.thumbnailUrl && (
+          {video.thumbnailUrl && preferences.showThumbnails && (
             <div className="relative flex-shrink-0">
               <Image
                 src={video.thumbnailUrl}

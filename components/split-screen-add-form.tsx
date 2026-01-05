@@ -9,6 +9,7 @@ import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
 import { extractVideoMetadata, VideoMetadata } from '@/lib/utils/metadata-extractor';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
 import { TagList } from '@/components/ui/tag';
+import { usePreferences } from '@/lib/preferences-context';
 
 const platformIcons = {
   youtube: Youtube,
@@ -43,6 +44,7 @@ interface SplitScreenAddFormProps {
 }
 
 export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
+  const { preferences } = usePreferences();
   const [url, setUrl] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
@@ -89,7 +91,7 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
       const parsed = parseVideoUrl(url);
       setParsedUrl(parsed);
 
-      if (parsed.isValid) {
+      if (parsed.isValid && preferences.autoPreview) {
         setIsLoadingMetadata(true);
         setPreviewError(null);
         try {
@@ -109,7 +111,7 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [url]);
+  }, [url, preferences.autoPreview]);
 
   // Tag management functions
   const handleTagInputChange = (value: string) => {
