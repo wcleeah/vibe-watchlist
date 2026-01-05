@@ -89,7 +89,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
               href={video.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 text-xs px-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center font-bold"
+              className="h-8 text-xs px-2 bg-primary text-primary-foreground dark:bg-white dark:text-black hover:bg-primary/90 dark:hover:bg-gray-100 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center font-bold"
               title="watch()"
             >
               watch()
@@ -117,7 +117,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
               <div className="flex justify-center">
                 <button
                   onClick={() => onDelete(video.id)}
-                  className="h-8 text-xs px-2 bg-destructive text-white hover:bg-destructive/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                  className="h-8 text-xs px-2 bg-red-500 text-white hover:bg-red-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                   title="delete()"
                 >
                   delete()
