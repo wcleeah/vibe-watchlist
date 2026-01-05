@@ -46,9 +46,9 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
       {/* 2-column grid layout: 8:2 ratio when actions shown, 1 column when not */}
       <div className={`min-h-[240px] ${showActions ? 'grid grid-cols-[8fr_2fr]' : ''}`}>
         {/* Content Column (full width when no actions, 80% when actions shown) */}
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-2">
           {/* Title Section */}
-          <div className="pb-4 border-b border-black dark:border-white">
+          <div className="pb-2 border-b border-black dark:border-white">
             <h3 className="text-lg font-semibold text-black dark:text-white font-mono">
               {video.title || 'Untitled Video'}
             </h3>
@@ -57,7 +57,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
           {/* Thumbnail + Content Row */}
           <div className="flex gap-4">
             {/* Thumbnail */}
-            <div className="flex-shrink-0 w-44 h-24">
+            <div className="flex-shrink-0 w-48 h-28">
               {video.thumbnailUrl ? (
                 <ThumbnailDisplay video={video} />
               ) : (
