@@ -51,7 +51,7 @@ export function FormLayout({
   onAddTag,
   onReset,
 }: FormLayoutProps) {
-  const [isAdding, setIsAdding] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hasValidUrl = parsedUrl?.isValid ?? false;
   const urlError = parsedUrl && !parsedUrl.isValid && url.trim()
@@ -62,7 +62,7 @@ export function FormLayout({
   const handleAddVideo = async () => {
     if (!url.trim() || !parsedUrl?.isValid) return;
 
-    setIsAdding(true);
+    setIsSubmitting(true);
     try {
       const videoData = {
         url: url.trim(),
@@ -86,7 +86,7 @@ export function FormLayout({
     } catch (error) {
       console.error('Error adding video:', error);
     } finally {
-      setIsAdding(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -105,6 +105,7 @@ export function FormLayout({
         onChange={setUrl}
         isValid={parsedUrl?.isValid}
         error={urlError || undefined}
+        disabled={isSubmitting}
       />
 
       {/* Tag Input - show only if showTags */}
@@ -118,7 +119,7 @@ export function FormLayout({
           suggestions={filteredSuggestions}
           showSuggestions={showTagSuggestions}
           onSelectSuggestion={selectSuggestedTag}
-          isLoading={isLoadingTags}
+          isLoading={isLoadingTags || isSubmitting}
           error={tagError}
         />
       )}
@@ -127,17 +128,17 @@ export function FormLayout({
        {showTags && (
          <div className="flex gap-2">
            <Button
-             type="button"
              variant="secondary"
-             className="flex-1"
+             className="flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
              onClick={onReset}
+             disabled={isSubmitting}
            >
              Reset
            </Button>
            <SubmitButton
              onClick={handleAddVideo}
-             isLoading={false}
-             disabled={!hasValidUrl}
+             isLoading={isSubmitting}
+             disabled={!hasValidUrl || isSubmitting}
              className="flex-1"
            />
          </div>
