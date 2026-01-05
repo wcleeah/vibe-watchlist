@@ -82,7 +82,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
 
         {/* Action Column (20%) - Full height on desktop, horizontal at bottom on mobile */}
         {showActions && (
-          <div className="px-4 pt-4 pb-4 flex md:flex-col flex-row gap-2 md:border-l border-black dark:border-white md:justify-start justify-center">
+          <div className="px-4 pt-4 pb-4 flex md:flex-col flex-row gap-2 md:border-l border-black dark:border-white justify-center">
             <a
               href={video.url}
               target="_blank"
