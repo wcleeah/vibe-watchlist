@@ -13,6 +13,7 @@ import "@fontsource/inter/600.css";
 export const metadata: Metadata = {
   title: "Video Watchlist",
   description: "Personal video watchlist for YouTube, Netflix, Nebula, and Twitch",
+  viewport: "width=device-width, initial-scale=1",
 };
 
 export default function RootLayout({

@@ -61,10 +61,10 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
           </div>
 
           {/* Thumbnail + Content Row */}
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             {/* Thumbnail */}
             {preferences.showThumbnails && (
-              <div className="flex-shrink-0 h-[171px] w-[304px]">
+              <div className="w-full sm:w-[304px] aspect-video sm:aspect-auto sm:flex-shrink-0 sm:h-[171px]">
                 {video.thumbnailUrl ? (
                   <ThumbnailDisplay video={video} />
                 ) : (
@@ -76,7 +76,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             )}
 
             {/* Content */}
-            <div className="flex-1 min-w-0 flex items-center">
+            <div className="flex-1 min-w-0 w-full sm:w-auto sm:flex sm:items-center">
               <div className="rounded-lg p-4 font-mono w-full">
                 <div className="text-sm">
                   {'{'}
@@ -108,19 +108,21 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
           <div className="px-4 pt-4 pb-4 flex flex-col md:border-l border-black dark:border-white justify-center">
             {/* Main action buttons */}
             <div className="flex md:flex-col flex-row gap-2 justify-center mb-8">
-            <a
+             <a
               href={video.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 text-xs px-2 bg-primary text-primary-foreground dark:bg-white dark:text-black hover:bg-primary/90 dark:hover:bg-gray-100 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center font-bold"
+              className="h-8 min-h-[44px] text-xs px-2 bg-primary text-primary-foreground dark:bg-white dark:text-black hover:bg-primary/90 dark:hover:bg-gray-100 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center font-bold"
               title="watch()"
+              aria-label="Watch video"
             >
               watch()
             </a>
             <button
               onClick={() => navigator.clipboard.writeText(video.url)}
-              className="h-8 text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+              className="h-8 min-h-[44px] text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
               title="copyUrl()"
+              aria-label="Copy video URL"
             >
               copyUrl()
             </button>
@@ -135,8 +137,9 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                     }
                   }}
                   disabled={loadingMarkWatched}
-                  className="h-8 text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                  className="h-8 min-h-[44px] text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                   title={video.isWatched ? "un-watch()" : "markWatched()"}
+                  aria-label={video.isWatched ? "Mark as unwatched" : "Mark as watched"}
                 >
                   {loadingMarkWatched ? <Loader2 className="w-4 h-4 animate-spin" /> : (video.isWatched ? 'unWatch()' : 'markWatched()')}
                 </button>
@@ -156,8 +159,9 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                     }
                   }}
                   disabled={loadingDelete}
-                  className="h-8 text-xs px-2 bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                  className="h-8 min-h-[44px] text-xs px-2 bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                   title="delete()"
+                  aria-label="Delete video"
                 >
                   {loadingDelete ? <Loader2 className="w-4 h-4 animate-spin" /> : 'delete()'}
                 </button>
