@@ -17,13 +17,8 @@ export async function extractVideoMetadata(url: string, platform: VideoPlatform)
         return await extractTwitchMetadata(url);
       case 'netflix':
       case 'nebula':
-        // For now, return basic metadata without API calls
-        return {
-          title: `Video from ${PLATFORM_NAMES[platform]}`,
-          thumbnailUrl: null,
-        };
       default:
-        // Try meta tag extraction for unknown platforms
+        // Try meta tag extraction with Google fallback for all platforms without specific APIs
         return await extractMetaTagMetadata(url);
     }
   } catch (error) {
@@ -120,6 +115,47 @@ async function getTwitchAccessToken(): Promise<string> {
   return data.access_token;
 }
 
+async function extractGoogleMetadata(url: string): Promise<VideoMetadata> {
+  try {
+    const urlObj = new URL(url);
+    const domain = urlObj.hostname;
+
+    // Construct search query: site:domain.com url_path
+    const path = urlObj.pathname.slice(1, 50); // first 50 chars of path
+    const query = `site:${domain} ${path}`;
+
+    const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_API_KEY}&cx=${process.env.GOOGLE_CSE_ID}&q=${encodeURIComponent(query)}&num=1`;
+
+    const response = await fetch(searchUrl);
+
+    if (!response.ok) {
+      throw new Error(`Google Search API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.items || data.items.length === 0) {
+      throw new Error('No search results found');
+    }
+
+    const result = data.items[0];
+
+    // Extract title and try to find image from snippet or pagemap
+    let thumbnailUrl = null;
+    if (result.pagemap && result.pagemap.cse_image) {
+      thumbnailUrl = result.pagemap.cse_image[0].src;
+    }
+
+    return {
+      title: result.title || 'Untitled Video',
+      thumbnailUrl,
+    };
+  } catch (error) {
+    console.error('Error extracting Google metadata:', error);
+    throw error;
+  }
+}
+
 async function extractMetaTagMetadata(url: string): Promise<VideoMetadata> {
   try {
     // Fetch the page HTML
@@ -177,12 +213,27 @@ async function extractMetaTagMetadata(url: string): Promise<VideoMetadata> {
       }
     }
 
-    return {
-      title: title || 'Untitled Video',
-      thumbnailUrl,
-    };
+    // If we got basic metadata, return it
+    if (title) {
+      return {
+        title: title || 'Untitled Video',
+        thumbnailUrl,
+      };
+    }
+
+    // Fallback to Google Search if meta tags didn't provide title
+    console.log('Meta tags insufficient, trying Google Search');
+    return await extractGoogleMetadata(url);
   } catch (error) {
     console.error('Error extracting meta tag metadata:', error);
-    throw error;
+
+    // Try Google as last resort
+    try {
+      console.log('Meta extraction failed, trying Google Search');
+      return await extractGoogleMetadata(url);
+    } catch (googleError) {
+      console.error('Google fallback also failed:', googleError);
+      throw error; // throw original error
+    }
   }
 }
