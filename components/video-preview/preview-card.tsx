@@ -82,9 +82,9 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
 
         {/* Action Column (20%) - Full height on desktop, horizontal at bottom on mobile */}
         {showActions && (
-          <div className="px-4 pt-4 pb-4 flex flex-col md:border-l border-black dark:border-white">
+          <div className="px-4 pt-4 pb-4 flex flex-col md:border-l border-black dark:border-white justify-center">
             {/* Main action buttons */}
-            <div className="flex md:flex-col flex-row gap-2 justify-center">
+            <div className="flex md:flex-col flex-row gap-2 justify-center mb-8">
               <a
                 href={video.url}
                 target="_blank"
@@ -114,14 +114,14 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
 
             {/* Delete button separated at bottom */}
             {onDelete && (
-              <div className="mt-4 flex justify-center">
+              <div className="flex justify-center">
                 <button
                   onClick={() => onDelete(video.id)}
                   className="h-8 text-xs px-2 bg-destructive text-white hover:bg-destructive/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                   title="delete()"
                 >
                   delete()
-                </button>
+              </button>
               </div>
             )}
           </div>
