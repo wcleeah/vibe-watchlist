@@ -34,16 +34,29 @@
 - [x] **Increase thumbnail size** - make thumbnails more prominent in the layout
 
 ### **Phase 6.2: Card Design Refinement** - PENDING
-**Goal**: Polish the unified card design and fix listing page styling inconsistencies
+**Goal**: Implement advanced card layout with 2-column structure and fix listing page styling
 
 **Tasks:**
-- [ ] **Card refinement**:
-  - [ ] Optimize card compactness - reduce unnecessary spacing for lean design
-  - [ ] Fix text differentiation - use font weights/styles instead of colors for hierarchy
-  - [ ] Add overflow support - handle long titles/metadata gracefully
-  - [ ] Hide URL display - make "Copy URL" button icon-only (no URL text)
-  - [ ] Fix title escaping - ensure proper text rendering
-  - [ ] Mobile actions - vertical stacking on desktop, horizontal at bottom on mobile
+- [ ] **Complete Card Layout & Refinement**:
+  - [x] **Structural Layout Changes**:
+    - [x] **Card dimensions**: Increase height to 240px for better presence
+    - [x] **Thumbnail enhancement**: Expand to 180px width with proper padding
+    - [x] **2-column grid layout**:
+      - [x] **Content column (80-90%)**: Split into 2 rows
+        - [x] **Row 1**: Title section (full width of content column)
+        - [x] **Row 2**: Thumbnail + metadata content
+      - [x] **Action column (10-20%)**: Full height button column
+    - [x] **Inner borders**: Add borders between title/content sections and content/action columns
+    - [x] **Proportions**: 8:2 or 9:1 ratio (content:action columns)
+
+  - [ ] **Polish & Optimization**:
+    - [ ] Optimize card compactness - reduce unnecessary spacing for lean design
+    - [ ] Fix text differentiation - use font weights/styles instead of colors for hierarchy
+    - [ ] Add overflow support - handle long titles/metadata gracefully
+    - [ ] Hide URL display - make "Copy URL" button icon-only (no URL text)
+    - [ ] Fix title escaping - ensure proper text rendering
+    - [ ] Mobile actions - vertical stacking on desktop, horizontal at bottom on mobile
+    - [ ] Maintain sticky-note button styling in new layout
 
 - [ ] **Listing page styling fixes**:
   - [ ] **Bulk operations UI**: Remove blue themes, use neutral backgrounds (`bg-white dark:bg-gray-900`) and function-style buttons (`markWatched()`, `delete()`)

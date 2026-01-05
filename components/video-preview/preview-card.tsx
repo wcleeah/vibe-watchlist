@@ -42,41 +42,47 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
   const borderClass = showActions ? 'border border-black dark:border-white' : '';
 
   return (
-    <div className={`bg-white dark:bg-black rounded-lg ${borderClass} min-h-[200px] ${className}`}>
-      <div className="p-4">
-        {/* Top: Title */}
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-black dark:text-white font-mono">
-            {video.title || 'Untitled Video'}
-          </h3>
-        </div>
-
-        {/* Bottom: Horizontal split */}
-        <div className="flex gap-4">
-          {/* Thumbnail */}
-          <div className="flex-shrink-0 w-36 h-24">
-            {video.thumbnailUrl ? (
-              <ThumbnailDisplay video={video} />
-            ) : (
-              <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
-                <FileText className="w-6 h-6 text-gray-400" />
-              </div>
-            )}
+    <div className={`bg-white dark:bg-black rounded-lg ${borderClass} min-h-[240px] ${className}`}>
+      {/* 2-column grid layout: 8:2 ratio when actions shown, 1 column when not */}
+      <div className={`min-h-[240px] ${showActions ? 'grid grid-cols-[8fr_2fr]' : ''}`}>
+        {/* Content Column (full width when no actions, 80% when actions shown) */}
+        <div className="p-4 space-y-4">
+          {/* Title Section */}
+          <div className="pb-4 border-b border-black dark:border-white">
+            <h3 className="text-lg font-semibold text-black dark:text-white font-mono">
+              {video.title || 'Untitled Video'}
+            </h3>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="text-sm text-black dark:text-white space-y-1">
-              <div>Platform: {PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}</div>
-              {video.tags && video.tags.length > 0 && (
-                <div>Tags: {video.tags.map(tag => tag.name).join(', ')}</div>
+          {/* Thumbnail + Content Row */}
+          <div className="flex gap-4">
+            {/* Thumbnail */}
+            <div className="flex-shrink-0 w-44 h-24">
+              {video.thumbnailUrl ? (
+                <ThumbnailDisplay video={video} />
+              ) : (
+                <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-gray-400" />
+                </div>
               )}
-              {video.id && <div className="text-xs text-black dark:text-white">ID: {video.id}</div>}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm text-black dark:text-white space-y-1">
+                <div>Platform: {PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}</div>
+                {video.tags && video.tags.length > 0 && (
+                  <div>Tags: {video.tags.map(tag => tag.name).join(', ')}</div>
+                )}
+                {video.id && <div className="text-xs text-black dark:text-white">ID: {video.id}</div>}
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex flex-col gap-2">
+        {/* Action Column (20%) - Full height */}
+        {showActions && (
+          <div className="p-4 flex flex-col gap-2 border-l border-black dark:border-white">
             <a
               href={video.url}
               target="_blank"
@@ -93,7 +99,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             >
               Copy URL
             </button>
-            {showActions && onDelete && (
+            {onDelete && (
               <button
                 onClick={() => onDelete(video.id)}
                 className="text-xs px-3 py-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
@@ -102,7 +108,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                 Delete
               </button>
             )}
-            {showActions && !video.isWatched && onMarkWatched && (
+            {!video.isWatched && onMarkWatched && (
               <button
                 onClick={() => onMarkWatched(video.id)}
                 className="text-xs px-3 py-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
@@ -112,7 +118,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
               </button>
             )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
