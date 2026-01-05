@@ -13,19 +13,13 @@ interface VideoListProps {
   videos: VideoWithTags[];
   onMarkWatched?: (id: number) => void;
   onDelete?: (id: number) => void;
+  loading?: boolean;
   isSelectable?: boolean;
   selectedIds?: number[];
-  onSelectionChange?: (id: number, selected: boolean) => void;
+  onSelectionChange?: (videoId: number, selected: boolean) => void;
 }
 
-export function VideoList({
-  videos,
-  onMarkWatched,
-  onDelete,
-  isSelectable = false,
-  selectedIds = [],
-  onSelectionChange
-}: VideoListProps) {
+export function VideoList({ videos, onMarkWatched, onDelete, loading = false, isSelectable = false, selectedIds = [], onSelectionChange }: VideoListProps) {
   // Memoize selected state for each video to prevent unnecessary re-renders
   const selectedStates = useMemo(() => {
     const states: Record<number, boolean> = {};
@@ -54,24 +48,24 @@ export function VideoList({
     <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
       {videos.map((video) => (
         <div key={video.id} className="p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
-          <PreviewCard
-            video={{
-              id: video.id,
-              url: video.url,
-              title: video.title,
-              platform: video.platform,
-              thumbnailUrl: video.thumbnailUrl,
-              isWatched: video.isWatched,
-              createdAt: video.createdAt,
-              updatedAt: video.updatedAt,
-              tags: video.tags || [],
-              highlightedTitle: video.highlightedTitle,
-              highlightedTags: video.highlightedTags,
-            }}
-            showActions={true}
-            onMarkWatched={onMarkWatched}
-            onDelete={onDelete}
-          />
+            <PreviewCard
+              video={{
+                id: video.id,
+                url: video.url,
+                title: video.title,
+                platform: video.platform,
+                thumbnailUrl: video.thumbnailUrl,
+                isWatched: video.isWatched,
+                createdAt: video.createdAt,
+                updatedAt: video.updatedAt,
+                tags: video.tags || [],
+                highlightedTitle: video.highlightedTitle,
+                highlightedTags: video.highlightedTags,
+              }}
+              showActions={true}
+              onMarkWatched={onMarkWatched}
+              onDelete={onDelete}
+            />
         </div>
       ))}
     </div>

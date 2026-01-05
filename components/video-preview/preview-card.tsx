@@ -120,7 +120,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             >
               copyUrl()
             </button>
-              {!video.isWatched && onMarkWatched && (
+              {onMarkWatched && (
                 <button
                   onClick={async () => {
                     setLoadingMarkWatched(true);
@@ -132,9 +132,9 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                   }}
                   disabled={loadingMarkWatched}
                   className="h-8 text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
-                  title="markWatched()"
+                  title={video.isWatched ? "un-watch()" : "markWatched()"}
                 >
-                  {loadingMarkWatched ? <Loader2 className="w-4 h-4 animate-spin" /> : 'markWatched()'}
+                  {loadingMarkWatched ? <Loader2 className="w-4 h-4 animate-spin" /> : (video.isWatched ? 'un-watch()' : 'markWatched()')}
                 </button>
               )}
             </div>

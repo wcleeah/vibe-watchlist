@@ -84,6 +84,6 @@ Based on codebase research and requirements analysis, here's the comprehensive p
 - [x] Task 2.1: Completed - Moved ID to top of JSON, added card padding for spacing, removed border from no-thumbnail placeholder
 - [x] Task 2.2: Completed - Removed View Analytics button and its import
 - [x] Task 2.3: Completed - Added loading spinners and disabled states for markWatched and delete buttons
-- [ ] Task 2.4: Pending
+- [x] Task 2.4: Completed - Added Watched tab and page, implemented un-watch functionality in preview cards
 - [ ] Task 3.1: Pending
 - [ ] Task 4.1: Pending
