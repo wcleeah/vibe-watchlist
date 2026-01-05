@@ -33,7 +33,7 @@
 - [x] **Style action buttons as sticky notes** - small, vertical stack on desktop right side
 - [x] **Increase thumbnail size** - make thumbnails more prominent in the layout
 
-### **Phase 6.2: Card Design Refinement** - IN PROGRESS
+### **Phase 6.2: Card Design Refinement** - COMPLETED ✅
 **Goal**: Implement advanced card layout with 2-column structure and fix listing page styling
 
 **Tasks:**
@@ -58,13 +58,13 @@
     - [x] Mobile actions - vertical stacking on desktop, horizontal at bottom on mobile
     - [x] Maintain sticky-note button styling in new layout
 
-- [ ] **Listing page styling fixes**:
-  - [ ] **Bulk operations UI**: Remove blue themes, use neutral backgrounds (`bg-white dark:bg-gray-900`) and function-style buttons (`markWatched()`, `delete()`)
-  - [ ] **Sorting dropdown**: Update borders to `border-gray-200 dark:border-gray-800`, consider Shadcn Select component
-  - [ ] **Platform filter buttons**: Change selected state from blue to neutral (`bg-gray-100 dark:bg-gray-800`)
-  - [ ] **Tag filter buttons**: Remove heavy blue usage, use neutral styling
-  - [ ] **VideoList container**: Fix dark mode background from `gray-950` to `gray-900`
-  - [ ] **Video cards**: Add proper dark mode (`dark:bg-gray-900`), convert to function-style buttons
+- [x] **Listing page styling fixes**:
+  - [x] **Bulk operations UI**: Remove blue themes, use neutral backgrounds (`bg-white dark:bg-gray-900`) and function-style buttons (`markWatched()`, `delete()`)
+  - [x] **Sorting dropdown**: Update borders to `border-gray-200 dark:border-gray-800`, consider Shadcn Select component
+  - [x] **Platform filter buttons**: Change selected state from blue to neutral (`bg-gray-100 dark:bg-gray-800`)
+  - [x] **Tag filter buttons**: Remove heavy blue usage, use neutral styling
+  - [x] **VideoList container**: Fix dark mode background from `gray-950` to `gray-900`
+  - [x] **Video cards**: Add proper dark mode (`dark:bg-gray-900`), convert to function-style buttons
 
 - [x] **Button standardization**:
   - [x] All buttons use `h-7 text-xs` sizing
@@ -110,8 +110,8 @@
 
 ## ✅ **Progress Tracking**
 
-**Completed Tasks**: 20/25
-**Current Phase**: 6.2 (Card Design Refinement) - IN PROGRESS
+**Completed Tasks**: 21/25
+**Current Phase**: 6.2 (Card Design Refinement) - COMPLETED ✅
 
 ---
 

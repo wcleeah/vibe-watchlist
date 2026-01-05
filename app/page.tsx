@@ -33,7 +33,7 @@ export default function Home() {
     </div>
   );
 
-  const form = <FormLayout url={url} setUrl={setUrl} onVideoAdded={() => {}} showTags={hasContent} />;
+  const form = <FormLayout url={url} setUrl={setUrl} parsedUrl={parsedUrl} onVideoAdded={() => {}} showTags={hasContent} />;
 
   const preview = hasContent ? (
     <PreviewCard

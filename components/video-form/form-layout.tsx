@@ -8,14 +8,14 @@ import { useVideoForm } from '@/hooks/use-video-form';
 interface FormLayoutProps {
   url: string;
   setUrl: (url: string) => void;
+  parsedUrl?: { isValid: boolean; platform?: string } | null;
   onVideoAdded?: () => void;
   className?: string;
   showTags?: boolean;
 }
 
-export function FormLayout({ url, setUrl, onVideoAdded, className, showTags = true }: FormLayoutProps) {
+export function FormLayout({ url, setUrl, parsedUrl, onVideoAdded, className, showTags = true }: FormLayoutProps) {
   const {
-    parsedUrl,
     selectedTags,
     setTagInput,
     tagInput,
