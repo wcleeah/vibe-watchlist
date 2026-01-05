@@ -33,11 +33,11 @@ export default function Home() {
     }
   });
 
-  const hasContent = url.trim().length > 0;
-  const isInitialLoading = hasContent && isLoadingMetadata;
+  const hasContent = url.trim().length > 0 && parsedUrl?.isValid === true;
+  const shouldShowLoading = hasContent && (isLoadingMetadata || !metadata);
 
   // Show full-page loading during metadata fetch
-  if (isInitialLoading) {
+  if (shouldShowLoading) {
     return (
       <div className="bg-background text-foreground">
         <NavigationTabs />

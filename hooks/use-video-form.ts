@@ -96,19 +96,33 @@ export function useVideoForm({ onVideoAdded }: UseVideoFormOptions = {}): UseVid
 
   // Auto-detect URL and fetch metadata on URL change
   useEffect(() => {
+    // Synchronous URL validation and loading state
+    if (!url.trim()) {
+      setParsedUrl(null);
+      setMetadata(null);
+      setIsLoadingMetadata(false);
+      setPreviewError(null);
+      return;
+    }
+
+    const parsed = parseVideoUrl(url);
+    setParsedUrl(parsed);
+
+    // Check for valid URL pattern
+    const isValidUrl = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be|netflix\.com|nebula\.tv|twitch\.tv)/i.test(url);
+
+    if (!parsed.isValid || !isValidUrl) {
+      setIsLoadingMetadata(false);
+      setMetadata(null);
+      setPreviewError(null);
+      return;
+    }
+
+    // Valid URL - set loading synchronously
+    setIsLoadingMetadata(true);
+
     const timeoutId = setTimeout(async () => {
-      if (!url.trim()) {
-        setParsedUrl(null);
-        setMetadata(null);
-        setPreviewError(null);
-        return;
-      }
-
-      const parsed = parseVideoUrl(url);
-      setParsedUrl(parsed);
-
-      if (parsed.isValid && preferences.autoPreview) {
-        setIsLoadingMetadata(true);
+      if (preferences.autoPreview) {
         setPreviewError(null);
         try {
           const meta = await extractVideoMetadata(url, parsed.platform);
@@ -121,6 +135,7 @@ export function useVideoForm({ onVideoAdded }: UseVideoFormOptions = {}): UseVid
           setIsLoadingMetadata(false);
         }
       } else {
+        setIsLoadingMetadata(false);
         setMetadata(null);
         setPreviewError(null);
       }
