@@ -24,6 +24,20 @@ const platformColors = {
   twitch: 'text-purple-600',
 };
 
+const platformBackgrounds = {
+  youtube: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
+  netflix: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
+  nebula: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
+  twitch: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
+};
+
+const platformAccentColors = {
+  youtube: 'text-red-600 dark:text-red-400',
+  netflix: 'text-red-600 dark:text-red-400',
+  nebula: 'text-purple-600 dark:text-purple-400',
+  twitch: 'text-purple-600 dark:text-purple-400',
+};
+
 interface SplitScreenAddFormProps {
   onVideoAdded?: () => void;
 }
@@ -234,10 +248,18 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
         </p>
       </div>
 
+      {/* Skip link for accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded z-50"
+      >
+        Skip to main content
+      </a>
+
       {/* Split-screen layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 h-full">
+      <div id="main-content" className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 h-full" role="main" aria-label="Add video form">
         {/* Left side: Form inputs (2/5 width on desktop) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 lg:space-y-6 order-2 lg:order-1">
           <div className="space-y-4">
             <div className="space-y-4">
               {/* URL Input */}
@@ -247,16 +269,24 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
                   placeholder="https://youtube.com/watch?v=..."
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className={`w-full h-12 text-base ${
+                  className={`w-full h-12 lg:h-12 text-base text-base ${
                     url.trim() && parsedUrl
                       ? parsedUrl.isValid
                         ? 'border-green-500 focus:border-green-500'
                         : 'border-orange-500 focus:border-orange-500'
                       : ''
                   }`}
+                  aria-label="Video URL input"
+                  aria-describedby={url.trim() && parsedUrl && !parsedUrl.isValid ? "url-validation-message" : undefined}
+                  aria-invalid={url.trim() && parsedUrl ? !parsedUrl.isValid : undefined}
                 />
                 {url.trim() && parsedUrl && !parsedUrl.isValid && (
-                  <div className="animate-in fade-in-0 slide-in-from-top-1 duration-300 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 p-2 rounded border border-orange-200 dark:border-orange-800">
+                  <div
+                    id="url-validation-message"
+                    className="animate-in fade-in-0 slide-in-from-top-1 duration-300 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 p-2 rounded border border-orange-200 dark:border-orange-800"
+                    role="alert"
+                    aria-live="polite"
+                  >
                     Please enter a valid YouTube, Netflix, Nebula, or Twitch URL
                   </div>
                 )}
@@ -272,8 +302,14 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
                       value={tagInput}
                       onChange={(e) => handleTagInputChange(e.target.value)}
                       onKeyDown={handleTagKeyDown}
-                      className="w-full h-12 text-base pr-10"
+                      className="w-full h-12 lg:h-12 text-base pr-10"
                       disabled={isLoadingTags}
+                      aria-label="Tag input"
+                      aria-describedby={tagError ? "tag-error-message" : selectedTags.length > 0 ? "selected-tags" : undefined}
+                      aria-expanded={showTagSuggestions}
+                      aria-haspopup="listbox"
+                      role="combobox"
+                      aria-autocomplete="list"
                     />
                     {isLoadingTags && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -282,14 +318,20 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
                     )}
                   </div>
                   {tagInput && showTagSuggestions && filteredSuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    <div
+                      className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-48 overflow-y-auto"
+                      role="listbox"
+                      aria-label="Tag suggestions"
+                    >
                       {filteredSuggestions.map((tag) => (
                         <button
                           key={tag.id}
                           onClick={() => selectSuggestedTag(tag)}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                          className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none"
+                          role="option"
+                          aria-selected={false}
                         >
-                          <TagIcon className="w-4 h-4 text-gray-400" />
+                          <TagIcon className="w-4 h-4 text-gray-400" aria-hidden="true" />
                           <span>{tag.name}</span>
                         </button>
                       ))}
@@ -297,12 +339,21 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
                   )}
                 </div>
                 {tagError && (
-                  <div className="animate-in fade-in-0 slide-in-from-top-1 duration-300 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
+                  <div
+                    id="tag-error-message"
+                    className="animate-in fade-in-0 slide-in-from-top-1 duration-300 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800"
+                    role="alert"
+                    aria-live="polite"
+                  >
                     {tagError}
                   </div>
                 )}
                 {selectedTags.length > 0 && (
-                  <div className="animate-in fade-in-0 slide-in-from-left-2 duration-300">
+                  <div
+                    id="selected-tags"
+                    className="animate-in fade-in-0 slide-in-from-left-2 duration-300"
+                    aria-label={`Selected tags: ${selectedTags.map(tag => tag.name).join(', ')}`}
+                  >
                     <TagList
                       tags={selectedTags}
                       onRemove={removeTag}
@@ -317,6 +368,7 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
               onClick={handleAddVideo}
               disabled={!url.trim() || !parsedUrl?.isValid || isAdding}
               className="w-full h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              aria-describedby={previewError ? "preview-error" : undefined}
             >
               {isAdding ? (
                 <div className="animate-in fade-in-0 duration-200">
@@ -334,8 +386,10 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
         </div>
 
         {/* Right side: Live preview (3/5 width on desktop) */}
-        <div className="lg:col-span-3">
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 min-h-[400px]">
+        <div className="lg:col-span-3 order-1 lg:order-2">
+          <div className={`rounded-lg border min-h-[300px] lg:min-h-[400px] ${
+            parsedUrl?.isValid ? platformBackgrounds[parsedUrl.platform] : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800'
+          }`}>
             {!url.trim() ? (
               // Empty state
               <div className="p-8 text-center text-gray-500 dark:text-gray-400 min-h-[400px] flex items-center justify-center">
@@ -359,18 +413,18 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
               <div className="p-6">
                 {/* File header */}
                 <div className="animate-in fade-in-0 slide-in-from-left-4 duration-400 flex items-center gap-3 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-                  <FileText className="w-5 h-5 text-gray-400 animate-in fade-in-0 zoom-in-95 duration-300 delay-100" />
+                  <FileText className={`w-5 h-5 ${platformAccentColors[parsedUrl.platform]} animate-in fade-in-0 zoom-in-95 duration-300 delay-100`} />
                   <div className="flex items-center gap-2 animate-in fade-in-0 slide-in-from-right-4 duration-400 delay-200">
                     {(() => {
                       const Icon = platformIcons[parsedUrl.platform];
                       return <Icon className={`w-5 h-5 ${platformColors[parsedUrl.platform]} animate-in fade-in-0 zoom-in-95 duration-300 delay-300`} />;
                     })()}
-                    <span className="text-sm font-mono text-gray-600 dark:text-gray-300 animate-in fade-in-0 duration-400 delay-400">
+                    <span className={`text-sm font-mono font-semibold ${platformAccentColors[parsedUrl.platform]} animate-in fade-in-0 duration-400 delay-400`}>
                       {PLATFORM_NAMES[parsedUrl.platform]} Video
                     </span>
                   </div>
                   {parsedUrl.videoId && (
-                    <span className="text-xs text-gray-400 font-mono ml-auto animate-in fade-in-0 slide-in-from-right-4 duration-400 delay-500">
+                    <span className={`text-xs font-mono ml-auto ${platformAccentColors[parsedUrl.platform]} opacity-75 animate-in fade-in-0 slide-in-from-right-4 duration-400 delay-500`}>
                       ID: {parsedUrl.videoId}
                     </span>
                   )}
@@ -412,9 +466,16 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
                     </div>
                   </div>
                 ) : previewError ? (
-                  <div className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 text-center py-8 space-y-4">
-                    <div className="text-red-600 dark:text-red-400 text-lg">⚠️ {previewError}</div>
-                    <div className="text-sm text-gray-500 bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
+                  <div
+                    className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 text-center py-8 space-y-4"
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    <div className="text-red-600 dark:text-red-400 text-lg" aria-label="Error">⚠️ {previewError}</div>
+                    <div
+                      id="preview-error"
+                      className="text-sm text-gray-500 bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800"
+                    >
                       The video may still be added to your watchlist
                     </div>
                   </div>
@@ -460,7 +521,7 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
                     {metadata.thumbnailUrl && (
                       <div className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-1100 mt-6">
                         <div className="font-mono text-sm text-purple-600 dark:text-purple-400 mb-2">thumbnail:</div>
-                        <div className="relative w-full max-w-sm mx-auto">
+                        <div className="relative w-full max-w-xs lg:max-w-sm mx-auto">
                           <Image
                             src={metadata.thumbnailUrl}
                             alt={metadata.title}
