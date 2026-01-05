@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { VideoIcon, ListVideo, BarChart3, CheckCircle, Tag, Menu, X } from 'lucide-react';
-import { PreferencesDialog } from '@/components/preferences-dialog';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export function NavigationTabs() {
   const pathname = usePathname();
@@ -54,8 +54,8 @@ export function NavigationTabs() {
               ))}
             </div>
 
-            {/* Preferences dialog aligned to the right */}
-            <PreferencesDialog />
+            {/* Theme toggle aligned to the right */}
+            <ThemeToggle />
           </div>
         </div>
       </nav>

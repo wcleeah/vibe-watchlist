@@ -64,12 +64,12 @@ This plan outlines the complete mobile optimization and metadata enhancement for
 - [x] **Time Estimate**: 10 minutes
 
 ### 1.7 Tag Management Form Mobile Layout
-- [ ] **Objective**: Expand form on mobile (input full-width, controls below)
-- [ ] **Files**: `app/tags/page.tsx`
-- [ ] **Change**: Container to `flex flex-col sm:flex-row gap-4 items-start sm:items-end`
-- [ ] **Testing**: Input spans full width on mobile
-- [ ] **Status**: Pending
-- [ ] **Time Estimate**: 15 minutes
+- [x] **Objective**: Expand form on mobile (input full-width, controls below)
+- [x] **Files**: `app/tags/page.tsx`
+- [x] **Change**: Container to `flex flex-col sm:flex-row gap-4 items-start sm:items-end`
+- [x] **Testing**: Input spans full width on mobile
+- [x] **Status**: Completed
+- [x] **Time Estimate**: 15 minutes
 
 ### 1.8 Preferences Panel Simplification
 - [ ] **Objective**: Replace complex dialog with simple theme toggle
