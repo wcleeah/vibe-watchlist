@@ -32,7 +32,7 @@ export default function Home() {
     </div>
   );
 
-  const form = <FormLayout onVideoAdded={() => {}} showTags={hasContent} />;
+  const form = <FormLayout onVideoAdded={() => {}} showTags={true} />;
 
   const preview = hasContent ? (
     <PreviewCard
