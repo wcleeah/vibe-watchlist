@@ -85,26 +85,26 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
           <div className="px-4 pt-4 pb-4 flex flex-col md:border-l border-black dark:border-white justify-center">
             {/* Main action buttons */}
             <div className="flex md:flex-col flex-row gap-2 justify-center mb-8">
-              <a
-                href={video.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-8 text-xs px-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
-                title="watch()"
-              >
-                watch()
-              </a>
-              <button
-                onClick={() => navigator.clipboard.writeText(video.url)}
-                className="h-8 text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
-                title="copyUrl()"
-              >
-                copyUrl()
-              </button>
+            <a
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-8 text-xs px-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center w-full max-w-[120px]"
+              title="watch()"
+            >
+              watch()
+            </a>
+            <button
+              onClick={() => navigator.clipboard.writeText(video.url)}
+              className="h-8 text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center w-full max-w-[120px]"
+              title="copyUrl()"
+            >
+              copyUrl()
+            </button>
               {!video.isWatched && onMarkWatched && (
                 <button
                   onClick={() => onMarkWatched(video.id)}
-                  className="h-8 text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                  className="h-8 text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center w-full max-w-[120px]"
                   title="markWatched()"
                 >
                   markWatched()
@@ -117,11 +117,11 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
               <div className="flex justify-center">
                 <button
                   onClick={() => onDelete(video.id)}
-                  className="h-8 text-xs px-2 bg-destructive text-white hover:bg-destructive/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                  className="h-8 text-xs px-2 bg-destructive text-white hover:bg-destructive/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center w-full max-w-[120px]"
                   title="delete()"
                 >
                   delete()
-              </button>
+                </button>
               </div>
             )}
           </div>
