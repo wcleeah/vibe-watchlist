@@ -57,7 +57,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
           {/* Thumbnail + Content Row */}
           <div className="flex gap-4">
             {/* Thumbnail */}
-            <div className="flex-shrink-0 h-[171px] w-auto">
+            <div className="flex-shrink-0 h-[171px] w-[304px]">
               {video.thumbnailUrl ? (
                 <ThumbnailDisplay video={video} />
               ) : (
