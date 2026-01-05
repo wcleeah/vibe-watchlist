@@ -28,12 +28,12 @@ This plan outlines the complete mobile optimization and metadata enhancement for
 - [x] **Time Estimate**: 20 minutes
 
 ### 1.3 Tag Input Button Height & Width
-- [ ] **Objective**: Match button to input height, improve mobile touch targets
-- [ ] **Files**: `components/video-form/tag-input.tsx`
-- [ ] **Change**: Update button to `h-12 px-4 sm:px-2`
-- [ ] **Testing**: Button height matches input, better mobile tap area
-- [ ] **Status**: Pending
-- [ ] **Time Estimate**: 10 minutes
+- [x] **Objective**: Match button to input height, improve mobile touch targets
+- [x] **Files**: `components/video-form/tag-input.tsx`
+- [x] **Change**: Update button to `h-12 px-4 sm:px-2`
+- [x] **Testing**: Button height matches input, better mobile tap area
+- [x] **Status**: Completed
+- [x] **Time Estimate**: 10 minutes
 
 ### 1.4 Card Action Buttons Mobile Layout
 - [ ] **Objective**: Stack action buttons vertically on mobile

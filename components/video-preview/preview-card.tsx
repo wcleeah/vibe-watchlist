@@ -107,12 +107,12 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
         {showActions && (
           <div className="px-4 pt-4 pb-4 flex flex-col md:border-l border-black dark:border-white justify-center">
             {/* Main action buttons */}
-            <div className="flex md:flex-col flex-row gap-2 justify-center mb-8">
+            <div className="flex flex-col md:flex-row gap-2 justify-center mb-8">
              <a
               href={video.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 min-h-[44px] text-xs px-2 bg-primary text-primary-foreground dark:bg-white dark:text-black hover:bg-primary/90 dark:hover:bg-gray-100 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center font-bold"
+              className="w-full h-8 min-h-[44px] text-xs px-2 bg-primary text-primary-foreground dark:bg-white dark:text-black hover:bg-primary/90 dark:hover:bg-gray-100 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center font-bold"
               title="watch()"
               aria-label="Watch video"
             >
@@ -120,7 +120,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             </a>
             <button
               onClick={() => navigator.clipboard.writeText(video.url)}
-              className="h-8 min-h-[44px] text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+              className="w-full h-8 min-h-[44px] text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
               title="copyUrl()"
               aria-label="Copy video URL"
             >
@@ -137,7 +137,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                     }
                   }}
                   disabled={loadingMarkWatched}
-                  className="h-8 min-h-[44px] text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                  className="w-full h-8 min-h-[44px] text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                   title={video.isWatched ? "un-watch()" : "markWatched()"}
                   aria-label={video.isWatched ? "Mark as unwatched" : "Mark as watched"}
                 >
@@ -159,7 +159,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                     }
                   }}
                   disabled={loadingDelete}
-                  className="h-8 min-h-[44px] text-xs px-2 bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                  className="w-full h-8 min-h-[44px] text-xs px-2 bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                   title="delete()"
                   aria-label="Delete video"
                 >
