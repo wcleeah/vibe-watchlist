@@ -140,6 +140,16 @@ import type { Video } from '@/types/video';
 └── app/                    # App-specific pages
 ```
 
+### Mobile Optimization
+- **Viewport**: Meta tag added in `app/layout.tsx` for proper mobile scaling
+- **Touch Targets**: All buttons have 44px minimum height for accessibility
+- **Responsive Navigation**: Hamburger menu with slide-out drawer for mobile screens
+- **Card Layouts**: Preview cards stack vertically on mobile, thumbnails scale responsively while maintaining 16:9 aspect ratio
+- **Dialogs**: Preferences dialog uses `max-w-80` with responsive grid layouts
+- **Typography**: Page headings use `text-2xl sm:text-3xl` for mobile readability
+- **Performance**: Lazy loading implemented for video thumbnails
+- **Testing Focus**: Optimized for iPhone 13 Pro (390px width) and modern mobile devices
+
 ### ESLint Configuration
 - **Base**: Next.js recommended rules with TypeScript support
 - **Config**: `eslint.config.mjs` with flat config format

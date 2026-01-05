@@ -80,6 +80,7 @@ export function ThumbnailDisplay({ video, className }: ThumbnailDisplayProps) {
         src={video.thumbnailUrl}
         alt={video.title || 'Video thumbnail'}
         fill
+        loading="lazy"
         className="object-contain rounded border border-gray-200 dark:border-gray-700"
       />
     </div>
