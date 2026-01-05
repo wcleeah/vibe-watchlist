@@ -94,12 +94,10 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             </a>
             <button
               onClick={() => navigator.clipboard.writeText(video.url)}
-              className="h-7 px-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded shadow-sm hover:shadow-md transition-all"
+              className="h-7 text-xs px-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded shadow-sm hover:shadow-md transition-all"
               title="copyUrl()"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
+              copyUrl()
             </button>
             {onDelete && (
               <button
