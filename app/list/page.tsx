@@ -7,7 +7,7 @@ import { Video } from '@/lib/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, X, Youtube, Tv, Gamepad2 } from 'lucide-react';
+import { Search, Filter, X, Youtube, Tv, Gamepad2, Globe } from 'lucide-react';
 
 interface Tag {
   id: number;
@@ -344,12 +344,13 @@ export default function ListPage() {
               Platforms:
             </div>
             <div className="flex flex-wrap gap-2">
-              {[
-                { key: 'youtube', label: 'YouTube', icon: Youtube, color: 'hover:bg-red-50 dark:hover:bg-red-950' },
-                { key: 'netflix', label: 'Netflix', icon: Tv, color: 'hover:bg-red-50 dark:hover:bg-red-950' },
-                { key: 'nebula', label: 'Nebula', icon: Tv, color: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
-                { key: 'twitch', label: 'Twitch', icon: Gamepad2, color: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
-              ].map(({ key, label, icon: Icon, color }) => (
+               {[
+                 { key: 'youtube', label: 'YouTube', icon: Youtube, color: 'hover:bg-red-50 dark:hover:bg-red-950' },
+                 { key: 'netflix', label: 'Netflix', icon: Tv, color: 'hover:bg-red-50 dark:hover:bg-red-950' },
+                 { key: 'nebula', label: 'Nebula', icon: Tv, color: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
+                 { key: 'twitch', label: 'Twitch', icon: Gamepad2, color: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
+                 { key: 'unknown', label: 'Unknown', icon: Globe, color: 'hover:bg-gray-50 dark:hover:bg-gray-950' },
+               ].map(({ key, label, icon: Icon, color }) => (
                 <Button
                   key={key}
                   variant={selectedPlatforms.includes(key) ? "default" : "outline"}

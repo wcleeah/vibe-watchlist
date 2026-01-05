@@ -124,6 +124,14 @@ export default function WatchedPage() {
     );
   };
 
+  const platforms = [
+    { key: 'youtube', label: 'YouTube', icon: Youtube, color: 'hover:bg-red-50 dark:hover:bg-red-950' },
+    { key: 'netflix', label: 'Netflix', icon: Tv, color: 'hover:bg-red-50 dark:hover:bg-red-950' },
+    { key: 'nebula', label: 'Nebula', icon: Gamepad2, color: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
+    { key: 'twitch', label: 'Twitch', icon: Tv, color: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
+    { key: 'unknown', label: 'Unknown', icon: Globe, color: 'hover:bg-gray-50 dark:hover:bg-gray-950' },
+  ];
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <NavigationTabs />
@@ -156,29 +164,25 @@ export default function WatchedPage() {
           </div>
 
           {/* Platform Filters */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               <Filter className="w-4 h-4" />
-              Platform:
+              Platforms:
             </div>
-             {[
-               { key: 'youtube', label: 'YouTube', icon: Youtube },
-               { key: 'netflix', label: 'Netflix', icon: Tv },
-               { key: 'nebula', label: 'Nebula', icon: Gamepad2 },
-               { key: 'twitch', label: 'Twitch', icon: Tv },
-               { key: 'unknown', label: 'Unknown', icon: Globe },
-             ].map(({ key, label, icon: Icon }) => (
-              <Button
-                key={key}
-                variant={selectedPlatforms.includes(key) ? "default" : "outline"}
-                size="sm"
-                onClick={() => handlePlatformFilter(key)}
-                 className="flex items-center gap-2 w-20 sm:w-24 px-3"
-              >
-                <Icon className="w-4 h-4" />
-                {label}
-              </Button>
-            ))}
+            <div className="flex flex-wrap gap-2">
+              {platforms.map(({ key, label, icon: Icon, color }) => (
+                <Button
+                  key={key}
+                  variant={selectedPlatforms.includes(key) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePlatformFilter(key)}
+                  className={`h-8 ${selectedPlatforms.includes(key) ? 'bg-gray-100 dark:bg-gray-800' : color}`}
+                >
+                  <Icon className="w-3 h-3 mr-1" />
+                  {label}
+                </Button>
+              ))}
+            </div>
           </div>
 
           {/* Tag Filters */}
