@@ -157,7 +157,7 @@ export default function TagsPage() {
                 className="w-16 h-10"
               />
             </div>
-            <Button onClick={handleAddTag} disabled={!newTagName.trim()}>
+            <Button onClick={handleAddTag} disabled={!newTagName.trim()} className="h-10">
               <Plus className="w-4 h-4 mr-2" />
               Add Tag
             </Button>
