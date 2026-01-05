@@ -55,7 +55,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
         <div className="px-4 pt-4 pb-4 space-y-1">
           {/* Title Section */}
           <div className="pb-2 border-b border-black dark:border-white">
-            <h3 className="text-lg font-bold text-black dark:text-white font-mono truncate" title={video.title || 'Untitled Video'}>
+             <h3 className="text-lg font-bold text-black dark:text-white font-mono truncate text-center sm:text-left" title={video.title || 'Untitled Video'}>
               {video.title || 'Untitled Video'}
             </h3>
           </div>
