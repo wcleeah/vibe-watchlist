@@ -82,7 +82,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
               // Delay to allow suggestion clicks
               setTimeout(() => setIsFocused(false), 150);
             }}
-             className={cn("w-full h-12 text-base pr-20", className)}
+             className={cn("w-full h-12 text-base", className)}
             disabled={isLoading}
             aria-label="Tag input"
             aria-describedby={error ? "tag-input-error" : selectedTags.length > 0 ? "selected-tags" : undefined}
@@ -100,7 +100,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
                  size="sm"
                  onClick={() => onTagAdd(value.trim())}
                  disabled={!value.trim()}
-                 className="h-12 w-20 text-xs"
+                 className="h-12 w-20 text-sm font-bold"
                >
                 Add
               </Button>
