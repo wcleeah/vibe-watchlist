@@ -52,7 +52,7 @@ export function MetadataDisplay({ video, className }: MetadataDisplayProps) {
         <div className="font-mono text-sm">
           <span className="text-purple-600 dark:text-purple-400">tags:</span>{' '}
           <span className="text-pink-600 dark:text-pink-400">
-            [{video.tags.map((t: Tag) => `&ldquo;${t.name}&rdquo;`).join(', ')}]
+            [{video.tags.map((t: Tag) => `"${t.name}"`).join(', ')}]
           </span>
         </div>
       )}
