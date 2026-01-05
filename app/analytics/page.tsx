@@ -1,16 +1,21 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import { NavigationTabs } from '@/components/navigation-tabs';
 import { useAnalytics } from '@/lib/analytics-context';
 
 export default function AnalyticsPage() {
   const { countdown, refreshStats } = useAnalytics();
+  const lastFetchRef = useRef(0);
 
-  // Ensure fresh data on page entry
+  // Ensure fresh data on page entry (throttled to prevent server overload)
   useEffect(() => {
-    refreshStats();
+    const now = Date.now();
+    if (now - lastFetchRef.current > 10000) { // Only fetch if more than 10 seconds since last fetch
+      refreshStats();
+      lastFetchRef.current = now;
+    }
   }, [refreshStats]);
 
   return (
