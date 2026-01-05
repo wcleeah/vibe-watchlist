@@ -70,39 +70,41 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
         )}
 
         <div className="relative">
-          <Input
-            ref={ref}
-            type="text"
-            placeholder={placeholder}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => {
-              // Delay to allow suggestion clicks
-              setTimeout(() => setIsFocused(false), 150);
-            }}
-             className={cn("w-full h-12 text-base", className)}
-            disabled={isLoading}
-            aria-label="Tag input"
-            aria-describedby={error ? "tag-input-error" : selectedTags.length > 0 ? "selected-tags" : undefined}
-            aria-expanded={showSuggestions && suggestions.length > 0 && isFocused}
-            aria-haspopup="listbox"
-            role="combobox"
-            aria-autocomplete="list"
-          />
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+          <div className="flex gap-0">
+            <Input
+              ref={ref}
+              type="text"
+              placeholder={placeholder}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => {
+                // Delay to allow suggestion clicks
+                setTimeout(() => setIsFocused(false), 150);
+              }}
+              className={cn("flex-1 h-12 text-base rounded-r-none border-r-0", className)}
+              disabled={isLoading}
+              aria-label="Tag input"
+              aria-describedby={error ? "tag-input-error" : selectedTags.length > 0 ? "selected-tags" : undefined}
+              aria-expanded={showSuggestions && suggestions.length > 0 && isFocused}
+              aria-haspopup="listbox"
+              role="combobox"
+              aria-autocomplete="list"
+            />
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+              <div className="flex items-center justify-center w-1/5 h-12 rounded-l-none border border-l-0 bg-gray-50 dark:bg-gray-800">
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+              </div>
             ) : (
-               <Button
-                 type="button"
-                 size="sm"
-                 onClick={() => onTagAdd(value.trim())}
-                 disabled={!value.trim()}
-                 className="h-12 w-20 text-sm font-bold"
-               >
-                Add
+              <Button
+                type="button"
+                onClick={() => onTagAdd(value.trim())}
+                disabled={!value.trim()}
+                className="w-1/5 h-12 rounded-l-none text-sm font-bold"
+              >
+                <span className="sm:hidden">+</span>
+                <span className="hidden sm:inline">Add</span>
               </Button>
             )}
           </div>
