@@ -3,12 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { VideoList } from '@/components/videos/video-list';
 import { NavigationTabs } from '@/components/navigation-tabs';
-import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import { Video } from '@/lib/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, X, Youtube, Tv, Gamepad2 } from 'lucide-react';
+import { Search, Filter, X, Youtube, Tv, Gamepad2, BarChart3 } from 'lucide-react';
 
 interface Tag {
   id: number;
@@ -201,7 +200,15 @@ export default function ListPage() {
       <main className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">My Watchlist</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-bold">My Watchlist</h1>
+            <Button asChild variant="outline" size="sm" className="flex items-center gap-2">
+              <a href="/analytics">
+                <BarChart3 className="w-4 h-4" />
+                View Analytics
+              </a>
+            </Button>
+          </div>
           <p className="text-gray-600 dark:text-gray-400">
             {videos.length} unwatched videos
             {(searchQuery || selectedPlatforms.length > 0 || selectedTagIds.length > 0) &&
@@ -437,11 +444,6 @@ export default function ListPage() {
             onSelectionChange={handleSelectionChange}
           />
         )}
-
-        {/* Analytics Section */}
-        <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
-          <AnalyticsDashboard />
-        </div>
       </main>
     </div>
   );
