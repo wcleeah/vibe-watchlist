@@ -175,10 +175,6 @@ export default function ListPage() {
     }
   };
 
-  const handleVideoAdded = () => {
-    fetchVideos();
-  };
-
   const handleMarkWatched = async (id: number) => {
     try {
       const response = await fetch(`/api/videos/${id}`, {

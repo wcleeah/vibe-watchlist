@@ -180,14 +180,15 @@ export async function POST(request: NextRequest) {
           thumbnailUrl: metadata.thumbnailUrl,
         })
         .returning();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle duplicate URL error (check both direct error and cause)
-      const isDuplicateError = error.code === '23505' ||
-                              error.constraint === 'videos_url_unique' ||
-                              error.cause?.code === '23505' ||
-                              error.cause?.constraint === 'videos_url_unique' ||
-                              error.message?.includes('duplicate') ||
-                              error.message?.includes('unique');
+      const err = error as { code?: string; constraint?: string; cause?: { code?: string; constraint?: string }; message?: string };
+      const isDuplicateError = err?.code === '23505' ||
+                              err?.constraint === 'videos_url_unique' ||
+                              err?.cause?.code === '23505' ||
+                              err?.cause?.constraint === 'videos_url_unique' ||
+                              err?.message?.includes('duplicate') ||
+                              err?.message?.includes('unique');
 
       if (isDuplicateError) {
         console.log('✅ Duplicate URL detected, returning 409');

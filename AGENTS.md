@@ -8,6 +8,10 @@ This file contains guidelines and commands for coding agents working on the vide
 - When you need to use anything browser related, use `playwriter` tools.
 - When you need to interact with the db directly, use `neon` tools.
 
+## After feature development
+- Periordically commit to git
+- Update PLAN.md and STYLE.md for any changes
+
 ## Build & Development Commands
 
 ### Development
