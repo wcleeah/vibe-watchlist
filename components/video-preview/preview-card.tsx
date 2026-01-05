@@ -70,14 +70,18 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 font-mono">
-                <div className="space-y-1 text-xs">
-                  <div><span className="text-purple-600 dark:text-purple-400">platform:</span> <span className="text-green-600 dark:text-green-400">"{PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}"</span></div>
-                  {video.tags && video.tags.length > 0 && (
-                    <div><span className="text-purple-600 dark:text-purple-400">tags:</span> <span className="text-yellow-600 dark:text-yellow-400">"{video.tags.map(tag => tag.name).join('", "')}"</span></div>
-                  )}
-                  {video.id && (
-                    <div><span className="text-cyan-600 dark:text-cyan-400">id:</span> <span className="text-cyan-600 dark:text-cyan-400">{video.id}</span></div>
-                  )}
+                <div className="text-xs">
+                  {'{'}
+                  <div className="ml-4 space-y-1">
+                    <div><span className="text-purple-600 dark:text-purple-400">"PLATFORM"</span>: <span className="text-green-600 dark:text-green-400">"{PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}"</span>,</div>
+                    {video.tags && video.tags.length > 0 && (
+                      <div><span className="text-purple-600 dark:text-purple-400">"TAGS"</span>: <span className="text-yellow-600 dark:text-yellow-400">[{video.tags.map(tag => `"${tag.name}"`).join(', ')}]</span>,</div>
+                    )}
+                    {video.id && (
+                      <div><span className="text-purple-600 dark:text-purple-400">"ID"</span>: <span className="text-cyan-600 dark:text-cyan-400">{video.id}</span></div>
+                    )}
+                  </div>
+                  {'}'}
                 </div>
               </div>
             </div>
