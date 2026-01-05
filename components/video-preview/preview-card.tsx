@@ -10,7 +10,7 @@ import { PreviewCardProps } from './types';
 export function PreviewCard({ video, showActions = false, onMarkWatched, onDelete, className }: PreviewCardProps) {
   if (video.isLoading) {
     return (
-      <div className={`bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 min-h-[300px] ${className}`}>
+      <div className={`bg-white dark:bg-black rounded-lg border border-black dark:border-white p-6 min-h-[300px] ${className}`}>
         <LoadingSkeleton />
       </div>
     );
@@ -18,7 +18,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
 
   if (video.error) {
     return (
-      <div className={`bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 min-h-[300px] ${className}`}>
+      <div className={`bg-white dark:bg-black rounded-lg border border-black dark:border-white p-6 min-h-[300px] ${className}`}>
         <ErrorDisplay error={video.error} />
       </div>
     );
@@ -39,14 +39,14 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
     twitch: 'text-purple-600 dark:text-purple-400',
   };
 
-  const borderClass = showActions ? 'border border-gray-200' : '';
+  const borderClass = showActions ? 'border border-black dark:border-white' : '';
 
   return (
-    <div className={`bg-white rounded-lg ${borderClass} min-h-[200px] ${className}`}>
+    <div className={`bg-white dark:bg-black rounded-lg ${borderClass} min-h-[200px] ${className}`}>
       <div className="p-4">
         {/* Top: Title */}
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 font-mono">
+          <h3 className="text-lg font-semibold text-black dark:text-white font-mono">
             {video.title || 'Untitled Video'}
           </h3>
         </div>
@@ -54,7 +54,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
         {/* Bottom: Horizontal split */}
         <div className="flex gap-4">
           {/* Thumbnail */}
-          <div className="flex-shrink-0 w-24 h-16">
+          <div className="flex-shrink-0 w-32 h-20">
             {video.thumbnailUrl ? (
               <ThumbnailDisplay video={video} />
             ) : (
@@ -66,12 +66,12 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="text-sm text-gray-600 space-y-1">
+            <div className="text-sm text-black dark:text-white space-y-1">
               <div>Platform: {PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}</div>
               {video.tags && video.tags.length > 0 && (
                 <div>Tags: {video.tags.map(tag => tag.name).join(', ')}</div>
               )}
-              {video.id && <div className="text-xs text-gray-500">ID: {video.id}</div>}
+              {video.id && <div className="text-xs text-black dark:text-white">ID: {video.id}</div>}
             </div>
           </div>
 
@@ -81,15 +81,22 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
               href={video.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              className="text-xs px-3 py-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
+              title="Watch Now"
+            >
+              Watch Now
+            </a>
+            <button
+              onClick={() => navigator.clipboard.writeText(video.url)}
+              className="text-xs px-3 py-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
               title="Copy URL"
             >
               Copy URL
-            </a>
+            </button>
             {showActions && onDelete && (
               <button
                 onClick={() => onDelete(video.id)}
-                className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                className="text-xs px-3 py-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
                 title="Delete"
               >
                 Delete
@@ -98,7 +105,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             {showActions && !video.isWatched && onMarkWatched && (
               <button
                 onClick={() => onMarkWatched(video.id)}
-                className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                className="text-xs px-3 py-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
                 title="Mark Watched"
               >
                 Watched
