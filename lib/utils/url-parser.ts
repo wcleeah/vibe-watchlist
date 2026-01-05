@@ -49,9 +49,11 @@ export function parseVideoUrl(url: string): ParsedUrl {
 
     // Twitch detection
     if (hostname.includes('twitch.tv')) {
+      const videoId = extractTwitchId(urlObj);
       return {
         url,
         platform: 'twitch',
+        videoId,
         isValid: true,
       };
     }
@@ -87,6 +89,18 @@ function extractYouTubeId(urlObj: URL): string | null {
   }
 
   return null;
+}
+
+function extractTwitchId(urlObj: URL): string | undefined {
+  const path = urlObj.pathname;
+
+  // twitch.tv/videos/{id}
+  const videoMatch = path.match(/^\/videos\/(\d+)$/);
+  if (videoMatch) {
+    return videoMatch[1];
+  }
+
+  return undefined;
 }
 
 export function detectPlatform(url: string): VideoPlatform | null {

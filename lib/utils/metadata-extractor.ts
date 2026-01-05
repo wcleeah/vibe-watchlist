@@ -1,4 +1,4 @@
-import { VideoPlatform } from './url-parser';
+import { VideoPlatform, parseVideoUrl } from './url-parser';
 import { PLATFORM_NAMES } from './platform-utils';
 
 export interface VideoMetadata {
@@ -13,9 +13,10 @@ export async function extractVideoMetadata(url: string, platform: VideoPlatform)
     switch (platform) {
       case 'youtube':
         return await extractYouTubeMetadata(url);
+      case 'twitch':
+        return await extractTwitchMetadata(url);
       case 'netflix':
       case 'nebula':
-      case 'twitch':
         // For now, return basic metadata without API calls
         return {
           title: `Video from ${PLATFORM_NAMES[platform]}`,
@@ -56,6 +57,67 @@ async function extractYouTubeMetadata(url: string): Promise<VideoMetadata> {
     authorName: data.author_name,
     authorUrl: data.author_url,
   };
+}
+
+async function extractTwitchMetadata(url: string): Promise<VideoMetadata> {
+  const parsed = parseVideoUrl(url);
+  if (!parsed.videoId) {
+    throw new Error('Invalid Twitch video URL');
+  }
+
+  const accessToken = await getTwitchAccessToken();
+
+  const apiUrl = `https://api.twitch.tv/helix/videos?id=${parsed.videoId}`;
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      'Client-ID': process.env.TWITCH_CLIENT_ID!,
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('Twitch video not found or private');
+    }
+    throw new Error(`Twitch API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (!data.data || data.data.length === 0) {
+    throw new Error('Twitch video data not found');
+  }
+
+  const video = data.data[0];
+
+  return {
+    title: video.title || 'Untitled Twitch Video',
+    thumbnailUrl: video.thumbnail_url || null,
+    authorName: video.user_name,
+    authorUrl: video.user_login ? `https://twitch.tv/${video.user_login}` : undefined,
+  };
+}
+
+async function getTwitchAccessToken(): Promise<string> {
+  const response = await fetch('https://id.twitch.tv/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      client_id: process.env.TWITCH_CLIENT_ID!,
+      client_secret: process.env.TWITCH_CLIENT_SECRET!,
+      grant_type: 'client_credentials',
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Twitch token request failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.access_token;
 }
 
 async function extractMetaTagMetadata(url: string): Promise<VideoMetadata> {
