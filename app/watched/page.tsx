@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, X, Youtube, Tv, Gamepad2, Tag } from 'lucide-react';
+import { Search, Filter, X, Youtube, Tv, Gamepad2, Tag, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -161,18 +161,19 @@ export default function WatchedPage() {
               <Filter className="w-4 h-4" />
               Platform:
             </div>
-            {[
-              { key: 'youtube', label: 'YouTube', icon: Youtube },
-              { key: 'netflix', label: 'Netflix', icon: Tv },
-              { key: 'nebula', label: 'Nebula', icon: Gamepad2 },
-              { key: 'twitch', label: 'Twitch', icon: Tv },
-            ].map(({ key, label, icon: Icon }) => (
+             {[
+               { key: 'youtube', label: 'YouTube', icon: Youtube },
+               { key: 'netflix', label: 'Netflix', icon: Tv },
+               { key: 'nebula', label: 'Nebula', icon: Gamepad2 },
+               { key: 'twitch', label: 'Twitch', icon: Tv },
+               { key: 'unknown', label: 'Unknown', icon: Globe },
+             ].map(({ key, label, icon: Icon }) => (
               <Button
                 key={key}
                 variant={selectedPlatforms.includes(key) ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePlatformFilter(key)}
-                className="flex items-center gap-2 w-20 sm:w-24"
+                 className="flex items-center gap-2 w-20 sm:w-24 px-3"
               >
                 <Icon className="w-4 h-4" />
                 {label}
