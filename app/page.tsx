@@ -21,7 +21,7 @@ export default function Home() {
     }
   });
 
-  const hasContent = parsedUrl?.isValid || false;
+  const hasContent = url.trim().length > 0;
 
   const header = (
     <div className="text-center mb-4">
