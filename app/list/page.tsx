@@ -233,10 +233,10 @@ export default function ListPage() {
 
         {/* Bulk Operations Toolbar */}
         {bulkMode && (
-          <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <span className="font-medium text-blue-900 dark:text-blue-100">
+                <span className="font-medium text-gray-900 dark:text-gray-100">
                   {selectedVideoIds.length} of {filteredVideos.length} videos selected
                 </span>
                 <div className="flex gap-2">
@@ -245,16 +245,18 @@ export default function ListPage() {
                     size="sm"
                     onClick={handleSelectAll}
                     disabled={selectedVideoIds.length === filteredVideos.length}
+                    className="h-8"
                   >
-                    Select All
+                    selectAll()
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleSelectNone}
                     disabled={selectedVideoIds.length === 0}
+                    className="h-8"
                   >
-                    Select None
+                    selectNone()
                   </Button>
                 </div>
               </div>
@@ -263,17 +265,17 @@ export default function ListPage() {
                   onClick={handleBulkMarkWatched}
                   disabled={selectedVideoIds.length === 0 || bulkLoading}
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700"
+                  className="h-8 bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 >
-                  {bulkLoading ? 'Processing...' : `Mark ${selectedVideoIds.length} as Watched`}
+                  {bulkLoading ? 'processing()' : `markWatched(${selectedVideoIds.length})`}
                 </Button>
                 <Button
                   onClick={handleBulkDelete}
                   disabled={selectedVideoIds.length === 0 || bulkLoading}
-                  variant="destructive"
                   size="sm"
+                  className="h-8 bg-red-500 text-white hover:bg-red-600"
                 >
-                  {bulkLoading ? 'Processing...' : `Delete ${selectedVideoIds.length} Videos`}
+                  {bulkLoading ? 'processing()' : `delete(${selectedVideoIds.length})`}
                 </Button>
                 <Button
                   onClick={() => {
@@ -327,7 +329,7 @@ export default function ListPage() {
                   setSortBy(field);
                   setSortOrder(order);
                 }}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                className="px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 text-sm"
               >
                 <option value="createdAt-desc">Newest First</option>
                 <option value="createdAt-asc">Oldest First</option>
@@ -362,7 +364,7 @@ export default function ListPage() {
                         : [...prev, key]
                     );
                   }}
-                  className={`h-8 ${selectedPlatforms.includes(key) ? 'bg-blue-600' : color}`}
+                  className={`h-8 ${selectedPlatforms.includes(key) ? 'bg-gray-100 dark:bg-gray-800' : color}`}
                 >
                   <Icon className="w-3 h-3 mr-1" />
                   {label}
@@ -425,7 +427,7 @@ export default function ListPage() {
                   onClick={() => handleTagFilter(tag.id)}
                   className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
                     selectedTagIds.includes(tag.id)
-                      ? 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200'
+                      ? 'bg-gray-200 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-gray-900 dark:text-gray-100'
                       : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                   style={selectedTagIds.includes(tag.id) ? {} : {

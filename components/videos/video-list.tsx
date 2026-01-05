@@ -51,7 +51,7 @@ export function VideoList({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
       {videos.map((video) => (
         <div key={video.id} className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
           <PreviewCard
