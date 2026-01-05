@@ -102,7 +102,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             {onDelete && (
               <button
                 onClick={() => onDelete(video.id)}
-                className="h-8 text-xs px-2 bg-red-400 dark:bg-red-600 text-red-50 hover:bg-red-500 dark:hover:bg-red-500 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                className="h-8 text-xs px-2 bg-destructive text-white hover:bg-destructive/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                 title="delete()"
               >
                 delete()
