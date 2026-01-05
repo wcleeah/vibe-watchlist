@@ -107,7 +107,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
         {showActions && (
           <div className="px-4 pt-4 pb-4 flex flex-col md:border-l border-black dark:border-white justify-center">
             {/* Main action buttons */}
-            <div className="flex flex-col md:flex-row gap-2 justify-center mb-8">
+            <div className="flex flex-col gap-2 justify-center mb-8">
              <a
               href={video.url}
               target="_blank"
