@@ -7,6 +7,7 @@ import { Loader2, Tag as TagIcon, Plus } from 'lucide-react';
 import { TagList } from '@/components/ui/tag';
 import { Tag } from '@/types/tag';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface TagInputProps {
   value: string;

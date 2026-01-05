@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NavigationTabs } from '@/components/navigation-tabs';
+import { toast } from 'sonner';
 
 interface Tag {
   id: number;
@@ -56,6 +57,7 @@ export default function TagsPage() {
         setNewTagName('');
         setNewTagColor('#6b7280');
         fetchTags();
+        toast.success('Tag added successfully 🏷️');
       }
     } catch (error) {
       console.error('Error adding tag:', error);
@@ -83,6 +85,7 @@ export default function TagsPage() {
       if (response.ok) {
         setEditingId(null);
         fetchTags();
+        toast.success('Tag updated successfully ✏️');
       }
     } catch (error) {
       console.error('Error updating tag:', error);
@@ -105,6 +108,7 @@ export default function TagsPage() {
 
       if (response.ok) {
         fetchTags();
+        toast.success('Tag deleted successfully 🗑️');
       }
     } catch (error) {
       console.error('Error deleting tag:', error);

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, X, Youtube, Tv, Gamepad2, Globe } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Tag {
   id: number;
@@ -133,13 +134,14 @@ export default function ListPage() {
         }),
       });
 
-      if (response.ok) {
-        // Refresh videos and clear selection
-        await fetchVideos();
-        setSelectedVideoIds([]);
-      }
-    } catch (error) {
-      console.error('Error bulk marking as watched:', error);
+       if (response.ok) {
+         // Refresh videos and clear selection
+         await fetchVideos();
+         setSelectedVideoIds([]);
+         toast.success(`Marked ${selectedVideoIds.length} videos as watched ✅`);
+       }
+     } catch (error) {
+       console.error('Error bulk marking as watched:', error);
     } finally {
       setBulkLoading(false);
     }
@@ -163,13 +165,14 @@ export default function ListPage() {
         }),
       });
 
-      if (response.ok) {
-        // Refresh videos and clear selection
-        await fetchVideos();
-        setSelectedVideoIds([]);
-      }
-    } catch (error) {
-      console.error('Error bulk deleting videos:', error);
+       if (response.ok) {
+         // Refresh videos and clear selection
+         await fetchVideos();
+         setSelectedVideoIds([]);
+         toast.success(`Deleted ${selectedVideoIds.length} videos successfully 🗑️`);
+       }
+     } catch (error) {
+       console.error('Error bulk deleting videos:', error);
     } finally {
       setBulkLoading(false);
     }
@@ -185,29 +188,29 @@ export default function ListPage() {
         body: JSON.stringify({ isWatched: true }),
       });
 
-      if (response.ok) {
-        setVideos(videos.filter(video => video.id !== id));
-      }
+       if (response.ok) {
+         setVideos(videos.filter(video => video.id !== id));
+         toast.success('Video marked as watched ✅');
+       }
     } catch (error) {
       console.error('Error marking video as watched:', error);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    try {
-      const response = await fetch(`/api/videos/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isWatched: true }),
-      });
+   const handleDelete = async (id: number) => {
+     try {
+       const response = await fetch(`/api/videos/${id}`, {
+         method: 'DELETE',
+       });
 
-      if (response.ok) {
-        setVideos(videos.filter(video => video.id !== id));
-      }
-    } catch (error) {
-      console.error('Error deleting video:', error);
-    }
-  };
+       if (response.ok) {
+         setVideos(videos.filter(video => video.id !== id));
+         toast.success('Video deleted successfully 🗑️');
+       }
+     } catch (error) {
+       console.error('Error deleting video:', error);
+     }
+   };
 
   return (
     <div className="min-h-screen bg-background text-foreground">

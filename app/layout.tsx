@@ -30,7 +30,12 @@ export default function RootLayout({
           <div className="min-h-screen bg-white dark:bg-black">
             {children}
           </div>
-          <Toaster />
+            <Toaster
+              position="top-center"
+              duration={5000}
+              closeButton={true}
+              richColors={true}
+            />
         </PreferencesProvider>
       </body>
     </html>
