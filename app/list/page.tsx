@@ -7,7 +7,7 @@ import { Video } from '@/lib/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, X, Youtube, Tv, Gamepad2, BarChart3 } from 'lucide-react';
+import { Search, Filter, X, Youtube, Tv, Gamepad2 } from 'lucide-react';
 
 interface Tag {
   id: number;
@@ -216,12 +216,7 @@ export default function ListPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-bold">My Watchlist</h1>
-            <Button asChild variant="outline" size="sm" className="flex items-center gap-2">
-              <a href="/analytics">
-                <BarChart3 className="w-4 h-4" />
-                View Analytics
-              </a>
-            </Button>
+
           </div>
           <p className="text-gray-600 dark:text-gray-400">
             {videos.length} unwatched videos

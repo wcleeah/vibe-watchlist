@@ -82,7 +82,7 @@ Based on codebase research and requirements analysis, here's the comprehensive p
 - [x] Task 1.4: Completed - Added Add button to tag input, removed green border from URL input
 - [x] Task 1.5: Completed - Added success toast, error JSON display, loading state with centered text, and hover tooltip for titles
 - [x] Task 2.1: Completed - Moved ID to top of JSON, added card padding for spacing, removed border from no-thumbnail placeholder
-- [ ] Task 2.2: Pending
+- [x] Task 2.2: Completed - Removed View Analytics button and its import
 - [ ] Task 2.3: Pending
 - [ ] Task 2.4: Pending
 - [ ] Task 3.1: Pending
