@@ -89,7 +89,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
               href={video.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 text-xs px-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+              className="h-8 text-xs px-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center font-bold"
               title="watch()"
             >
               watch()
