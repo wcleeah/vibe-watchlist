@@ -3,7 +3,7 @@
 import { useState, forwardRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Tag as TagIcon } from 'lucide-react';
+import { Loader2, Tag as TagIcon, Plus } from 'lucide-react';
 import { TagList } from '@/components/ui/tag';
 import { Tag } from '@/types/tag';
 import { cn } from '@/lib/utils';
@@ -103,7 +103,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
                 disabled={!value.trim()}
                 className="w-1/5 h-12 rounded-l-none text-sm font-bold"
               >
-                <span className="sm:hidden">+</span>
+                <Plus className="w-5 h-5 sm:hidden" />
                 <span className="hidden sm:inline">Add</span>
               </Button>
             )}
