@@ -25,14 +25,14 @@ export function SplitLayout({ left, right, className }: SplitLayoutProps) {
   return (
     <div className={`grid grid-cols-1 lg:grid-cols-5 gap-0 ${className}`}>
       {/* Left side */}
-      <div className="lg:col-span-2 order-2 lg:order-1 flex items-center px-4">
+      <div className="lg:col-span-2 order-1 flex items-center px-4">
         <div className="w-full">
           {left}
         </div>
       </div>
 
       {/* Right side */}
-      <div className="lg:col-span-3 order-1 lg:order-2 flex items-start justify-center px-4">
+      <div className="lg:col-span-3 order-2 flex items-start justify-center px-4">
         <div className="w-full">
           {right}
         </div>

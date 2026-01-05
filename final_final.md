@@ -10,12 +10,12 @@ This plan outlines the complete mobile optimization and metadata enhancement for
 ## Phase 1: UI/UX Refinements
 
 ### 1.1 Preview Card Title Centering (Mobile)
-- [ ] **Objective**: Center video titles on mobile for better visual hierarchy
-- [ ] **Files**: `components/video-preview/preview-card.tsx`
-- [ ] **Change**: Add `text-center sm:text-left` to title className
-- [ ] **Testing**: Verify alignment on iPhone 13 Pro vs desktop
-- [ ] **Status**: Pending
-- [ ] **Time Estimate**: 15 minutes
+- [x] **Objective**: Center video titles on mobile for better visual hierarchy
+- [x] **Files**: `components/video-preview/preview-card.tsx`
+- [x] **Change**: Add `text-center sm:text-left` to title className
+- [x] **Testing**: Verify alignment on iPhone 13 Pro vs desktop
+- [x] **Status**: Completed
+- [x] **Time Estimate**: 15 minutes
 
 ### 1.2 Add Video Page Layout Adjustments
 - [ ] **Objective**: Reduce top gap and reorder form/preview on mobile
