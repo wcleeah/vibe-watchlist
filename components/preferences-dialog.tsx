@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Settings, Palette, Monitor, Moon, Sun, RotateCcw, Youtube, Tv, Gamepad2 } from 'lucide-react';
-import { usePreferences, type ThemeMode, type AccentColor, type VideoPlatform } from '@/lib/preferences-context';
+import { Settings, Palette, Monitor, Moon, Sun, RotateCcw } from 'lucide-react';
+import { usePreferences, type ThemeMode } from '@/lib/preferences-context';
 
 const themeOptions: { value: ThemeMode; label: string; icon: React.ReactNode }[] = [
   { value: 'light', label: 'Light', icon: <Sun className="w-4 h-4" /> },
@@ -12,21 +12,7 @@ const themeOptions: { value: ThemeMode; label: string; icon: React.ReactNode }[]
   { value: 'system', label: 'System', icon: <Monitor className="w-4 h-4" /> },
 ];
 
-const accentColors: { value: AccentColor; label: string; class: string }[] = [
-  { value: 'blue', label: 'Blue', class: 'bg-blue-500' },
-  { value: 'green', label: 'Green', class: 'bg-green-500' },
-  { value: 'purple', label: 'Purple', class: 'bg-purple-500' },
-  { value: 'red', label: 'Red', class: 'bg-red-500' },
-  { value: 'orange', label: 'Orange', class: 'bg-orange-500' },
-];
 
-const platformOptions: { value: VideoPlatform | null; label: string; icon: React.ReactNode }[] = [
-  { value: null, label: 'None (ask each time)', icon: null },
-  { value: 'youtube', label: 'YouTube', icon: <Youtube className="w-4 h-4" /> },
-  { value: 'netflix', label: 'Netflix', icon: <Tv className="w-4 h-4" /> },
-  { value: 'nebula', label: 'Nebula', icon: <Tv className="w-4 h-4" /> },
-  { value: 'twitch', label: 'Twitch', icon: <Gamepad2 className="w-4 h-4" /> },
-];
 
 export function PreferencesDialog() {
   const { preferences, updatePreferences, resetPreferences } = usePreferences();
@@ -36,13 +22,7 @@ export function PreferencesDialog() {
     updatePreferences({ theme });
   };
 
-  const handleAccentChange = (accentColor: AccentColor) => {
-    updatePreferences({ accentColor });
-  };
 
-  const handlePlatformChange = (defaultPlatform: VideoPlatform | null) => {
-    updatePreferences({ defaultPlatform });
-  };
 
   const toggleCompactView = () => {
     updatePreferences({ compactView: !preferences.compactView });
@@ -104,47 +84,6 @@ export function PreferencesDialog() {
                     size="sm"
                     onClick={() => handleThemeChange(option.value)}
                     className="flex items-center gap-1 h-7 text-xs px-2"
-                  >
-                    {option.icon}
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Accent Color */}
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Accent Color</Label>
-              <div className="grid grid-cols-5 gap-1">
-                {accentColors.map((color) => (
-                  <button
-                    key={color.value}
-                    onClick={() => handleAccentChange(color.value)}
-                    className={`w-6 h-6 rounded-full border-2 transition-all ${
-                      preferences.accentColor === color.value
-                        ? 'border-gray-900 dark:border-gray-100 scale-110'
-                        : 'border-gray-300 dark:border-gray-600 hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: color.class.replace('bg-', '') }}
-                    title={color.label}
-                  >
-                    <span className="sr-only">{color.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Default Platform */}
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Default Platform</Label>
-              <div className="grid grid-cols-2 gap-1">
-                {platformOptions.map((option) => (
-                  <Button
-                    key={option.value || 'null'}
-                    variant={preferences.defaultPlatform === option.value ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePlatformChange(option.value)}
-                    className="flex items-center gap-1 h-7 text-xs px-2 justify-start"
                   >
                     {option.icon}
                     {option.label}

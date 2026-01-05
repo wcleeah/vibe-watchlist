@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FileText, CheckCircle, Trash2, Loader2 } from 'lucide-react';
+import { usePreferences } from '@/lib/preferences-context';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
 import { MetadataDisplay, ThumbnailDisplay } from './metadata-components';
 import { LoadingSkeleton } from './loading-skeleton';
@@ -9,6 +10,7 @@ import { ErrorDisplay } from './error-display';
 import { PreviewCardProps } from './types';
 
 export function PreviewCard({ video, showActions = false, onMarkWatched, onDelete, className }: PreviewCardProps) {
+  const { preferences } = usePreferences();
   const [loadingMarkWatched, setLoadingMarkWatched] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
 
@@ -61,15 +63,17 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
           {/* Thumbnail + Content Row */}
           <div className="flex gap-4">
             {/* Thumbnail */}
-            <div className="flex-shrink-0 h-[171px] w-[304px]">
-              {video.thumbnailUrl ? (
-                <ThumbnailDisplay video={video} />
-              ) : (
-                <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-gray-400" />
-                </div>
-              )}
-            </div>
+            {preferences.showThumbnails && (
+              <div className="flex-shrink-0 h-[171px] w-[304px]">
+                {video.thumbnailUrl ? (
+                  <ThumbnailDisplay video={video} />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-gray-400" />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Content */}
             <div className="flex-1 min-w-0 flex items-center">

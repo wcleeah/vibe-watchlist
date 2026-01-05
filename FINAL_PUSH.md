@@ -85,5 +85,5 @@ Based on codebase research and requirements analysis, here's the comprehensive p
 - [x] Task 2.2: Completed - Removed View Analytics button and its import
 - [x] Task 2.3: Completed - Added loading spinners and disabled states for markWatched and delete buttons
 - [x] Task 2.4: Completed - Added Watched tab and page, implemented un-watch functionality in preview cards
-- [ ] Task 3.1: Pending
+- [x] Task 3.1: Completed - Removed non-functional accent color and default platform options, implemented show thumbnails toggle
 - [x] Task 4.1: Completed - Created tag management page with add, edit, delete functionality and navigation tab
