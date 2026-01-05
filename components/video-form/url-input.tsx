@@ -38,7 +38,6 @@ export const UrlInput = forwardRef<HTMLInputElement, UrlInputProps>(
           onChange={(e) => onChange(e.target.value)}
           className={cn(
             "w-full h-12 text-base",
-            showValidation && isValid && "border-green-500 focus:border-green-500",
             showValidation && !isValid && "border-orange-500 focus:border-orange-500",
             className
           )}

@@ -89,6 +89,13 @@ export function FormLayout({
 
   return (
     <div className={`space-y-6 ${className}`}>
+      {/* Heading */}
+      {showTags && (
+        <div className="text-center mb-4">
+          <h2 className="text-xl font-semibold">Add Tags</h2>
+        </div>
+      )}
+
       {/* URL Input */}
       <UrlInput
         value={url}

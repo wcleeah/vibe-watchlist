@@ -58,6 +58,17 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
 
     return (
       <div className="space-y-2">
+        {/* Selected tags */}
+        {selectedTags.length > 0 && (
+          <div id="selected-tags" aria-label={`Selected tags: ${selectedTags.map(tag => tag.name).join(', ')}`}>
+            <TagList
+              tags={selectedTags}
+              onRemove={onTagRemove}
+              size="sm"
+            />
+          </div>
+        )}
+
         <div className="relative">
           <Input
             ref={ref}
@@ -71,7 +82,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
               // Delay to allow suggestion clicks
               setTimeout(() => setIsFocused(false), 150);
             }}
-            className={cn("w-full h-12 text-base pr-10", className)}
+            className={cn("w-full h-12 text-base pr-16", className)}
             disabled={isLoading}
             aria-label="Tag input"
             aria-describedby={error ? "tag-input-error" : selectedTags.length > 0 ? "selected-tags" : undefined}
@@ -80,11 +91,21 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
             role="combobox"
             aria-autocomplete="list"
           />
-          {isLoading && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-            </div>
-          )}
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => onTagAdd(value.trim())}
+                disabled={!value.trim()}
+                className="h-8 px-2 text-xs"
+              >
+                Add
+              </Button>
+            )}
+          </div>
 
           {/* Suggestions dropdown */}
           {showSuggestions && suggestions.length > 0 && isFocused && (
@@ -108,17 +129,6 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
             </div>
           )}
         </div>
-
-        {/* Selected tags */}
-        {selectedTags.length > 0 && (
-          <div id="selected-tags" aria-label={`Selected tags: ${selectedTags.map(tag => tag.name).join(', ')}`}>
-            <TagList
-              tags={selectedTags}
-              onRemove={onTagRemove}
-              size="sm"
-            />
-          </div>
-        )}
 
         {/* Error message */}
         {error && (
