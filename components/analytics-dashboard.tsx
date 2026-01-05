@@ -35,8 +35,8 @@ export function AnalyticsDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Analytics</h2>
-        <Button onClick={refreshStats} disabled={isLoading}>
+        <h2 className="text-2xl font-bold font-mono">Analytics</h2>
+        <Button onClick={refreshStats} disabled={isLoading} variant="outline">
           <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
@@ -44,130 +44,83 @@ export function AnalyticsDashboard() {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center gap-3">
-            <Play className="w-8 h-8 text-blue-500" />
-            <div>
-              <div className="text-2xl font-bold">{stats.totalVideos}</div>
-              <div className="text-sm text-gray-500">Total Videos</div>
-            </div>
-          </div>
-        </Card>
+        <div className="p-4 border border-gray-200">
+          <div className="text-2xl font-bold font-mono">{stats.totalVideos}</div>
+          <div className="text-sm text-gray-600">Total Videos</div>
+        </div>
 
-        <Card className="p-6">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="w-8 h-8 text-green-500" />
-            <div>
-              <div className="text-2xl font-bold">{stats.watchedVideos}</div>
-              <div className="text-sm text-gray-500">Watched</div>
-            </div>
-          </div>
-        </Card>
+        <div className="p-4 border border-gray-200">
+          <div className="text-2xl font-bold font-mono">{stats.watchedVideos}</div>
+          <div className="text-sm text-gray-600">Watched</div>
+        </div>
 
-        <Card className="p-6">
-          <div className="flex items-center gap-3">
-            <Calendar className="w-8 h-8 text-orange-500" />
-            <div>
-              <div className="text-2xl font-bold">{stats.unwatchedVideos}</div>
-              <div className="text-sm text-gray-500">To Watch</div>
-            </div>
-          </div>
-        </Card>
+        <div className="p-4 border border-gray-200">
+          <div className="text-2xl font-bold font-mono">{stats.unwatchedVideos}</div>
+          <div className="text-sm text-gray-600">To Watch</div>
+        </div>
 
-        <Card className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full border-4 border-green-500 flex items-center justify-center">
-              <div className="text-xs font-bold text-green-600">{stats.watchProgress}%</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{stats.watchProgress}%</div>
-              <div className="text-sm text-gray-500">Complete</div>
-            </div>
-          </div>
-        </Card>
+        <div className="p-4 border border-gray-200">
+          <div className="text-2xl font-bold font-mono">{stats.watchProgress}%</div>
+          <div className="text-sm text-gray-600">Complete</div>
+        </div>
       </div>
 
       {/* Platform Statistics */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Tv className="w-5 h-5" />
-          Platform Statistics
-        </h3>
-        <div className="space-y-3">
-          {Object.entries(stats.platformStats).map(([platform, stat]) => {
-            const Icon = platformIcons[platform as keyof typeof platformIcons] || Tv;
-            return (
-              <div key={platform} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Icon className="w-5 h-5 text-gray-600" />
-                  <span className="font-medium">{PLATFORM_NAMES[platform as keyof typeof PLATFORM_NAMES] || platform}</span>
-                </div>
-                <div className="flex items-center gap-4 text-sm">
-                  <span>{stat.watched}/{stat.total} watched</span>
-                  <Badge variant={stat.percentage === 100 ? "default" : stat.percentage > 50 ? "secondary" : "outline"}>
-                    {stat.percentage}%
-                  </Badge>
-                </div>
+      <div className="p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold font-mono mb-4">Platform Statistics</h3>
+        <div className="space-y-2">
+          {Object.entries(stats.platformStats).map(([platform, stat]) => (
+            <div key={platform} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-b-0">
+              <span className="font-mono text-sm">{PLATFORM_NAMES[platform as keyof typeof PLATFORM_NAMES] || platform}</span>
+              <div className="flex items-center gap-4 text-sm font-mono">
+                <span>{stat.watched}/{stat.total}</span>
+                <span>{stat.percentage}%</span>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
-      </Card>
+      </div>
 
       {/* Tag Statistics */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Tag className="w-5 h-5" />
-          Tag Statistics
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold font-mono mb-4">Tag Statistics</h3>
+        <div className="space-y-1">
           {Object.entries(stats.tagStats)
             .sort(([, a], [, b]) => b.total - a.total)
             .slice(0, 10)
             .map(([tag, stat]) => (
-              <div key={tag} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <span className="font-medium">#{tag}</span>
-                <div className="flex items-center gap-2 text-sm">
+              <div key={tag} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-b-0">
+                <span className="font-mono text-sm">#{tag}</span>
+                <div className="flex items-center gap-4 text-sm font-mono">
                   <span>{stat.watched}/{stat.total}</span>
-                  <Badge variant={stat.percentage === 100 ? "default" : "secondary"}>
-                    {stat.percentage}%
-                  </Badge>
+                  <span>{stat.percentage}%</span>
                 </div>
               </div>
             ))}
         </div>
-      </Card>
+      </div>
 
       {/* Recent Activity */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
-          Recent Activity
-        </h3>
-        <div className="space-y-3">
+      <div className="p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold font-mono mb-4">Recent Activity</h3>
+        <div className="space-y-1">
           {stats.recentActivity.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">No recent activity</div>
+            <div className="text-center py-4 text-gray-500 font-mono text-sm">No recent activity</div>
           ) : (
-            stats.recentActivity.map((activity) => {
-              const Icon = platformIcons[activity.platform as keyof typeof platformIcons] || Tv;
-              return (
-                <div key={`${activity.id}-${activity.action}`} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <Icon className="w-5 h-5 text-gray-600" />
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{activity.title}</div>
-                    <div className="text-xs text-gray-500">
-                      Watched {new Date(activity.watchedAt).toLocaleDateString()}
-                    </div>
+            stats.recentActivity.map((activity) => (
+              <div key={`${activity.id}-${activity.action}`} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-b-0">
+                <div className="flex-1">
+                  <div className="font-mono text-sm">{activity.title}</div>
+                  <div className="text-xs text-gray-500 font-mono">
+                    Watched {new Date(activity.watchedAt).toLocaleDateString()}
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {activity.platform}
-                  </Badge>
                 </div>
-              );
-            })
+                <span className="text-sm font-mono">{activity.platform}</span>
+              </div>
+            ))
           )}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
