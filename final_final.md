@@ -56,12 +56,12 @@ This plan outlines the complete mobile optimization and metadata enhancement for
 - [x] **Time Estimate**: 15 minutes
 
 ### 1.6 Watched Page Platform Buttons Equal Width
-- [ ] **Objective**: Consistent button widths across platform filters
-- [ ] **Files**: `app/watched/page.tsx`
-- [ ] **Change**: Add `w-20 sm:w-24` to platform buttons
-- [ ] **Testing**: All buttons same width regardless of label
-- [ ] **Status**: Pending
-- [ ] **Time Estimate**: 10 minutes
+- [x] **Objective**: Consistent button widths across platform filters
+- [x] **Files**: `app/watched/page.tsx`
+- [x] **Change**: Add `w-20 sm:w-24` to platform buttons
+- [x] **Testing**: All buttons same width regardless of label
+- [x] **Status**: Completed
+- [x] **Time Estimate**: 10 minutes
 
 ### 1.7 Tag Management Form Mobile Layout
 - [ ] **Objective**: Expand form on mobile (input full-width, controls below)

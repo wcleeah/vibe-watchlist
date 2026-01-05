@@ -136,7 +136,7 @@ export default function TagsPage() {
         {/* Add New Tag */}
         <div className="bg-white dark:bg-gray-900 rounded-lg border p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Add New Tag</h2>
-          <div className="flex gap-4 items-end">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
             <div className="flex-1">
               <Label htmlFor="tagName" className="mb-2">Tag Name</Label>
               <Input
