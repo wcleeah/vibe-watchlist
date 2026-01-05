@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { VideoList } from '@/components/videos/video-list';
-import { Video } from '@/lib/db/schema';
 import { NavigationTabs } from '@/components/navigation-tabs';
+import { AnalyticsDashboard } from '@/components/analytics-dashboard';
+import { Video } from '@/lib/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -436,6 +437,11 @@ export default function ListPage() {
             onSelectionChange={handleSelectionChange}
           />
         )}
+
+        {/* Analytics Section */}
+        <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+          <AnalyticsDashboard />
+        </div>
       </main>
     </div>
   );
