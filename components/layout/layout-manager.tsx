@@ -15,12 +15,8 @@ export function LayoutManager({ hasContent, header, form, preview, className }: 
   const [showSplit, setShowSplit] = useState(false);
 
   useEffect(() => {
-    // Debounce the layout transition to prevent jarring changes
-    const timeoutId = setTimeout(() => {
-      setShowSplit(hasContent);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
+    // Immediate layout transition for better UX
+    setShowSplit(hasContent);
   }, [hasContent]);
 
   if (!showSplit) {
