@@ -189,7 +189,21 @@ export default function ListPage() {
         setVideos(videos.filter(video => video.id !== id));
       }
     } catch (error) {
-      console.error('Failed to mark video as watched:', error);
+      console.error('Error marking video as watched:', error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const response = await fetch(`/api/videos/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setVideos(videos.filter(video => video.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
     }
   };
 
@@ -439,6 +453,7 @@ export default function ListPage() {
           <VideoList
             videos={filteredVideos}
             onMarkWatched={handleMarkWatched}
+            onDelete={handleDelete}
             isSelectable={bulkMode}
             selectedIds={selectedVideoIds}
             onSelectionChange={handleSelectionChange}
