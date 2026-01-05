@@ -1,11 +1,17 @@
 'use client';
 
+import { useEffect } from 'react';
 import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import { NavigationTabs } from '@/components/navigation-tabs';
 import { useAnalytics } from '@/lib/analytics-context';
 
 export default function AnalyticsPage() {
-  const { countdown } = useAnalytics();
+  const { countdown, refreshStats } = useAnalytics();
+
+  // Ensure fresh data on page entry
+  useEffect(() => {
+    refreshStats();
+  }, [refreshStats]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
