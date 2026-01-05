@@ -8,7 +8,7 @@ export default function AnalyticsPage() {
     <div className="min-h-screen bg-background text-foreground">
       <NavigationTabs />
 
-      <main className="container mx-auto px-4 pt-16 pb-12 max-w-6xl">
+      <main className="container mx-auto px-4 pt-20 pb-12 max-w-6xl">
         <AnalyticsDashboard />
       </main>
     </div>

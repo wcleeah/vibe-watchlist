@@ -18,9 +18,9 @@
   - [x] Consolidate URL state: Move `useVideoForm` from `FormLayout` to `page.tsx`
   - [x] Pass URL state and handlers as props to `FormLayout`
   - [x] This enables `hasContent` to properly track URL input and trigger split
-- [ ] **Verify fixes**: Test split behavior - URL entry should immediately show two-section layout
+- [x] **Verify fixes**: Test split behavior - URL entry should immediately show two-section layout
 
-### **Phase 6.1: Foundation - Black/White Design System** - PENDING
+### **Phase 6.1: Foundation - Black/White Design System** - IN PROGRESS
 **Goal**: Establish the core grep-app aesthetic with proper coloring and component updates
 
 **Tasks:**
@@ -97,8 +97,8 @@
 
 ## ✅ **Progress Tracking**
 
-**Completed Tasks**: 4/25
-**Current Phase**: 6.0 (Critical Layout & State Bug Fixes)
+**Completed Tasks**: 5/25
+**Current Phase**: 6.1 (Foundation - Black/White Design System)
 
 ---
 
