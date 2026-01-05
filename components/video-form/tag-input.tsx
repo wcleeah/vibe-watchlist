@@ -35,7 +35,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
     onSelectSuggestion,
     isLoading = false,
     error,
-    placeholder = "Add tags (press Enter or comma to add)...",
+    placeholder = "Add tags",
     className,
   }, ref) => {
     const [isFocused, setIsFocused] = useState(false);
@@ -82,7 +82,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
               // Delay to allow suggestion clicks
               setTimeout(() => setIsFocused(false), 150);
             }}
-            className={cn("w-full h-12 text-base pr-16", className)}
+             className={cn("w-full h-12 text-base pr-20", className)}
             disabled={isLoading}
             aria-label="Tag input"
             aria-describedby={error ? "tag-input-error" : selectedTags.length > 0 ? "selected-tags" : undefined}
@@ -100,7 +100,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
                  size="sm"
                  onClick={() => onTagAdd(value.trim())}
                  disabled={!value.trim()}
-                 className="h-12 px-4 sm:px-2 text-xs"
+                 className="h-12 w-20 text-xs"
                >
                 Add
               </Button>
