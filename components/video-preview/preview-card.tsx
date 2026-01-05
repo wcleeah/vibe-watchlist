@@ -68,9 +68,9 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 font-mono">
-                <div className="text-xs">
+            <div className="flex-1 min-w-0 flex items-center">
+              <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 font-mono w-full">
+                <div className="text-sm">
                   {'{'}
                   <div className="ml-4 space-y-1">
                     <div><span className="text-purple-600 dark:text-purple-400">"PLATFORM"</span>: <span className="text-green-600 dark:text-green-400">"{PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}"</span>,</div>
@@ -78,7 +78,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                       <div><span className="text-purple-600 dark:text-purple-400">"TAGS"</span>: <span className="text-yellow-600 dark:text-yellow-400">[{video.tags.map(tag => `"${tag.name}"`).join(', ')}]</span>,</div>
                     )}
                     {video.id && (
-                      <div><span className="text-purple-600 dark:text-purple-400">"ID"</span>: <span className="text-cyan-600 dark:text-cyan-400">{video.id}</span></div>
+                      <div><span className="text-cyan-600 dark:text-cyan-400">"ID"</span>: <span className="text-cyan-600 dark:text-cyan-400">{video.id}</span></div>
                     )}
                   </div>
                   {'}'}
