@@ -43,13 +43,13 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
 
   return (
     <div className={`bg-white dark:bg-black rounded-lg ${borderClass} min-h-[240px] ${className}`}>
-      {/* 2-column grid layout: 8:2 ratio when actions shown, 1 column when not */}
-      <div className={`min-h-[240px] ${showActions ? 'grid grid-cols-[8fr_2fr]' : ''}`}>
+      {/* Responsive layout: 2-column on desktop, stacked on mobile */}
+      <div className={`min-h-[240px] ${showActions ? 'grid grid-cols-1 md:grid-cols-[8fr_2fr]' : ''}`}>
         {/* Content Column (full width when no actions, 80% when actions shown) */}
-        <div className="px-4 pt-4 pb-4 space-y-2">
+        <div className="px-4 pt-4 pb-4 space-y-1">
           {/* Title Section */}
           <div className="pb-2 border-b border-black dark:border-white">
-            <h3 className="text-lg font-semibold text-black dark:text-white font-mono">
+            <h3 className="text-lg font-bold text-black dark:text-white font-mono truncate">
               {video.title || 'Untitled Video'}
             </h3>
           </div>
@@ -69,20 +69,20 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="text-sm text-black dark:text-white space-y-1">
-                <div>Platform: {PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                <div className="truncate">Platform: {PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}</div>
                 {video.tags && video.tags.length > 0 && (
-                  <div>Tags: {video.tags.map(tag => tag.name).join(', ')}</div>
+                  <div className="truncate">Tags: {video.tags.map(tag => tag.name).join(', ')}</div>
                 )}
-                {video.id && <div className="text-xs text-black dark:text-white">ID: {video.id}</div>}
+                {video.id && <div className="text-xs text-black dark:text-white truncate">ID: {video.id}</div>}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Action Column (20%) - Full height */}
+        {/* Action Column (20%) - Full height on desktop, horizontal at bottom on mobile */}
         {showActions && (
-          <div className="px-4 pt-4 pb-4 flex flex-col gap-2 border-l border-black dark:border-white">
+          <div className="px-4 pt-4 pb-4 flex md:flex-col flex-row gap-2 md:border-l border-black dark:border-white md:justify-start justify-center">
             <a
               href={video.url}
               target="_blank"
@@ -94,10 +94,12 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             </a>
             <button
               onClick={() => navigator.clipboard.writeText(video.url)}
-              className="text-xs px-3 py-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
+              className="p-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
               title="Copy URL"
             >
-              Copy URL
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
             </button>
             {onDelete && (
               <button

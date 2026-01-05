@@ -33,7 +33,7 @@
 - [x] **Style action buttons as sticky notes** - small, vertical stack on desktop right side
 - [x] **Increase thumbnail size** - make thumbnails more prominent in the layout
 
-### **Phase 6.2: Card Design Refinement** - PENDING
+### **Phase 6.2: Card Design Refinement** - IN PROGRESS
 **Goal**: Implement advanced card layout with 2-column structure and fix listing page styling
 
 **Tasks:**
@@ -49,13 +49,13 @@
     - [x] **Inner borders**: Add borders between title/content sections and content/action columns
     - [x] **Proportions**: 8:2 or 9:1 ratio (content:action columns)
 
-  - [ ] **Polish & Optimization**:
-    - [ ] Optimize card compactness - reduce unnecessary spacing for lean design
-    - [ ] Fix text differentiation - use font weights/styles instead of colors for hierarchy
-    - [ ] Add overflow support - handle long titles/metadata gracefully
-    - [ ] Hide URL display - make "Copy URL" button icon-only (no URL text)
+  - [x] **Polish & Optimization**:
+    - [x] Optimize card compactness - reduce unnecessary spacing for lean design
+    - [x] Fix text differentiation - use font weights/styles instead of colors for hierarchy
+    - [x] Add overflow support - handle long titles/metadata gracefully
+    - [x] Hide URL display - make "Copy URL" button icon-only (no URL text)
     - [ ] Fix title escaping - ensure proper text rendering
-    - [ ] Mobile actions - vertical stacking on desktop, horizontal at bottom on mobile
+    - [x] Mobile actions - vertical stacking on desktop, horizontal at bottom on mobile
     - [ ] Maintain sticky-note button styling in new layout
 
 - [ ] **Listing page styling fixes**:
