@@ -145,7 +145,7 @@ CREATE TYPE video_platform_enum AS ENUM ('youtube', 'netflix', 'nebula', 'twitch
 ### Phase 5: Advanced Features (IN PROGRESS)
 1. ✅ Advanced Filtering: Platform filters, date sorting, search within titles
 2. ✅ Bulk Operations: Mark multiple videos as watched, batch delete
-3. ⏳ Enhanced Search: Full-text search with highlighting
+3. ✅ Enhanced Search: Full-text search with highlighting
 4. ⏳ User Preferences: Custom themes, default platforms, UI settings
 5. ⏳ Analytics: Watch statistics, viewing patterns
 6. ✅ Tag Functionality: Add tags to videos for categorization

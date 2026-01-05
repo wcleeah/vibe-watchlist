@@ -35,9 +35,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Title search with case-insensitive LIKE
+    // Enhanced search: titles and tags with case-insensitive matching
     if (search && search.trim()) {
-      whereConditions.push(sql`${videos.title} ILIKE ${sql.placeholder('search')}`);
+      whereConditions.push(sql`(
+        ${videos.title} ILIKE ${sql.placeholder('search')} OR
+        EXISTS (
+          SELECT 1 FROM ${videoTags}
+          JOIN ${tags} ON ${videoTags.tagId} = ${tags.id}
+          WHERE ${videoTags.videoId} = ${videos.id} AND ${tags.name} ILIKE ${sql.placeholder('search')}
+        )
+      )`);
     }
 
     // Build dynamic order by clause
@@ -70,7 +77,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Add search parameter if searching
+    // Add search parameter if searching (used in both title and tag searches)
     if (search && search.trim()) {
       queryParams.search = `%${search.trim()}%`;
     }
@@ -96,27 +103,49 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    // Parse the tags JSON string back to array
-    const videosWithTags = result.map(video => {
-      let tags = [];
+    // Parse the tags JSON string back to array and add highlighting
+    const videosWithTags = result.map((video: { id: number; title: string | null; tags: unknown; [key: string]: unknown }) => {
+      let parsedTags: Array<Record<string, unknown>> = [];
+
       try {
-        if (Array.isArray(video.tags)) {
-          // Already parsed as array
-          tags = video.tags;
-        } else if (typeof video.tags === 'string') {
-          // Need to parse JSON string
-          tags = video.tags && video.tags.trim() !== '' ? JSON.parse(video.tags) : [];
-        } else {
-          // Fallback for other cases
-          tags = [];
+        if (typeof video.tags === 'string') {
+          parsedTags = JSON.parse(video.tags);
+        } else if (Array.isArray(video.tags)) {
+          parsedTags = video.tags;
         }
-      } catch (error) {
-        console.error('Error parsing tags for video:', video.id, error);
-        tags = [];
+      } catch {
+        parsedTags = [];
       }
+
+      // Add highlighting if search term is provided
+      let highlightedTitle = video.title;
+      let highlightedTags = parsedTags;
+
+      if (search && search.trim()) {
+        const searchTerm = search.trim().toLowerCase();
+        const searchRegex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+
+        // Highlight in title
+        if (video.title) {
+          highlightedTitle = video.title.replace(searchRegex, '<mark>$1</mark>');
+        }
+
+        // Highlight in tags
+        highlightedTags = parsedTags.map((tag: unknown) => {
+          const tagObj = tag as { name: string; [key: string]: unknown };
+          return {
+            ...tagObj,
+            name: tagObj.name.replace(searchRegex, '<mark>$1</mark>')
+          };
+        });
+      }
+
       return {
         ...video,
-        tags,
+        title: video.title,
+        tags: parsedTags,
+        highlightedTitle,
+        highlightedTags
       };
     });
 

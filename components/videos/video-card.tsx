@@ -10,6 +10,12 @@ interface VideoWithTags extends Video {
     name: string;
     color?: string | null;
   }>;
+  highlightedTitle?: string;
+  highlightedTags?: Array<{
+    id: number;
+    name: string;
+    color?: string | null;
+  }>;
 }
 
 interface VideoCardProps {
@@ -97,18 +103,26 @@ export function VideoCard({
               <div className="mb-2">
                 <span className="text-blue-600 dark:text-blue-400">├──</span>{' '}
                 <span className="text-purple-600 dark:text-purple-400">title</span>:{' '}
-                <span className="text-green-600 dark:text-green-400">&quot;{video.title || 'Untitled Video'}&quot;</span>
+                <span className="text-green-600 dark:text-green-400">
+                  {video.highlightedTitle ? (
+                    <span dangerouslySetInnerHTML={{ __html: `&ldquo;${video.highlightedTitle}&rdquo;` }} />
+                  ) : (
+                    `&ldquo;${video.title || 'Untitled'}&rdquo;`
+                  )}
+                </span>
               </div>
               <div className="mb-2">
                 <span className="text-blue-600 dark:text-blue-400">├──</span>{' '}
                 <span className="text-purple-600 dark:text-purple-400">url</span>:{' '}
                 <span className="text-yellow-600 dark:text-yellow-400">&quot;{video.url}&quot;</span>
               </div>
-              {video.tags && video.tags.length > 0 && (
+              {(video.tags && video.tags.length > 0) && (
                 <div className="mb-2">
                   <span className="text-blue-600 dark:text-blue-400">└──</span>{' '}
                   <span className="text-purple-600 dark:text-purple-400">tags</span>:{' '}
-                  <span className="text-orange-600 dark:text-orange-400">[{video.tags.map(t => t.name).join(', ')}]</span>
+                  <span className="text-orange-600 dark:text-orange-400">
+                    [{(video.highlightedTags || video.tags).map(t => t.name).join(', ')}]
+                  </span>
                 </div>
               )}
             </pre>
@@ -116,7 +130,7 @@ export function VideoCard({
             {/* Tags display */}
             {video.tags && video.tags.length > 0 && (
               <div className="mt-3">
-                <TagList tags={video.tags} size="sm" />
+                <TagList tags={video.highlightedTags || video.tags} size="sm" />
               </div>
             )}
           </div>

@@ -41,12 +41,16 @@ export function Tag({
         color: tagColor,
       }}
     >
-      <span>{name}</span>
+      {name.includes('<mark>') ? (
+        <span dangerouslySetInnerHTML={{ __html: name }} />
+      ) : (
+        <span>{name}</span>
+      )}
       {onRemove && (
         <button
           onClick={handleRemove}
           className="ml-1 hover:bg-black/10 rounded-full p-0.5 transition-colors"
-          aria-label={`Remove ${name} tag`}
+          aria-label={`Remove ${name.replace(/<[^>]*>/g, '')} tag`}
         >
           <X className={size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'} />
         </button>
