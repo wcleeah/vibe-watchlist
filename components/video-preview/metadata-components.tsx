@@ -68,7 +68,7 @@ interface ThumbnailDisplayProps {
 export function ThumbnailDisplay({ video, className }: ThumbnailDisplayProps) {
   if (!video.thumbnailUrl) {
     return (
-      <div className={`w-full max-w-xs mx-auto h-32 bg-gray-200 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 flex items-center justify-center ${className}`}>
+      <div className={`w-full max-w-xs mx-auto h-32 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center ${className}`}>
         <span className="text-gray-500 dark:text-gray-400 text-sm">No thumbnail</span>
       </div>
     );
