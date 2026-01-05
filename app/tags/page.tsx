@@ -138,7 +138,7 @@ export default function TagsPage() {
           <h2 className="text-xl font-semibold mb-4">Add New Tag</h2>
           <div className="flex gap-4 items-end">
             <div className="flex-1">
-              <Label htmlFor="tagName">Tag Name</Label>
+              <Label htmlFor="tagName" className="mb-2">Tag Name</Label>
               <Input
                 id="tagName"
                 value={newTagName}
@@ -148,7 +148,7 @@ export default function TagsPage() {
               />
             </div>
             <div>
-              <Label htmlFor="tagColor">Color</Label>
+              <Label htmlFor="tagColor" className="mb-2">Color</Label>
               <Input
                 id="tagColor"
                 type="color"
