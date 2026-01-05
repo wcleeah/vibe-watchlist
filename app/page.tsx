@@ -27,6 +27,12 @@ export default function Home() {
     removeTag,
     selectSuggestedTag,
     addTag,
+    manualMode,
+    setManualMode,
+    manualTitle,
+    setManualTitle,
+    manualThumbnailUrl,
+    setManualThumbnailUrl,
   } = useVideoForm({
     onVideoAdded: () => {
       toast.success('Video added successfully!');
@@ -94,9 +100,9 @@ export default function Home() {
               video={{
                 id: 0,
                 url,
-                title: metadata?.title || null,
+                title: manualMode ? manualTitle : (metadata?.title || null),
                 platform: parsedUrl?.platform || 'youtube',
-                thumbnailUrl: metadata?.thumbnailUrl || null,
+                thumbnailUrl: manualMode ? manualThumbnailUrl : (metadata?.thumbnailUrl || null),
                 isWatched: false,
                 tags: selectedTags,
                 metadata,
@@ -104,6 +110,12 @@ export default function Home() {
                 error: previewError || undefined,
               }}
               showActions={false}
+              onToggleManual={() => setManualMode(!manualMode)}
+              manualMode={manualMode}
+              manualTitle={manualTitle}
+              onManualTitleChange={setManualTitle}
+              manualThumbnailUrl={manualThumbnailUrl}
+              onManualThumbnailChange={setManualThumbnailUrl}
             />
           ) : null}
         />

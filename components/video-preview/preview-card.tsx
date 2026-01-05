@@ -9,7 +9,19 @@ import { LoadingSkeleton } from './loading-skeleton';
 import { ErrorDisplay } from './error-display';
 import { PreviewCardProps } from './types';
 
-export function PreviewCard({ video, showActions = false, onMarkWatched, onDelete, className }: PreviewCardProps) {
+export function PreviewCard({
+  video,
+  showActions = false,
+  onMarkWatched,
+  onDelete,
+  className,
+  onToggleManual,
+  manualMode,
+  manualTitle,
+  onManualTitleChange,
+  manualThumbnailUrl,
+  onManualThumbnailChange,
+}: PreviewCardProps) {
   const { preferences } = usePreferences();
   const [loadingMarkWatched, setLoadingMarkWatched] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
@@ -25,7 +37,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
   if (video.error) {
     return (
       <div className={`bg-white dark:bg-black rounded-lg border border-black dark:border-white p-6 min-h-[300px] ${className}`}>
-        <ErrorDisplay error={video.error} />
+        <ErrorDisplay error={video.error} onToggleManual={onToggleManual} />
       </div>
     );
   }
@@ -55,9 +67,28 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
         <div className="px-4 pt-4 pb-4 space-y-1">
           {/* Title Section */}
           <div className="pb-2 border-b border-black dark:border-white">
-             <h3 className="text-lg font-bold text-black dark:text-white font-mono truncate text-center sm:text-left" title={video.title || 'Untitled Video'}>
-              {video.title || 'Untitled Video'}
-            </h3>
+            {manualMode ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+                <input
+                  type="text"
+                  value={manualTitle || ''}
+                  onChange={(e) => onManualTitleChange?.(e.target.value)}
+                  placeholder="Enter video title"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono"
+                />
+                <button
+                  onClick={() => onToggleManual?.()}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Cancel manual entry
+                </button>
+              </div>
+            ) : (
+              <h3 className="text-lg font-bold text-black dark:text-white font-mono truncate text-center sm:text-left" title={video.title || 'Untitled Video'}>
+                {video.title || 'Untitled Video'}
+              </h3>
+            )}
           </div>
 
           {/* Thumbnail + Content Row */}
@@ -65,7 +96,28 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             {/* Thumbnail */}
             {preferences.showThumbnails && (
               <div className="w-full sm:w-[304px] aspect-video sm:aspect-auto sm:flex-shrink-0 sm:h-[171px]">
-                {video.thumbnailUrl ? (
+                {manualMode ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Thumbnail URL</label>
+                    <input
+                      type="url"
+                      value={manualThumbnailUrl || ''}
+                      onChange={(e) => onManualThumbnailChange?.(e.target.value)}
+                      placeholder="https://example.com/thumbnail.jpg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono text-sm"
+                    />
+                    {manualThumbnailUrl && (
+                      <img
+                        src={manualThumbnailUrl}
+                        alt="Thumbnail preview"
+                        className="w-full h-auto max-h-[171px] object-cover rounded"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    )}
+                  </div>
+                ) : video.thumbnailUrl ? (
                   <ThumbnailDisplay video={video} />
                 ) : (
                   <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">

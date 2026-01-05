@@ -25,6 +25,13 @@ export interface PreviewCardProps {
   onMarkWatched?: (id: number) => void;
   onDelete?: (id: number) => void;
   className?: string;
+  // Manual metadata props
+  onToggleManual?: () => void;
+  manualMode?: boolean;
+  manualTitle?: string;
+  onManualTitleChange?: (title: string) => void;
+  manualThumbnailUrl?: string;
+  onManualThumbnailChange?: (url: string) => void;
 }
 
 export interface LoadingSkeletonProps {
@@ -34,5 +41,6 @@ export interface LoadingSkeletonProps {
 export interface ErrorDisplayProps {
   error: string;
   onRetry?: () => void;
+  onToggleManual?: () => void;
   className?: string;
 }

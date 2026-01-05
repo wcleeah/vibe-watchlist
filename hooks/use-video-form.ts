@@ -31,10 +31,18 @@ interface UseVideoFormReturn {
   // URL validation state
   parsedUrl: ParsedUrl | null;
 
-  // Metadata state
-  metadata: VideoMetadata | null;
-  isLoadingMetadata: boolean;
-  previewError: string | null;
+   // Metadata state
+   metadata: VideoMetadata | null;
+   isLoadingMetadata: boolean;
+   previewError: string | null;
+
+   // Manual metadata state
+   manualMode: boolean;
+   setManualMode: (mode: boolean) => void;
+   manualTitle: string;
+   setManualTitle: (title: string) => void;
+   manualThumbnailUrl: string;
+   setManualThumbnailUrl: (url: string) => void;
 
   // Tag state
   selectedTags: Tag[];
@@ -65,10 +73,15 @@ export function useVideoForm({ onVideoAdded }: UseVideoFormOptions = {}): UseVid
   // URL validation state
   const [parsedUrl, setParsedUrl] = useState<ParsedUrl | null>(null);
 
-  // Metadata state
-  const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
-  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
-  const [previewError, setPreviewError] = useState<string | null>(null);
+   // Metadata state
+   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
+   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
+   const [previewError, setPreviewError] = useState<string | null>(null);
+
+   // Manual metadata state
+   const [manualMode, setManualMode] = useState(false);
+   const [manualTitle, setManualTitle] = useState('');
+   const [manualThumbnailUrl, setManualThumbnailUrl] = useState('');
 
   // Tag state
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
@@ -234,9 +247,9 @@ export function useVideoForm({ onVideoAdded }: UseVideoFormOptions = {}): UseVid
     try {
       const videoData = {
         url: url.trim(),
-        title: metadata?.title,
+        title: manualMode ? manualTitle : metadata?.title,
         platform: parsedUrl.platform,
-        thumbnailUrl: metadata?.thumbnailUrl,
+        thumbnailUrl: manualMode ? manualThumbnailUrl : metadata?.thumbnailUrl,
         tagIds: selectedTags.map(tag => tag.id),
       };
 
@@ -261,6 +274,9 @@ export function useVideoForm({ onVideoAdded }: UseVideoFormOptions = {}): UseVid
         setSelectedTags([]);
         setTagInput('');
         setPreviewError(null);
+        setManualMode(false);
+        setManualTitle('');
+        setManualThumbnailUrl('');
         onVideoAdded?.();
       }
     } catch (error) {
@@ -284,6 +300,14 @@ export function useVideoForm({ onVideoAdded }: UseVideoFormOptions = {}): UseVid
     metadata,
     isLoadingMetadata,
     previewError,
+
+    // Manual metadata state
+    manualMode,
+    setManualMode,
+    manualTitle,
+    setManualTitle,
+    manualThumbnailUrl,
+    setManualThumbnailUrl,
 
     // Tag state
     selectedTags,
