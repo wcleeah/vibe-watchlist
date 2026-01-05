@@ -14,7 +14,18 @@ export default function Home() {
     metadata,
     selectedTags,
     isLoadingMetadata,
-    previewError
+    previewError,
+    tagInput,
+    setTagInput,
+    showTagSuggestions,
+    filteredSuggestions,
+    isLoadingTags,
+    tagError,
+    handleTagInputChange,
+    handleTagKeyDown,
+    removeTag,
+    selectSuggestedTag,
+    addTag,
   } = useVideoForm({
     onVideoAdded: () => {
       // Could add toast notification or redirect to list
@@ -33,7 +44,27 @@ export default function Home() {
     </div>
   );
 
-  const form = <FormLayout url={url} setUrl={setUrl} parsedUrl={parsedUrl} onVideoAdded={() => {}} showTags={hasContent} />;
+  const form = (
+    <FormLayout
+      url={url}
+      setUrl={setUrl}
+      parsedUrl={parsedUrl}
+      onVideoAdded={() => {}}
+      showTags={hasContent}
+      selectedTags={selectedTags}
+      tagInput={tagInput}
+      setTagInput={setTagInput}
+      handleTagInputChange={handleTagInputChange}
+      handleTagKeyDown={handleTagKeyDown}
+      removeTag={removeTag}
+      selectSuggestedTag={selectSuggestedTag}
+      filteredSuggestions={filteredSuggestions}
+      showTagSuggestions={showTagSuggestions}
+      isLoadingTags={isLoadingTags}
+      tagError={tagError}
+      onAddTag={addTag}
+    />
+  );
 
   const preview = hasContent ? (
     <PreviewCard

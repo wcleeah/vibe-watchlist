@@ -77,7 +77,7 @@ Based on codebase research and requirements analysis, here's the comprehensive p
 
 ### Status Tracking
 - [x] Task 1.1: Completed - Added vertical centering to split layout in LayoutManager
-- [ ] Task 1.2: Pending
+- [x] Task 1.2: Completed - Synced tag state between form and preview by lifting state to Home component
 - [ ] Task 1.3: Pending
 - [ ] Task 1.4: Pending
 - [ ] Task 1.5: Pending

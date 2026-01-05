@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { UrlInput } from './url-input';
 import { TagInput } from './tag-input';
 import { SubmitButton } from './submit-button';
-import { useVideoForm } from '@/hooks/use-video-form';
+import { Tag } from '@/types/tag';
 
 interface FormLayoutProps {
   url: string;
@@ -13,24 +13,42 @@ interface FormLayoutProps {
   onVideoAdded?: () => void;
   className?: string;
   showTags?: boolean;
+  // Tag props to sync with preview
+  selectedTags: Tag[];
+  tagInput: string;
+  setTagInput: (value: string) => void;
+  handleTagInputChange: (value: string) => void;
+  handleTagKeyDown: (e: React.KeyboardEvent) => Promise<void>;
+  removeTag: (tagId: number) => void;
+  selectSuggestedTag: (tag: Tag) => void;
+  filteredSuggestions: Tag[];
+  showTagSuggestions: boolean;
+  isLoadingTags: boolean;
+  tagError: string | null;
+  onAddTag: (tagName: string) => Promise<void>;
 }
 
-export function FormLayout({ url, setUrl, parsedUrl, onVideoAdded, className, showTags = true }: FormLayoutProps) {
+export function FormLayout({
+  url,
+  setUrl,
+  parsedUrl,
+  onVideoAdded,
+  className,
+  showTags = true,
+  selectedTags,
+  tagInput,
+  setTagInput,
+  handleTagInputChange,
+  handleTagKeyDown,
+  removeTag,
+  selectSuggestedTag,
+  filteredSuggestions,
+  showTagSuggestions,
+  isLoadingTags,
+  tagError,
+  onAddTag,
+}: FormLayoutProps) {
   const [isAdding, setIsAdding] = useState(false);
-
-  const {
-    selectedTags,
-    setTagInput,
-    tagInput,
-    showTagSuggestions,
-    filteredSuggestions,
-    isLoadingTags,
-    tagError,
-    handleTagInputChange,
-    handleTagKeyDown,
-    removeTag,
-    selectSuggestedTag,
-  } = useVideoForm({ onVideoAdded });
 
   const hasValidUrl = parsedUrl?.isValid ?? false;
   const urlError = parsedUrl && !parsedUrl.isValid && url.trim()
@@ -84,11 +102,7 @@ export function FormLayout({ url, setUrl, parsedUrl, onVideoAdded, className, sh
         <TagInput
           value={tagInput}
           onChange={handleTagInputChange}
-          onTagAdd={async (tagName) => {
-            // Set the tag input value and trigger add
-            handleTagInputChange(tagName);
-            setTimeout(() => handleTagKeyDown({ key: 'Enter', preventDefault: () => {} } as React.KeyboardEvent), 0);
-          }}
+          onTagAdd={onAddTag}
           onTagRemove={removeTag}
           selectedTags={selectedTags}
           suggestions={filteredSuggestions}

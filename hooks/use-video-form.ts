@@ -52,6 +52,7 @@ interface UseVideoFormReturn {
   handleTagKeyDown: (e: React.KeyboardEvent) => Promise<void>;
   removeTag: (tagId: number) => void;
   selectSuggestedTag: (tag: Tag) => void;
+  addTag: (tagName: string) => Promise<void>;
 }
 
 export function useVideoForm({ onVideoAdded }: UseVideoFormOptions = {}): UseVideoFormReturn {
@@ -287,5 +288,6 @@ export function useVideoForm({ onVideoAdded }: UseVideoFormOptions = {}): UseVid
     handleTagKeyDown,
     removeTag,
     selectSuggestedTag,
+    addTag,
   };
 }
