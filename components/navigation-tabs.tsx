@@ -19,8 +19,8 @@ export function NavigationTabs() {
               className={cn(
                 "flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors",
                 pathname === "/"
-                  ? "border-gray-900 text-gray-900"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               )}
             >
               <VideoIcon className="w-4 h-4" />
@@ -31,8 +31,8 @@ export function NavigationTabs() {
               className={cn(
                 "flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors",
                 pathname === "/list"
-                  ? "border-gray-900 text-gray-900"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               )}
             >
               <ListVideo className="w-4 h-4" />
@@ -43,8 +43,8 @@ export function NavigationTabs() {
               className={cn(
                 "flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors",
                 pathname === "/analytics"
-                  ? "border-gray-900 text-gray-900"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               )}
             >
               <BarChart3 className="w-4 h-4" />
