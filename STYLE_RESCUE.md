@@ -76,10 +76,10 @@
 
 **Tasks:**
 - [x] **Navbar spacing**: Remove `px-4` padding from navigation container
-- [ ] **Add video page centering**: Center on full screen height (not container)
-- [ ] **Perfect 40/60 split**: Adjust grid proportions for exact split (after Phase 6.0 fix)
-- [ ] **Add horizontal divider**: Visual separator between left/right sections
-- [ ] **Remove preview container**: Clean up wrapper styling around preview
+- [x] **Add video page centering**: Center on full screen height (not container)
+- [x] **Perfect 40/60 split**: Adjust grid proportions for exact split (after Phase 6.0 fix)
+- [x] **Add horizontal divider**: Visual separator between left/right sections
+- [x] **Remove preview container**: Clean up wrapper styling around preview
 - [ ] **Confirm grep-app behavior**: Split triggers immediately on URL entry
 
 ### **Phase 6.4: Analytics Page Redesign** - PENDING

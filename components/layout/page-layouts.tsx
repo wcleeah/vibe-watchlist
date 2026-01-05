@@ -32,7 +32,7 @@ export function SplitLayout({ left, right, className }: SplitLayoutProps) {
       </div>
 
       {/* Right side */}
-      <div className="lg:col-span-3 order-1 lg:order-2 flex items-center justify-center px-4 border-l border-gray-200 min-h-[400px]">
+      <div className="lg:col-span-3 order-1 lg:order-2 flex items-start justify-center px-4">
         <div className="w-full">
           {right}
         </div>
