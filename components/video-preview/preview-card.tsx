@@ -1,13 +1,13 @@
 'use client';
 
-import { FileText } from 'lucide-react';
+import { FileText, CheckCircle, Trash2 } from 'lucide-react';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
 import { MetadataDisplay, ThumbnailDisplay } from './metadata-components';
 import { LoadingSkeleton } from './loading-skeleton';
 import { ErrorDisplay } from './error-display';
 import { PreviewCardProps } from './types';
 
-export function PreviewCard({ video, showActions = false, className }: PreviewCardProps) {
+export function PreviewCard({ video, showActions = false, onMarkWatched, onDelete, className }: PreviewCardProps) {
   if (video.isLoading) {
     return (
       <div className={`bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 min-h-[300px] ${className}`}>
@@ -101,6 +101,26 @@ export function PreviewCard({ video, showActions = false, className }: PreviewCa
               >
                 Watch
               </a>
+
+              {!video.isWatched && onMarkWatched && (
+                <button
+                  onClick={() => onMarkWatched(video.id)}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Watched
+                </button>
+              )}
+
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(video.id)}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -1,9 +1,16 @@
-import { VideoCard } from './video-card';
+import { PreviewCard } from '@/components/video-preview';
 import { Video } from '@/lib/db/schema';
+import { Tag } from '@/types/tag';
 import { useMemo } from 'react';
 
+interface VideoWithTags extends Video {
+  tags?: Tag[];
+  highlightedTitle?: string;
+  highlightedTags?: Tag[];
+}
+
 interface VideoListProps {
-  videos: Video[];
+  videos: VideoWithTags[];
   onMarkWatched?: (id: number) => void;
   onDelete?: (id: number) => void;
   isSelectable?: boolean;
@@ -46,15 +53,26 @@ export function VideoList({
   return (
     <div className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
       {videos.map((video) => (
-        <VideoCard
-          key={video.id}
-          video={video}
-          onMarkWatched={onMarkWatched}
-          onDelete={onDelete}
-          isSelectable={isSelectable}
-          isSelected={selectedStates[video.id] || false}
-          onSelectionChange={onSelectionChange}
-        />
+        <div key={video.id} className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+          <PreviewCard
+            video={{
+              id: video.id,
+              url: video.url,
+              title: video.title,
+              platform: video.platform,
+              thumbnailUrl: video.thumbnailUrl,
+              isWatched: video.isWatched,
+              createdAt: video.createdAt,
+              updatedAt: video.updatedAt,
+              tags: video.tags || [],
+              highlightedTitle: video.highlightedTitle,
+              highlightedTags: video.highlightedTags,
+            }}
+            showActions={true}
+            onMarkWatched={onMarkWatched}
+            onDelete={onDelete}
+          />
+        </div>
       ))}
     </div>
   );
