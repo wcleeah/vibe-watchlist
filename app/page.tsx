@@ -53,10 +53,10 @@ export default function Home() {
   ) : null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="bg-background text-foreground">
       <NavigationTabs />
 
-      <main className="container mx-auto px-4 py-12 max-w-6xl">
+      <main className="min-h-screen container mx-auto px-4 py-12 max-w-6xl flex items-center justify-center">
         <LayoutManager
           hasContent={hasContent}
           header={header}
