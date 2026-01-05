@@ -61,18 +61,17 @@ Based on research, grep.app features a minimal, code-focused, developer-oriented
 - **Performance**: Server components, optimize for fast loads. Avoid heavy animations.
 
 ### Card/Preview Design Overhaul
-- **Unified Design**: Single `VideoCard` component, minimal borders (thin gray lines, no thick whites).
+- **Unified Design**: Updated `PreviewCard` component with conditional borders (none for preview). Light bg, minimal.
 - **Structure Implementation**:
-  - Top: Title in clean font, greytone hierarchy.
-  - Bottom: Horizontal split - thumbnail, content (tags/ID), vertical buttons (small, functional).
-  - Mobile: Horizontal button stack.
+  - Top: Title in font-mono, greytone.
+  - Bottom: Horizontal split - thumbnail (fixed 24x16), content (platform/tags/ID), vertical actions.
+  - Actions: Copy URL always, delete/watched if applicable. Small buttons.
+  - Mobile: Actions horizontal (needs responsive tweak).
 - **Styling Details**:
-  - Lean: `max-w-sm`, white/light bg, subtle shadows.
-  - Centering: `flex items-center`.
-  - Overflow: `text-ellipsis`.
-  - Fix escaped text.
-  - Buttons: Shadcn/ui, but minimal styling.
-- **Best Practices**: Tailwind utilities, CSS variables, responsive.
+  - Lean: min-h 200px, white bg.
+  - No emojis, greytone text.
+  - Overflow handled.
+  - Escaped text assumed sanitized.
 
 ### Navbar Spacing Optimization
 - **Remove Excess Margins**: Full-width, minimal padding, centered content like grep.app header.
