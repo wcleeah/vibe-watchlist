@@ -21,9 +21,9 @@ export default function Home() {
     }
   });
 
-  const hasContent = parsedUrl?.isValid || false;
+  const hasContent = url.trim().length > 0;
 
-  const header = (
+  const header = hasContent ? null : (
     <div className="text-center mb-4">
       <h1 className="text-3xl font-bold mb-4">Add New Video</h1>
       <p className="text-gray-600 dark:text-gray-400">
