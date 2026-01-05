@@ -87,14 +87,14 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
               href={video.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-7 text-xs px-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+              className="h-8 text-xs px-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
               title="watch()"
             >
               watch()
             </a>
             <button
               onClick={() => navigator.clipboard.writeText(video.url)}
-              className="h-7 text-xs px-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+              className="h-8 text-xs px-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
               title="copyUrl()"
             >
               copyUrl()
@@ -102,7 +102,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             {onDelete && (
               <button
                 onClick={() => onDelete(video.id)}
-                className="h-7 text-xs px-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                className="h-8 text-xs px-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                 title="delete()"
               >
                 delete()
@@ -111,7 +111,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             {!video.isWatched && onMarkWatched && (
               <button
                 onClick={() => onMarkWatched(video.id)}
-                className="h-7 text-xs px-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                className="h-8 text-xs px-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                 title="markWatched()"
               >
                 markWatched()
