@@ -22,7 +22,8 @@ export async function extractVideoMetadata(url: string, platform: VideoPlatform)
           thumbnailUrl: null,
         };
       default:
-        throw new Error(`Unsupported platform: ${platform}`);
+        // Try meta tag extraction for unknown platforms
+        return await extractMetaTagMetadata(url);
     }
   } catch (error) {
     console.error('Error extracting metadata:', error);
@@ -55,4 +56,71 @@ async function extractYouTubeMetadata(url: string): Promise<VideoMetadata> {
     authorName: data.author_name,
     authorUrl: data.author_url,
   };
+}
+
+async function extractMetaTagMetadata(url: string): Promise<VideoMetadata> {
+  try {
+    // Fetch the page HTML
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Video Watchlist App/1.0',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch page: ${response.status}`);
+    }
+
+    const html = await response.text();
+
+    // Extract title from various sources
+    let title = '';
+
+    // Try Open Graph title
+    const ogTitleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i);
+    if (ogTitleMatch) {
+      title = ogTitleMatch[1];
+    }
+
+    // Try Twitter title
+    if (!title) {
+      const twitterTitleMatch = html.match(/<meta\s+name=["']twitter:title["']\s+content=["']([^"']+)["']/i);
+      if (twitterTitleMatch) {
+        title = twitterTitleMatch[1];
+      }
+    }
+
+    // Try document title
+    if (!title) {
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      if (titleMatch) {
+        title = titleMatch[1].trim();
+      }
+    }
+
+    // Extract thumbnail
+    let thumbnailUrl = null;
+
+    // Try Open Graph image
+    const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+    if (ogImageMatch) {
+      thumbnailUrl = ogImageMatch[1];
+    }
+
+    // Try Twitter image
+    if (!thumbnailUrl) {
+      const twitterImageMatch = html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
+      if (twitterImageMatch) {
+        thumbnailUrl = twitterImageMatch[1];
+      }
+    }
+
+    return {
+      title: title || 'Untitled Video',
+      thumbnailUrl,
+    };
+  } catch (error) {
+    console.error('Error extracting meta tag metadata:', error);
+    throw error;
+  }
 }

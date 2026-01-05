@@ -108,10 +108,8 @@ export function useVideoForm({ onVideoAdded }: UseVideoFormOptions = {}): UseVid
     const parsed = parseVideoUrl(url);
     setParsedUrl(parsed);
 
-    // Check for valid URL pattern
-    const isValidUrl = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be|netflix\.com|nebula\.tv|twitch\.tv)/i.test(url);
-
-    if (!parsed.isValid || !isValidUrl) {
+    // Accept any valid URL
+    if (!parsed.isValid) {
       setIsLoadingMetadata(false);
       setMetadata(null);
       setPreviewError(null);

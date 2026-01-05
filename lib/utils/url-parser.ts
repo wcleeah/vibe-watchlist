@@ -1,4 +1,4 @@
-export type VideoPlatform = 'youtube' | 'netflix' | 'nebula' | 'twitch';
+export type VideoPlatform = 'youtube' | 'netflix' | 'nebula' | 'twitch' | 'unknown';
 
 export interface ParsedUrl {
   url: string;
@@ -9,7 +9,7 @@ export interface ParsedUrl {
 
 export function parseVideoUrl(url: string): ParsedUrl {
   if (!url || typeof url !== 'string') {
-    return { url, platform: 'youtube', isValid: false };
+    return { url, platform: 'unknown', isValid: false };
   }
 
   try {
@@ -56,9 +56,14 @@ export function parseVideoUrl(url: string): ParsedUrl {
       };
     }
 
-    return { url, platform: 'youtube', isValid: false };
+    // Accept any valid HTTPS URL
+    return {
+      url,
+      platform: 'unknown',
+      isValid: true,
+    };
   } catch {
-    return { url, platform: 'youtube', isValid: false };
+    return { url, platform: 'unknown', isValid: false };
   }
 }
 

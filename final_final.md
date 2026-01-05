@@ -72,15 +72,15 @@ This plan outlines the complete mobile optimization and metadata enhancement for
 - [x] **Time Estimate**: 15 minutes
 
 ### 1.8 Preferences Panel Simplification
-- [ ] **Objective**: Replace complex dialog with simple theme toggle
-- [ ] **Files**: `components/navigation-tabs.tsx`, remove `components/preferences-dialog.tsx`
-- [ ] **Changes**:
+- [x] **Objective**: Replace complex dialog with simple theme toggle
+- [x] **Files**: `components/navigation-tabs.tsx`, remove `components/preferences-dialog.tsx`
+- [x] **Changes**:
   - Create new `ThemeToggle` component
   - Replace PreferencesDialog usage
   - Implement light/dark/system cycling
-- [ ] **Testing**: Theme toggle works in navigation
-- [ ] **Status**: Pending
-- [ ] **Time Estimate**: 30 minutes
+- [x] **Testing**: Theme toggle works in navigation
+- [x] **Status**: Completed
+- [x] **Time Estimate**: 30 minutes
 
 ### 1.9 Universal URL Support
 - [ ] **Objective**: Accept any URL, attempt metadata extraction

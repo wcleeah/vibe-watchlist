@@ -1,12 +1,11 @@
-export type VideoPlatform = 'youtube' | 'netflix' | 'nebula' | 'twitch';
-
-// Platform-specific utilities and constants
+export type VideoPlatform = 'youtube' | 'netflix' | 'nebula' | 'twitch' | 'unknown';
 
 export const PLATFORM_NAMES = {
   youtube: 'YouTube',
   netflix: 'Netflix',
   nebula: 'Nebula',
   twitch: 'Twitch',
+  unknown: 'Unknown Platform',
 } as const;
 
 export const PLATFORM_URLS = {
