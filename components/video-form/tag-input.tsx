@@ -95,13 +95,13 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
             ) : (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => onTagAdd(value.trim())}
-                disabled={!value.trim()}
-                className="h-8 px-2 text-xs"
-              >
+               <Button
+                 type="button"
+                 size="sm"
+                 onClick={() => onTagAdd(value.trim())}
+                 disabled={!value.trim()}
+                 className="h-12 px-4 sm:px-2 text-xs"
+               >
                 Add
               </Button>
             )}

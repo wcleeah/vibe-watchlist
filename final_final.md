@@ -18,14 +18,14 @@ This plan outlines the complete mobile optimization and metadata enhancement for
 - [x] **Time Estimate**: 15 minutes
 
 ### 1.2 Add Video Page Layout Adjustments
-- [ ] **Objective**: Reduce top gap and reorder form/preview on mobile
-- [ ] **Files**: `app/page.tsx`, `components/layout/page-layouts.tsx`
-- [ ] **Changes**:
+- [x] **Objective**: Reduce top gap and reorder form/preview on mobile
+- [x] **Files**: `app/page.tsx`, `components/layout/page-layouts.tsx`
+- [x] **Changes**:
   - Reduce top padding: `pt-12 sm:pt-16`
   - Swap order classes in SplitLayout for mobile-first layout
-- [ ] **Testing**: Verify form above preview on mobile, reduced top space
-- [ ] **Status**: Pending
-- [ ] **Time Estimate**: 20 minutes
+- [x] **Testing**: Verify form above preview on mobile, reduced top space
+- [x] **Status**: Completed
+- [x] **Time Estimate**: 20 minutes
 
 ### 1.3 Tag Input Button Height & Width
 - [ ] **Objective**: Match button to input height, improve mobile touch targets
