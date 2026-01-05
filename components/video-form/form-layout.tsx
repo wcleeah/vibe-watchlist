@@ -8,9 +8,10 @@ import { useVideoForm } from '@/hooks/use-video-form';
 interface FormLayoutProps {
   onVideoAdded?: () => void;
   className?: string;
+  showTags?: boolean;
 }
 
-export function FormLayout({ onVideoAdded, className }: FormLayoutProps) {
+export function FormLayout({ onVideoAdded, className, showTags = true }: FormLayoutProps) {
   const {
     url,
     setUrl,
@@ -45,30 +46,34 @@ export function FormLayout({ onVideoAdded, className }: FormLayoutProps) {
         error={urlError || undefined}
       />
 
-      {/* Tag Input */}
-      <TagInput
-        value={tagInput}
-        onChange={handleTagInputChange}
-        onTagAdd={async (tagName) => {
-          // Set the tag input value and trigger add
-          handleTagInputChange(tagName);
-          setTimeout(() => handleTagKeyDown({ key: 'Enter', preventDefault: () => {} } as React.KeyboardEvent), 0);
-        }}
-        onTagRemove={removeTag}
-        selectedTags={selectedTags}
-        suggestions={filteredSuggestions}
-        showSuggestions={showTagSuggestions}
-        onSelectSuggestion={selectSuggestedTag}
-        isLoading={isLoadingTags}
-        error={tagError}
-      />
+      {/* Tag Input - show only if showTags */}
+      {showTags && (
+        <TagInput
+          value={tagInput}
+          onChange={handleTagInputChange}
+          onTagAdd={async (tagName) => {
+            // Set the tag input value and trigger add
+            handleTagInputChange(tagName);
+            setTimeout(() => handleTagKeyDown({ key: 'Enter', preventDefault: () => {} } as React.KeyboardEvent), 0);
+          }}
+          onTagRemove={removeTag}
+          selectedTags={selectedTags}
+          suggestions={filteredSuggestions}
+          showSuggestions={showTagSuggestions}
+          onSelectSuggestion={selectSuggestedTag}
+          isLoading={isLoadingTags}
+          error={tagError}
+        />
+      )}
 
-      {/* Submit Button */}
-      <SubmitButton
-        onClick={handleAddVideo}
-        isLoading={isAdding}
-        disabled={!hasValidUrl}
-      />
+      {/* Submit Button - show only if showTags */}
+      {showTags && (
+        <SubmitButton
+          onClick={handleAddVideo}
+          isLoading={isAdding}
+          disabled={!hasValidUrl}
+        />
+      )}
     </div>
   );
 }
