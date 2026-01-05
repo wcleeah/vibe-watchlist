@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, CheckCircle, Youtube, Tv, Gamepad2, FileText, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle, Youtube, Tv, Gamepad2, FileText, ExternalLink, Tag as TagIcon } from 'lucide-react';
 import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
 import { extractVideoMetadata, VideoMetadata } from '@/lib/utils/metadata-extractor';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
+import { TagList } from '@/components/ui/tag';
 
 const platformIcons = {
   youtube: Youtube,
@@ -36,6 +37,30 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+
+  // Tag functionality state
+  const [selectedTags, setSelectedTags] = useState<Array<{ id: number; name: string; color?: string | null }>>([]);
+  const [availableTags, setAvailableTags] = useState<Array<{ id: number; name: string; color?: string | null }>>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [isLoadingTags, setIsLoadingTags] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
+
+  // Fetch available tags on component mount
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const response = await fetch('/api/tags');
+        if (response.ok) {
+          const tags = await response.json();
+          setAvailableTags(tags);
+        }
+      } catch (error) {
+        console.error('Failed to fetch tags:', error);
+      }
+    };
+    fetchTags();
+  }, []);
 
   // Auto-detect URL and fetch metadata on URL change
   useEffect(() => {
@@ -72,6 +97,91 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
     return () => clearTimeout(timeoutId);
   }, [url]);
 
+  // Tag management functions
+  const handleTagInputChange = (value: string) => {
+    setTagInput(value);
+    setShowTagSuggestions(value.length > 0);
+    setTagError(null);
+  };
+
+  const handleTagKeyDown = async (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      await addTag(tagInput.trim());
+    } else if (e.key === 'Escape') {
+      setShowTagSuggestions(false);
+    }
+  };
+
+  const addTag = async (tagName: string) => {
+    if (!tagName) return;
+
+    // Check if tag is already selected
+    if (selectedTags.some(tag => tag.name.toLowerCase() === tagName.toLowerCase())) {
+      setTagError('Tag already added');
+      return;
+    }
+
+    // Check if tag exists in available tags
+    const existingTag = availableTags.find(tag => tag.name.toLowerCase() === tagName.toLowerCase());
+    if (existingTag) {
+      setSelectedTags(prev => [...prev, existingTag]);
+      setTagInput('');
+      setShowTagSuggestions(false);
+      return;
+    }
+
+    // Create new tag
+    setIsLoadingTags(true);
+    try {
+      const response = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: tagName }),
+      });
+
+      if (response.ok) {
+        const newTag = await response.json();
+        setAvailableTags(prev => [...prev, newTag]);
+        setSelectedTags(prev => [...prev, newTag]);
+        setTagInput('');
+        setShowTagSuggestions(false);
+      } else if (response.status === 409) {
+        // Tag already exists, fetch it
+        const existingTag = availableTags.find(tag => tag.name.toLowerCase() === tagName.toLowerCase());
+        if (existingTag) {
+          setSelectedTags(prev => [...prev, existingTag]);
+        }
+        setTagError('Tag already exists');
+      } else {
+        setTagError('Failed to create tag');
+      }
+    } catch (error) {
+      console.error('Error creating tag:', error);
+      setTagError('Failed to create tag');
+    } finally {
+      setIsLoadingTags(false);
+    }
+  };
+
+  const removeTag = (tagId: number) => {
+    setSelectedTags(prev => prev.filter(tag => tag.id !== tagId));
+  };
+
+  const selectSuggestedTag = (tag: { id: number; name: string; color?: string | null }) => {
+    if (!selectedTags.some(t => t.id === tag.id)) {
+      setSelectedTags(prev => [...prev, tag]);
+    }
+    setTagInput('');
+    setShowTagSuggestions(false);
+  };
+
+  // Filter suggestions based on input
+  const filteredSuggestions = availableTags.filter(tag =>
+    tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
+    !selectedTags.some(selected => selected.id === tag.id)
+  ).slice(0, 5); // Limit to 5 suggestions
+
   const handleAddVideo = async () => {
     if (!url.trim() || !parsedUrl?.isValid) return;
 
@@ -82,6 +192,7 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
         title: metadata?.title,
         platform: parsedUrl.platform,
         thumbnailUrl: metadata?.thumbnailUrl,
+        tagIds: selectedTags.map(tag => tag.id),
       };
 
       const response = await fetch('/api/videos', {
@@ -101,6 +212,8 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
         setUrl('');
         setParsedUrl(null);
         setMetadata(null);
+        setSelectedTags([]);
+        setTagInput('');
         setPreviewError(null);
         onVideoAdded?.();
       }
@@ -126,25 +239,69 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
         {/* Left side: Form inputs (2/5 width on desktop) */}
         <div className="lg:col-span-2 space-y-6">
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Input
-                type="url"
-                placeholder="https://youtube.com/watch?v=..."
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className={`w-full h-12 text-base ${
-                  url.trim() && parsedUrl
-                    ? parsedUrl.isValid
-                      ? 'border-green-500 focus:border-green-500'
-                      : 'border-orange-500 focus:border-orange-500'
-                    : ''
-                }`}
-              />
-              {url.trim() && parsedUrl && !parsedUrl.isValid && (
-                <div className="text-sm text-orange-600 dark:text-orange-400">
-                  Please enter a valid YouTube, Netflix, Nebula, or Twitch URL
+            <div className="space-y-4">
+              {/* URL Input */}
+              <div className="space-y-2">
+                <Input
+                  type="url"
+                  placeholder="https://youtube.com/watch?v=..."
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className={`w-full h-12 text-base ${
+                    url.trim() && parsedUrl
+                      ? parsedUrl.isValid
+                        ? 'border-green-500 focus:border-green-500'
+                        : 'border-orange-500 focus:border-orange-500'
+                      : ''
+                  }`}
+                />
+                {url.trim() && parsedUrl && !parsedUrl.isValid && (
+                  <div className="text-sm text-orange-600 dark:text-orange-400">
+                    Please enter a valid YouTube, Netflix, Nebula, or Twitch URL
+                  </div>
+                )}
+              </div>
+
+              {/* Tag Input */}
+              <div className="space-y-2">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Add tags (press Enter or comma to add)..."
+                    value={tagInput}
+                    onChange={(e) => handleTagInputChange(e.target.value)}
+                    onKeyDown={handleTagKeyDown}
+                    className="w-full h-12 text-base"
+                    disabled={isLoadingTags}
+                  />
+                  {tagInput && showTagSuggestions && filteredSuggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {filteredSuggestions.map((tag) => (
+                        <button
+                          key={tag.id}
+                          onClick={() => selectSuggestedTag(tag)}
+                          className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                        >
+                          <TagIcon className="w-4 h-4 text-gray-400" />
+                          <span>{tag.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+                {tagError && (
+                  <div className="text-sm text-red-600 dark:text-red-400">
+                    {tagError}
+                  </div>
+                )}
+                {selectedTags.length > 0 && (
+                  <TagList
+                    tags={selectedTags}
+                    onRemove={removeTag}
+                    size="sm"
+                  />
+                )}
+              </div>
             </div>
 
             <Button
@@ -251,6 +408,16 @@ export function SplitScreenAddForm({ onVideoAdded }: SplitScreenAddFormProps) {
                       <div className="font-mono text-sm">
                         <span className="text-purple-600 dark:text-purple-400">author:</span>{' '}
                         <span className="text-cyan-600 dark:text-cyan-400">&ldquo;{metadata.authorName}&rdquo;</span>
+                      </div>
+                    )}
+
+                    {/* Tags */}
+                    {selectedTags.length > 0 && (
+                      <div className="font-mono text-sm">
+                        <span className="text-purple-600 dark:text-purple-400">tags:</span>{' '}
+                        <span className="text-pink-600 dark:text-pink-400">
+                          [{selectedTags.map(tag => `"${tag.name}"`).join(', ')}]
+                        </span>
                       </div>
                     )}
 
