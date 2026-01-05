@@ -71,11 +71,11 @@
   - [x] Function-style labels (e.g., `watch()`, `delete()`, `markWatched()`)
   - [x] Neutral variants (ghost for secondary actions)
 
-### **Phase 6.3: Layout & Spacing Improvements** - PENDING
+### **Phase 6.3: Layout & Spacing Improvements** - IN PROGRESS 🚀
 **Goal**: Perfect navbar and add video page layouts
 
 **Tasks:**
-- [ ] **Navbar spacing**: Remove `px-4` padding from navigation container
+- [x] **Navbar spacing**: Remove `px-4` padding from navigation container
 - [ ] **Add video page centering**: Center on full screen height (not container)
 - [ ] **Perfect 40/60 split**: Adjust grid proportions for exact split (after Phase 6.0 fix)
 - [ ] **Add horizontal divider**: Visual separator between left/right sections
