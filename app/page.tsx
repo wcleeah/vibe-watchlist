@@ -41,7 +41,7 @@ export default function Home() {
     return (
       <div className="bg-background text-foreground">
         <NavigationTabs />
-      <main className="min-h-screen pt-12 sm:pt-16 pb-20 container mx-auto px-4 max-w-6xl flex items-center justify-center">
+      <main className="min-h-screen pt-8 sm:pt-16 pb-20 container mx-auto px-4 max-w-6xl flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg text-gray-500 dark:text-gray-400">Loading...</div>
           </div>
