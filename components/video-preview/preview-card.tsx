@@ -86,7 +86,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                     )}
                     <div><span className="text-purple-600 dark:text-purple-400">&quot;PLATFORM&quot;</span>: <span className="text-green-600 dark:text-green-400">&quot;{PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}&quot;</span>,</div>
                     {video.tags && video.tags.length > 0 && (
-                      <div><span className="text-purple-600 dark:text-purple-400">&quot;TAGS&quot;</span>: <span className="text-yellow-600 dark:text-yellow-400">[{video.tags.map(tag => `&quot;${tag.name}&quot;`).join(', ')}]</span></div>
+                      <div><span className="text-purple-600 dark:text-purple-400">&quot;TAGS&quot;</span>: <span className="text-yellow-600 dark:text-yellow-400">[{video.tags.map(tag => `"${tag.name}"`).join(', ')}]</span></div>
                     )}
                   </div>
                   {'}'}
