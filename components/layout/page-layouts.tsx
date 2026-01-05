@@ -8,7 +8,7 @@ interface CenteredLayoutProps {
 export function CenteredLayout({ children, className }: CenteredLayoutProps) {
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 ${className}`}>
-      <div className="w-full max-w-md space-y-6">
+      <div className="w-full max-w-2xl space-y-6">
         {children}
       </div>
     </div>
