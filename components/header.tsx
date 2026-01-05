@@ -1,0 +1,1 @@
+// Header component removed - theme toggle now in navigation
