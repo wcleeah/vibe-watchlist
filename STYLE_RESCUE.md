@@ -74,9 +74,9 @@ Based on research, grep.app features a minimal, code-focused, developer-oriented
   - Escaped text assumed sanitized.
 
 ### Navbar Spacing Optimization
-- **Remove Excess Margins**: Full-width, minimal padding, centered content like grep.app header.
-- **Layout**: Simple nav bar with links, no clutter.
-- **Integration**: Functional, developer-focused.
+- **Remove Side Margins**: Updated to `w-full px-4`, removed container constraints for full-width, minimal spacing.
+- **Layout**: Kept justify-between, h-16.
+- **Integration**: Clean, grep.app-inspired.
 
 ### Add Video Page Spacing Enhancement
 - **Initial State**: Centered header + input, full-height like search pages.
