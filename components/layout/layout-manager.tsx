@@ -31,16 +31,18 @@ export function LayoutManager({ hasContent, header, form, preview, className }: 
 
   // Split layout
   return (
-    <div className={`min-h-screen ${className}`}>
+    <div className={`min-h-screen flex flex-col ${className}`}>
       {/* Header */}
       <div className="text-center py-8">
         {header}
       </div>
 
-      <SplitLayout
-        left={form}
-        right={preview}
-      />
+      <div className="flex-1 flex items-center justify-center">
+        <SplitLayout
+          left={form}
+          right={preview}
+        />
+      </div>
     </div>
   );
 }
