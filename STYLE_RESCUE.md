@@ -54,9 +54,9 @@
     - [x] Fix text differentiation - use font weights/styles instead of colors for hierarchy
     - [x] Add overflow support - handle long titles/metadata gracefully
     - [x] Hide URL display - make "Copy URL" button icon-only (no URL text)
-    - [ ] Fix title escaping - ensure proper text rendering
+    - [x] Fix title escaping - ensure proper text rendering
     - [x] Mobile actions - vertical stacking on desktop, horizontal at bottom on mobile
-    - [ ] Maintain sticky-note button styling in new layout
+    - [x] Maintain sticky-note button styling in new layout
 
 - [ ] **Listing page styling fixes**:
   - [ ] **Bulk operations UI**: Remove blue themes, use neutral backgrounds (`bg-white dark:bg-gray-900`) and function-style buttons (`markWatched()`, `delete()`)
@@ -66,10 +66,10 @@
   - [ ] **VideoList container**: Fix dark mode background from `gray-950` to `gray-900`
   - [ ] **Video cards**: Add proper dark mode (`dark:bg-gray-900`), convert to function-style buttons
 
-- [ ] **Button standardization**:
-  - [ ] All buttons use `h-7 text-xs` sizing
-  - [ ] Function-style labels (e.g., `watch()`, `delete()`, `markWatched()`)
-  - [ ] Neutral variants (ghost for secondary actions)
+- [x] **Button standardization**:
+  - [x] All buttons use `h-7 text-xs` sizing
+  - [x] Function-style labels (e.g., `watch()`, `delete()`, `markWatched()`)
+  - [x] Neutral variants (ghost for secondary actions)
 
 ### **Phase 6.3: Layout & Spacing Improvements** - PENDING
 **Goal**: Perfect navbar and add video page layouts
@@ -110,8 +110,8 @@
 
 ## ✅ **Progress Tracking**
 
-**Completed Tasks**: 10/25
-**Current Phase**: 6.1 (Foundation - Black/White Design System)
+**Completed Tasks**: 17/25
+**Current Phase**: 6.2 (Card Design Refinement) - IN PROGRESS
 
 ---
 

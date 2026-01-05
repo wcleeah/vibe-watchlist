@@ -87,15 +87,15 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
               href={video.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs px-3 py-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
-              title="Watch Now"
+              className="h-7 text-xs px-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded shadow-sm hover:shadow-md transition-all"
+              title="watch()"
             >
-              Watch Now
+              watch()
             </a>
             <button
               onClick={() => navigator.clipboard.writeText(video.url)}
-              className="p-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
-              title="Copy URL"
+              className="h-7 px-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded shadow-sm hover:shadow-md transition-all"
+              title="copyUrl()"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -104,19 +104,19 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             {onDelete && (
               <button
                 onClick={() => onDelete(video.id)}
-                className="text-xs px-3 py-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
-                title="Delete"
+                className="h-7 text-xs px-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded shadow-sm hover:shadow-md transition-all"
+                title="delete()"
               >
-                Delete
+                delete()
               </button>
             )}
             {!video.isWatched && onMarkWatched && (
               <button
                 onClick={() => onMarkWatched(video.id)}
-                className="text-xs px-3 py-2 bg-black dark:bg-white text-white dark:text-black rounded shadow-sm hover:shadow-md transition-all transform hover:scale-105"
-                title="Mark Watched"
+                className="h-7 text-xs px-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded shadow-sm hover:shadow-md transition-all"
+                title="markWatched()"
               >
-                Watched
+                markWatched()
               </button>
             )}
           </div>
