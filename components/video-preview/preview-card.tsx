@@ -69,7 +69,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
 
             {/* Content */}
             <div className="flex-1 min-w-0 flex items-center">
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 font-mono w-full">
+              <div className="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-4 font-mono w-full">
                 <div className="text-sm">
                   {'{'}
                   <div className="ml-4 space-y-1">
