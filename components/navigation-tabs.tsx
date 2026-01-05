@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { VideoIcon, ListVideo, BarChart3, CheckCircle } from 'lucide-react';
+import { VideoIcon, ListVideo, BarChart3, CheckCircle, Tag } from 'lucide-react';
 import { PreferencesDialog } from '@/components/preferences-dialog';
 
 export function NavigationTabs() {
@@ -49,6 +49,18 @@ export function NavigationTabs() {
             >
               <CheckCircle className="w-4 h-4" />
               Watched
+            </Link>
+            <Link
+              href="/tags"
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors",
+                pathname === "/tags"
+                  ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              )}
+            >
+              <Tag className="w-4 h-4" />
+              Tags
             </Link>
             <Link
               href="/analytics"
