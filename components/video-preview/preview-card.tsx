@@ -10,8 +10,8 @@ import { PreviewCardProps } from './types';
 export function PreviewCard({ video, showActions = false, onMarkWatched, onDelete, className }: PreviewCardProps) {
   if (video.isLoading) {
     return (
-      <div className={`bg-white dark:bg-black rounded-lg border border-black dark:border-white p-6 min-h-[300px] ${className}`}>
-        <LoadingSkeleton />
+      <div className={`bg-white dark:bg-black rounded-lg border border-black dark:border-white p-6 min-h-[300px] flex items-center justify-center ${className}`}>
+        <div className="text-lg text-gray-500 dark:text-gray-400">loading...</div>
       </div>
     );
   }
@@ -49,7 +49,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
         <div className="px-4 pt-4 pb-4 space-y-1">
           {/* Title Section */}
           <div className="pb-2 border-b border-black dark:border-white">
-            <h3 className="text-lg font-bold text-black dark:text-white font-mono truncate">
+            <h3 className="text-lg font-bold text-black dark:text-white font-mono truncate" title={video.title || 'Untitled Video'}>
               {video.title || 'Untitled Video'}
             </h3>
           </div>
@@ -83,6 +83,13 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                   </div>
                   {'}'}
                 </div>
+                {video.error && (
+                  <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
+                    <div className="font-mono text-sm text-red-600 dark:text-red-400">
+                      &quot;ERROR&quot;: &quot;{video.error}&quot;
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

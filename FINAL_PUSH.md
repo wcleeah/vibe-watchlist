@@ -79,8 +79,8 @@ Based on codebase research and requirements analysis, here's the comprehensive p
 - [x] Task 1.1: Completed - Added vertical centering to split layout in LayoutManager
 - [x] Task 1.2: Completed - Synced tag state between form and preview by lifting state to Home component
 - [x] Task 1.3: Completed - Added heading, repositioned tags above input, removed green border from URL input
-- [ ] Task 1.4: Pending
-- [ ] Task 1.5: Pending
+- [x] Task 1.4: Completed - Added Add button to tag input, removed green border from URL input
+- [x] Task 1.5: Completed - Added success toast, error JSON display, loading state with centered text, and hover tooltip for titles
 - [ ] Task 2.1: Pending
 - [ ] Task 2.2: Pending
 - [ ] Task 2.3: Pending

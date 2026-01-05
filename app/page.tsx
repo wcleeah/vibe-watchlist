@@ -5,6 +5,7 @@ import { LayoutManager } from '@/components/layout/layout-manager';
 import { FormLayout } from '@/components/video-form';
 import { PreviewCard } from '@/components/video-preview';
 import { useVideoForm } from '@/hooks/use-video-form';
+import { toast } from 'sonner';
 
 export default function Home() {
   const {
@@ -28,8 +29,7 @@ export default function Home() {
     addTag,
   } = useVideoForm({
     onVideoAdded: () => {
-      // Could add toast notification or redirect to list
-      console.log('Video added successfully');
+      toast.success('Video added successfully!');
     }
   });
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { PreferencesProvider } from "@/lib/preferences-context";
 import { AnalyticsProvider } from "@/lib/analytics-context";
+import { Toaster } from 'sonner';
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 import "@fontsource/jetbrains-mono/600.css";
@@ -29,6 +30,7 @@ export default function RootLayout({
             <div className="min-h-screen bg-white dark:bg-black">
               {children}
             </div>
+            <Toaster />
           </AnalyticsProvider>
         </PreferencesProvider>
       </body>
