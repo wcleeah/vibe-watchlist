@@ -1,7 +1,7 @@
 import { pgTable, serial, text, boolean, timestamp, pgEnum, integer } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
-export const videoPlatformEnum = pgEnum('video_platform', ['youtube', 'netflix', 'nebula', 'twitch']);
+export const videoPlatformEnum = pgEnum('video_platform', ['youtube', 'netflix', 'nebula', 'twitch', 'unknown']);
 
 export const videos = pgTable('videos', {
   id: serial('id').primaryKey(),

@@ -2,7 +2,7 @@
 
 import { VideoPlatform } from '@/lib/utils/url-parser';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
-import { Youtube, Tv, Gamepad2 } from 'lucide-react';
+import { Youtube, Tv, Gamepad2, Globe } from 'lucide-react';
 
 interface PlatformIconProps {
   platform: VideoPlatform;
@@ -16,6 +16,7 @@ export function PlatformIcon({ platform, size = 'md', className }: PlatformIconP
     netflix: Tv,
     nebula: Tv,
     twitch: Gamepad2,
+    unknown: Globe,
   };
 
   const sizeClass = {
@@ -45,6 +46,7 @@ export function PlatformBadge({ platform, variant = 'default', className }: Plat
     netflix: 'bg-red-100 text-red-800 border-red-200',
     nebula: 'bg-purple-100 text-purple-800 border-purple-200',
     twitch: 'bg-purple-100 text-purple-800 border-purple-200',
+    unknown: 'bg-gray-100 text-gray-800 border-gray-200',
   };
 
   const colorClass = colors[platform] || 'bg-gray-100 text-gray-800 border-gray-200';
@@ -94,6 +96,12 @@ export function PlatformTheme({ platform, children }: PlatformThemeProps) {
       borderClass: 'border-purple-200 dark:border-purple-800',
       accentClass: 'text-purple-600 dark:text-purple-400',
       icon: '🎮',
+    },
+    unknown: {
+      backgroundClass: 'bg-gray-50 dark:bg-gray-900/20',
+      borderClass: 'border-gray-200 dark:border-gray-800',
+      accentClass: 'text-gray-600 dark:text-gray-400',
+      icon: '🌐',
     },
   };
 

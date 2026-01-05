@@ -83,14 +83,16 @@ This plan outlines the complete mobile optimization and metadata enhancement for
 - [x] **Time Estimate**: 30 minutes
 
 ### 1.9 Universal URL Support
-- [ ] **Objective**: Accept any URL, attempt metadata extraction
-- [ ] **Files**: `hooks/use-video-form.ts`, `lib/utils/metadata-extractor.ts`
-- [ ] **Changes**:
+- [x] **Objective**: Accept any URL, attempt metadata extraction
+- [x] **Files**: `hooks/use-video-form.ts`, `lib/utils/metadata-extractor.ts`, `lib/utils/url-parser.ts`, `lib/utils/platform-utils.ts`
+- [x] **Changes**:
   - Remove platform regex restriction
   - Add meta tag extraction fallback
-- [ ] **Testing**: Any URL accepted, basic metadata extracted
-- [ ] **Status**: Pending
-- [ ] **Time Estimate**: 20 minutes
+  - Updated URL parser for unknown platforms
+  - Added 'unknown' platform type
+- [x] **Testing**: Any URL accepted, basic metadata extracted
+- [x] **Status**: Completed
+- [x] **Time Estimate**: 20 minutes
 
 ## Phase 2: Metadata Extraction Enhancements
 
@@ -150,9 +152,9 @@ This plan outlines the complete mobile optimization and metadata enhancement for
 - [ ] **Time Estimate**: 1.5 hours
 
 ## Progress Tracking
-- **Phase 1 Progress**: 0/9 items completed
+- **Phase 1 Progress**: 9/9 items completed
 - **Phase 2 Progress**: 0/4 items completed
-- **Overall Progress**: 0/13 items completed
+- **Overall Progress**: 9/13 items completed
 - **Estimated Completion**: Phase 1: 2 hours, Phase 2: 6.5 hours
 
 ## Next Steps
