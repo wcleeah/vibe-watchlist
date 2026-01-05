@@ -26,12 +26,10 @@ export default function RootLayout({
         className="antialiased"
       >
         <PreferencesProvider>
-          <AnalyticsProvider>
-            <div className="min-h-screen bg-white dark:bg-black">
-              {children}
-            </div>
-            <Toaster />
-          </AnalyticsProvider>
+          <div className="min-h-screen bg-white dark:bg-black">
+            {children}
+          </div>
+          <Toaster />
         </PreferencesProvider>
       </body>
     </html>

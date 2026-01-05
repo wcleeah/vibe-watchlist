@@ -3,9 +3,9 @@
 import { useEffect, useRef } from 'react';
 import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import { NavigationTabs } from '@/components/navigation-tabs';
-import { useAnalytics } from '@/lib/analytics-context';
+import { AnalyticsProvider, useAnalytics } from '@/lib/analytics-context';
 
-export default function AnalyticsPage() {
+function AnalyticsPageContent() {
   const { countdown, refreshStats } = useAnalytics();
   const lastFetchRef = useRef(0);
 
@@ -31,5 +31,13 @@ export default function AnalyticsPage() {
         <AnalyticsDashboard />
       </main>
     </div>
+  );
+}
+
+export default function AnalyticsPage() {
+  return (
+    <AnalyticsProvider>
+      <AnalyticsPageContent />
+    </AnalyticsProvider>
   );
 }
