@@ -1,18 +1,11 @@
 'use client';
 
 import { useAnalytics } from '@/lib/analytics-context';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Youtube, Tv, Gamepad2, RefreshCw, TrendingUp, Calendar, Tag, Play } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
 
-const platformIcons = {
-  youtube: Youtube,
-  netflix: Tv,
-  nebula: Tv,
-  twitch: Gamepad2,
-};
+
 
 export function AnalyticsDashboard() {
   const { stats, refreshStats, isLoading } = useAnalytics();
