@@ -1,6 +1,7 @@
 'use client';
 
-import { FileText, CheckCircle, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, CheckCircle, Trash2, Loader2 } from 'lucide-react';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
 import { MetadataDisplay, ThumbnailDisplay } from './metadata-components';
 import { LoadingSkeleton } from './loading-skeleton';
@@ -8,6 +9,9 @@ import { ErrorDisplay } from './error-display';
 import { PreviewCardProps } from './types';
 
 export function PreviewCard({ video, showActions = false, onMarkWatched, onDelete, className }: PreviewCardProps) {
+  const [loadingMarkWatched, setLoadingMarkWatched] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+
   if (video.isLoading) {
     return (
       <div className={`bg-white dark:bg-black rounded-lg border border-black dark:border-white p-6 min-h-[300px] flex items-center justify-center ${className}`}>
@@ -118,11 +122,19 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             </button>
               {!video.isWatched && onMarkWatched && (
                 <button
-                  onClick={() => onMarkWatched(video.id)}
-                  className="h-8 text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                  onClick={async () => {
+                    setLoadingMarkWatched(true);
+                    try {
+                      await onMarkWatched(video.id);
+                    } finally {
+                      setLoadingMarkWatched(false);
+                    }
+                  }}
+                  disabled={loadingMarkWatched}
+                  className="h-8 text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                   title="markWatched()"
                 >
-                  markWatched()
+                  {loadingMarkWatched ? <Loader2 className="w-4 h-4 animate-spin" /> : 'markWatched()'}
                 </button>
               )}
             </div>
@@ -131,11 +143,19 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             {onDelete && (
               <div className="flex justify-center">
                 <button
-                  onClick={() => onDelete(video.id)}
-                  className="h-8 text-xs px-2 bg-red-500 text-white hover:bg-red-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                  onClick={async () => {
+                    setLoadingDelete(true);
+                    try {
+                      await onDelete(video.id);
+                    } finally {
+                      setLoadingDelete(false);
+                    }
+                  }}
+                  disabled={loadingDelete}
+                  className="h-8 text-xs px-2 bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                   title="delete()"
                 >
-                  delete()
+                  {loadingDelete ? <Loader2 className="w-4 h-4 animate-spin" /> : 'delete()'}
                 </button>
               </div>
             )}
