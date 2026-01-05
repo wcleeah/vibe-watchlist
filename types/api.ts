@@ -44,6 +44,6 @@ export interface VideoFilters {
   offset?: number;
 }
 
-export interface VideosApiResponse extends PaginatedResponse<VideoWithTags> {}
+export type VideosApiResponse = PaginatedResponse<VideoWithTags>;
 
-export interface TagsApiResponse extends ApiResponse<Tag[]> {}
+export type TagsApiResponse = ApiResponse<Tag[]>;

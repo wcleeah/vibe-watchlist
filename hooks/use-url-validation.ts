@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
 
 interface ParsedUrl {
@@ -10,24 +9,11 @@ interface ParsedUrl {
   isValid: boolean;
 }
 
-interface UseUrlValidationOptions {
-  debounceMs?: number;
-}
-
 interface UseUrlValidationReturn {
-  parsedUrl: ParsedUrl | null;
-  isValidating: boolean;
-  validationError: string | null;
   validateUrl: (url: string) => ParsedUrl | null;
 }
 
-export function useUrlValidation({
-  debounceMs = 300
-}: UseUrlValidationOptions = {}): UseUrlValidationReturn {
-  const [parsedUrl, setParsedUrl] = useState<ParsedUrl | null>(null);
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
-
+export function useUrlValidation(): UseUrlValidationReturn {
   const validateUrl = (url: string): ParsedUrl | null => {
     if (!url || typeof url !== 'string') {
       return { url, platform: 'youtube' as VideoPlatform, isValid: false };
@@ -42,14 +28,7 @@ export function useUrlValidation({
     }
   };
 
-  useEffect(() => {
-    setValidationError(null);
-  }, [parsedUrl]);
-
   return {
-    parsedUrl,
-    isValidating,
-    validationError,
     validateUrl,
   };
 }
