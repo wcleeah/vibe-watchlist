@@ -53,7 +53,7 @@ export function PreferencesDialog() {
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 top-12 z-50 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4">
+        <div className="absolute right-0 top-12 z-50 w-full max-w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium flex items-center gap-2">
               <Settings className="w-4 h-4" />
@@ -76,14 +76,14 @@ export function PreferencesDialog() {
                 <Palette className="w-3 h-3" />
                 Theme
               </Label>
-              <div className="grid grid-cols-3 gap-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
                 {themeOptions.map((option) => (
                   <Button
                     key={option.value}
                     variant={preferences.theme === option.value ? "default" : "outline"}
                     size="sm"
                     onClick={() => handleThemeChange(option.value)}
-                    className="flex items-center gap-1 h-7 text-xs px-2"
+                    className="flex items-center gap-1 h-7 min-h-[44px] text-xs px-2"
                   >
                     {option.icon}
                     {option.label}
@@ -102,7 +102,7 @@ export function PreferencesDialog() {
                     variant={preferences.compactView ? "default" : "outline"}
                     size="sm"
                     onClick={toggleCompactView}
-                    className="h-6 px-2 text-xs"
+                    className="h-6 min-h-[44px] px-2 text-xs"
                   >
                     {preferences.compactView ? 'On' : 'Off'}
                   </Button>
@@ -114,7 +114,7 @@ export function PreferencesDialog() {
                     variant={preferences.autoPreview ? "default" : "outline"}
                     size="sm"
                     onClick={toggleAutoPreview}
-                    className="h-6 px-2 text-xs"
+                    className="h-6 min-h-[44px] px-2 text-xs"
                   >
                     {preferences.autoPreview ? 'On' : 'Off'}
                   </Button>
@@ -126,7 +126,7 @@ export function PreferencesDialog() {
                     variant={preferences.showThumbnails ? "default" : "outline"}
                     size="sm"
                     onClick={toggleShowThumbnails}
-                    className="h-6 px-2 text-xs"
+                    className="h-6 min-h-[44px] px-2 text-xs"
                   >
                     {preferences.showThumbnails ? 'On' : 'Off'}
                   </Button>
@@ -140,7 +140,7 @@ export function PreferencesDialog() {
                 variant="outline"
                 onClick={handleReset}
                 size="sm"
-                className="w-full flex items-center gap-1 h-7 text-xs"
+                className="w-full flex items-center gap-1 h-7 min-h-[44px] text-xs"
               >
                 <RotateCcw className="w-3 h-3" />
                 Reset to Defaults

@@ -131,7 +131,7 @@ export default function WatchedPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">Watched Videos</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Watched Videos</h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">
             {videos.length} watched videos

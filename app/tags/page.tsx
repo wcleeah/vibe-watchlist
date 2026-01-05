@@ -127,7 +127,7 @@ export default function TagsPage() {
       <main className="container mx-auto px-4 pt-32 pb-12 max-w-4xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Manage Tags</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Manage Tags</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Create, edit, and delete tags for organizing your videos
           </p>

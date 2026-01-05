@@ -52,7 +52,7 @@ export default function Home() {
 
   const header = hasContent ? null : (
     <div className="text-center mb-4">
-      <h1 className="text-3xl font-bold mb-4">Add New Video</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-4">Add New Video</h1>
       <p className="text-gray-600 dark:text-gray-400">
         Paste a video URL from YouTube, Netflix, Nebula, or Twitch
       </p>

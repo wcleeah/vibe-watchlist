@@ -1,85 +1,106 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { VideoIcon, ListVideo, BarChart3, CheckCircle, Tag } from 'lucide-react';
+import { VideoIcon, ListVideo, BarChart3, CheckCircle, Tag, Menu, X } from 'lucide-react';
 import { PreferencesDialog } from '@/components/preferences-dialog';
 
 export function NavigationTabs() {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const closeMenu = () => setIsOpen(false);
+
+  const navLinks = [
+    { href: '/', label: 'Add Video', icon: VideoIcon },
+    { href: '/list', label: 'My List', icon: ListVideo },
+    { href: '/watched', label: 'Watched', icon: CheckCircle },
+    { href: '/tags', label: 'Tags', icon: Tag },
+    { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+  ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-background">
-      <div className="w-full px-4">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex space-x-8">
-            <Link
-              href="/"
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors",
-                pathname === "/"
-                  ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              )}
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-background">
+        <div className="w-full px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Mobile hamburger button */}
+            <button
+              onClick={() => setIsOpen(true)}
+              className="sm:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Open navigation menu"
             >
-              <VideoIcon className="w-4 h-4" />
-              Add Video
-            </Link>
-            <Link
-              href="/list"
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors",
-                pathname === "/list"
-                  ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              )}
-            >
-              <ListVideo className="w-4 h-4" />
-              My List
-            </Link>
-            <Link
-              href="/watched"
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors",
-                pathname === "/watched"
-                  ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              )}
-            >
-              <CheckCircle className="w-4 h-4" />
-              Watched
-            </Link>
-            <Link
-              href="/tags"
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors",
-                pathname === "/tags"
-                  ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              )}
-            >
-              <Tag className="w-4 h-4" />
-              Tags
-            </Link>
-            <Link
-              href="/analytics"
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors",
-                pathname === "/analytics"
-                  ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              )}
-            >
-              <BarChart3 className="w-4 h-4" />
-              Analytics
-            </Link>
-          </div>
+              <Menu className="w-5 h-5" />
+            </button>
 
-          {/* Preferences dialog aligned to the right */}
-          <PreferencesDialog />
+            {/* Desktop navigation */}
+            <div className="hidden sm:flex space-x-8">
+              {navLinks.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors",
+                    pathname === href
+                      ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
+                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Preferences dialog aligned to the right */}
+            <PreferencesDialog />
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Mobile slide-out drawer */}
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 sm:hidden"
+            onClick={closeMenu}
+          />
+          {/* Drawer */}
+          <div className="fixed top-0 left-0 z-50 h-full w-64 bg-background border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out sm:hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold">Navigation</h2>
+              <button
+                onClick={closeMenu}
+                className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label="Close navigation menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="py-4">
+              {navLinks.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={closeMenu}
+                  className={cn(
+                    "flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
+                    pathname === href
+                      ? "text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800"
+                      : "text-gray-700 dark:text-gray-300"
+                  )}
+                >
+                  <Icon className="w-5 h-5" />
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }
