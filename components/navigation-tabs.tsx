@@ -10,7 +10,7 @@ export function NavigationTabs() {
   const pathname = usePathname();
 
   return (
-    <nav className="border-b border-gray-200 mb-8">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-background">
       <div className="w-full px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex space-x-8">

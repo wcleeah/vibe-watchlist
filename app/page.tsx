@@ -56,7 +56,7 @@ export default function Home() {
     <div className="bg-background text-foreground">
       <NavigationTabs />
 
-      <main className="min-h-[calc(100vh-4rem)] container mx-auto px-4 py-12 max-w-6xl flex items-center justify-center">
+      <main className="min-h-screen pt-20 container mx-auto px-4 py-12 max-w-6xl flex items-center justify-center">
         <LayoutManager
           hasContent={hasContent}
           header={header}
