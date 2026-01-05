@@ -172,7 +172,7 @@ export default function WatchedPage() {
                 variant={selectedPlatforms.includes(key) ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePlatformFilter(key)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-20 sm:w-24"
               >
                 <Icon className="w-4 h-4" />
                 {label}

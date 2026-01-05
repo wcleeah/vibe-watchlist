@@ -46,14 +46,14 @@ This plan outlines the complete mobile optimization and metadata enhancement for
 - [x] **Time Estimate**: 15 minutes
 
 ### 1.5 Watchlist Page Controls Optimization
-- [ ] **Objective**: Full-width dropdown, reduced spacing on mobile
-- [ ] **Files**: `app/list/page.tsx`
-- [ ] **Changes**:
+- [x] **Objective**: Full-width dropdown, reduced spacing on mobile
+- [x] **Files**: `app/list/page.tsx`
+- [x] **Changes**:
   - Dropdown wrapper: `w-full sm:w-auto`
   - Row gap: `gap-2 sm:gap-4`
-- [ ] **Testing**: Dropdown spans full width on mobile
-- [ ] **Status**: Pending
-- [ ] **Time Estimate**: 15 minutes
+- [x] **Testing**: Dropdown spans full width on mobile
+- [x] **Status**: Completed
+- [x] **Time Estimate**: 15 minutes
 
 ### 1.6 Watched Page Platform Buttons Equal Width
 - [ ] **Objective**: Consistent button widths across platform filters
