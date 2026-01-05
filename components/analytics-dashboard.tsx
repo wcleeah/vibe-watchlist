@@ -14,17 +14,13 @@ export function AnalyticsDashboard() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3">
-            <h2 className="text-2xl font-bold text-black dark:text-white font-mono">📊 Analytics Dashboard</h2>
-          </div>
-          <Button onClick={refreshStats} disabled={isLoading} variant="outline" className="h-8 text-xs px-2">
+          <h2 className="text-2xl font-bold">Analytics</h2>
+          <Button onClick={refreshStats} disabled={isLoading}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            refresh()
+            Refresh
           </Button>
         </div>
-        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
-          <div className="text-gray-500 font-mono text-sm italic">Loading analytics...</div>
-        </div>
+        <div className="text-center py-8 text-gray-500">Loading analytics...</div>
       </div>
     );
   }
@@ -32,101 +28,89 @@ export function AnalyticsDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3">
-          <h2 className="text-2xl font-bold text-black dark:text-white font-mono">📊 Analytics Dashboard</h2>
-        </div>
-        <Button onClick={refreshStats} disabled={isLoading} variant="outline" className="h-8 text-xs px-2">
+        <h2 className="text-2xl font-bold font-mono">Analytics</h2>
+        <Button onClick={refreshStats} disabled={isLoading} variant="outline">
           <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          refresh()
+          Refresh
         </Button>
       </div>
 
       {/* Overview Stats */}
-      <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <div className="pb-3 border-b border-gray-300 dark:border-gray-600 mb-4">
-          <h3 className="text-lg font-bold text-black dark:text-white font-mono">📊 Analytics Overview</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 border border-gray-200">
+          <div className="text-2xl font-bold font-mono">{stats.totalVideos}</div>
+          <div className="text-sm text-gray-600">Total Videos</div>
         </div>
-        <div className="font-mono text-sm">
-          {'{'}
-          <div className="ml-4 space-y-1">
-            <div><span className="text-purple-600 dark:text-purple-400">"TOTAL_VIDEOS"</span>: <span className="text-green-600 dark:text-green-400">{stats.totalVideos}</span>,</div>
-            <div><span className="text-purple-600 dark:text-purple-400">"WATCHED"</span>: <span className="text-green-600 dark:text-green-400">{stats.watchedVideos}</span>,</div>
-            <div><span className="text-purple-600 dark:text-purple-400">"TO_WATCH"</span>: <span className="text-green-600 dark:text-green-400">{stats.unwatchedVideos}</span>,</div>
-            <div><span className="text-purple-600 dark:text-purple-400">"COMPLETION_RATE"</span>: <span className="text-yellow-600 dark:text-yellow-400">"{stats.watchProgress}%"</span></div>
-          </div>
-          {'}'}
+
+        <div className="p-4 border border-gray-200">
+          <div className="text-2xl font-bold font-mono">{stats.watchedVideos}</div>
+          <div className="text-sm text-gray-600">Watched</div>
+        </div>
+
+        <div className="p-4 border border-gray-200">
+          <div className="text-2xl font-bold font-mono">{stats.unwatchedVideos}</div>
+          <div className="text-sm text-gray-600">To Watch</div>
+        </div>
+
+        <div className="p-4 border border-gray-200">
+          <div className="text-2xl font-bold font-mono">{stats.watchProgress}%</div>
+          <div className="text-sm text-gray-600">Complete</div>
         </div>
       </div>
 
       {/* Platform Statistics */}
-      <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <div className="pb-3 border-b border-gray-300 dark:border-gray-600 mb-4">
-          <h3 className="text-lg font-bold text-black dark:text-white font-mono">🎬 Platform Statistics</h3>
-        </div>
-        <div className="font-mono text-sm">
-          {'{'}
-          <div className="ml-4 space-y-1">
-            {Object.entries(stats.platformStats).map(([platform, stat]) => (
-              <div key={platform}>
-                <span className="text-purple-600 dark:text-purple-400">"{PLATFORM_NAMES[platform as keyof typeof PLATFORM_NAMES] || platform}"</span>: {'{'}
-                <span className="text-green-600 dark:text-green-400 ml-4">"watched": {stat.watched}, "total": {stat.total}, "percentage": "{stat.percentage}%"</span>
-                {'}'}{Object.entries(stats.platformStats).length > 1 ? ',' : ''}
+      <div className="p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold font-mono mb-4">Platform Statistics</h3>
+        <div className="space-y-2">
+          {Object.entries(stats.platformStats).map(([platform, stat]) => (
+            <div key={platform} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-b-0">
+              <span className="font-mono text-sm">{PLATFORM_NAMES[platform as keyof typeof PLATFORM_NAMES] || platform}</span>
+              <div className="flex items-center gap-4 text-sm font-mono">
+                <span>{stat.watched}/{stat.total}</span>
+                <span>{stat.percentage}%</span>
               </div>
-            ))}
-          </div>
-          {'}'}
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Tag Statistics */}
-      <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <div className="pb-3 border-b border-gray-300 dark:border-gray-600 mb-4">
-          <h3 className="text-lg font-bold text-black dark:text-white font-mono">🏷️ Tag Statistics</h3>
-        </div>
-        <div className="font-mono text-sm">
-          {'{'}
-          <div className="ml-4 space-y-1">
-            {Object.entries(stats.tagStats)
-              .sort(([, a], [, b]) => b.total - a.total)
-              .slice(0, 10)
-              .map(([tag, stat]) => (
-                <div key={tag}>
-                  <span className="text-purple-600 dark:text-purple-400">"{tag}"</span>: {'{'}
-                  <span className="text-green-600 dark:text-green-400 ml-4">"watched": {stat.watched}, "total": {stat.total}, "percentage": "{stat.percentage}%"</span>
-                  {'}'}{Object.entries(stats.tagStats).slice(0, 10).length > 1 ? ',' : ''}
+      <div className="p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold font-mono mb-4">Tag Statistics</h3>
+        <div className="space-y-1">
+          {Object.entries(stats.tagStats)
+            .sort(([, a], [, b]) => b.total - a.total)
+            .slice(0, 10)
+            .map(([tag, stat]) => (
+              <div key={tag} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-b-0">
+                <span className="font-mono text-sm">#{tag}</span>
+                <div className="flex items-center gap-4 text-sm font-mono">
+                  <span>{stat.watched}/{stat.total}</span>
+                  <span>{stat.percentage}%</span>
                 </div>
-              ))}
-          </div>
-          {'}'}
+              </div>
+            ))}
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <div className="pb-3 border-b border-gray-300 dark:border-gray-600 mb-4">
-          <h3 className="text-lg font-bold text-black dark:text-white font-mono">📈 Recent Activity</h3>
-        </div>
-        <div className="font-mono text-sm">
+      <div className="p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold font-mono mb-4">Recent Activity</h3>
+        <div className="space-y-1">
           {stats.recentActivity.length === 0 ? (
-            <div className="text-gray-500 italic">No recent activity</div>
+            <div className="text-center py-4 text-gray-500 font-mono text-sm">No recent activity</div>
           ) : (
-            <>
-              {'['}
-              <div className="ml-4 space-y-1">
-                {stats.recentActivity.map((activity, index) => (
-                  <div key={`${activity.id}-${activity.action}`}>
-                    {'{'}
-                    <div className="ml-4 space-y-1">
-                      <div><span className="text-purple-600 dark:text-purple-400">"title"</span>: <span className="text-green-600 dark:text-green-400">"{activity.title}"</span>,</div>
-                      <div><span className="text-purple-600 dark:text-purple-400">"platform"</span>: <span className="text-green-600 dark:text-green-400">"{activity.platform}"</span>,</div>
-                      <div><span className="text-purple-600 dark:text-purple-400">"watchedAt"</span>: <span className="text-yellow-600 dark:text-yellow-400">"{new Date(activity.watchedAt).toLocaleDateString()}"</span></div>
-                    </div>
-                    {'}'}{index < stats.recentActivity.length - 1 ? ',' : ''}
+            stats.recentActivity.map((activity) => (
+              <div key={`${activity.id}-${activity.action}`} className="flex items-center justify-between p-2 border-b border-gray-100 last:border-b-0">
+                <div className="flex-1">
+                  <div className="font-mono text-sm">{activity.title}</div>
+                  <div className="text-xs text-gray-500 font-mono">
+                    Watched {new Date(activity.watchedAt).toLocaleDateString()}
                   </div>
-                ))}
+                </div>
+                <span className="text-sm font-mono">{activity.platform}</span>
               </div>
-              {']'}
-            </>
+            ))
           )}
         </div>
       </div>
