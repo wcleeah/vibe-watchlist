@@ -81,10 +81,10 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                 <div className="text-sm">
                   {'{'}
                   <div className="ml-4 space-y-1">
-                    <div><span className="text-purple-600 dark:text-purple-400">&quot;PLATFORM&quot;</span>: <span className="text-green-600 dark:text-green-400">&quot;{PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}&quot;</span>,</div>
-                    {video.id && (
+                    {video.id != null && video.id != undefined && (
                       <div><span className="text-cyan-600 dark:text-cyan-400">&quot;ID&quot;</span>: <span className="text-cyan-600 dark:text-cyan-400">{video.id}</span>,</div>
                     )}
+                    <div><span className="text-purple-600 dark:text-purple-400">&quot;PLATFORM&quot;</span>: <span className="text-green-600 dark:text-green-400">&quot;{PLATFORM_NAMES[video.platform as keyof typeof PLATFORM_NAMES] || video.platform}&quot;</span>,</div>
                     {video.tags && video.tags.length > 0 && (
                       <div><span className="text-purple-600 dark:text-purple-400">&quot;TAGS&quot;</span>: <span className="text-yellow-600 dark:text-yellow-400">[{video.tags.map(tag => `&quot;${tag.name}&quot;`).join(', ')}]</span></div>
                     )}
@@ -138,7 +138,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
                   className="h-8 text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                   title={video.isWatched ? "un-watch()" : "markWatched()"}
                 >
-                  {loadingMarkWatched ? <Loader2 className="w-4 h-4 animate-spin" /> : (video.isWatched ? 'un-watch()' : 'markWatched()')}
+                  {loadingMarkWatched ? <Loader2 className="w-4 h-4 animate-spin" /> : (video.isWatched ? 'unWatch()' : 'markWatched()')}
                 </button>
               )}
             </div>

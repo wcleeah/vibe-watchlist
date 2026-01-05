@@ -30,6 +30,7 @@ const AnalyticsContext = createContext<{
   stats: WatchStats | null;
   refreshStats: () => Promise<void>;
   isLoading: boolean;
+  countdown: number;
 } | null>(null);
 
 export function useAnalytics() {
@@ -47,6 +48,7 @@ interface AnalyticsProviderProps {
 export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
   const [stats, setStats] = useState<WatchStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [countdown, setCountdown] = useState(15);
 
   const refreshStats = async () => {
     setIsLoading(true);
@@ -140,8 +142,26 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     refreshStats();
   }, []);
 
+  // Polling every 15 seconds with countdown
+  useEffect(() => {
+    // Start countdown
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => prev > 1 ? prev - 1 : 15);
+    }, 1000);
+
+    // Polling
+    const pollInterval = setInterval(() => {
+      refreshStats();
+    }, 15000);
+
+    return () => {
+      clearInterval(countdownInterval);
+      clearInterval(pollInterval);
+    };
+  }, []);
+
   return (
-    <AnalyticsContext.Provider value={{ stats, refreshStats, isLoading }}>
+    <AnalyticsContext.Provider value={{ stats, refreshStats, isLoading, countdown }}>
       {children}
     </AnalyticsContext.Provider>
   );

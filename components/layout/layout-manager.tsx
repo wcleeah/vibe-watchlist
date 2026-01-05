@@ -33,9 +33,11 @@ export function LayoutManager({ hasContent, header, form, preview, className }: 
   return (
     <div className={`min-h-screen flex flex-col ${className}`}>
       {/* Header */}
-      <div className="text-center py-8">
-        {header}
-      </div>
+      {header && (
+        <div className="text-center py-8">
+          {header}
+        </div>
+      )}
 
       <div className="flex-1 flex items-center justify-center">
         <SplitLayout

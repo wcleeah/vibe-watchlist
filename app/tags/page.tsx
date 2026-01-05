@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NavigationTabs } from '@/components/navigation-tabs';
 
 interface Tag {
   id: number;
@@ -122,6 +123,7 @@ export default function TagsPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <NavigationTabs />
       <main className="container mx-auto px-4 pt-32 pb-12 max-w-4xl">
         {/* Header */}
         <div className="mb-8">

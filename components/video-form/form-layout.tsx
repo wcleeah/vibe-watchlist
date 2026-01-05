@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { UrlInput } from './url-input';
 import { TagInput } from './tag-input';
 import { SubmitButton } from './submit-button';
+import { Button } from '@/components/ui/button';
 import { Tag } from '@/types/tag';
 
 interface FormLayoutProps {
@@ -26,6 +27,7 @@ interface FormLayoutProps {
   isLoadingTags: boolean;
   tagError: string | null;
   onAddTag: (tagName: string) => Promise<void>;
+  onReset?: () => void;
 }
 
 export function FormLayout({
@@ -47,6 +49,7 @@ export function FormLayout({
   isLoadingTags,
   tagError,
   onAddTag,
+  onReset,
 }: FormLayoutProps) {
   const [isAdding, setIsAdding] = useState(false);
 
@@ -120,14 +123,25 @@ export function FormLayout({
         />
       )}
 
-      {/* Submit Button - show only if showTags */}
-      {showTags && (
-        <SubmitButton
-          onClick={handleAddVideo}
-          isLoading={false}
-          disabled={!hasValidUrl}
-        />
-      )}
+       {/* Buttons - show only if showTags */}
+       {showTags && (
+         <div className="flex gap-2">
+           <Button
+             type="button"
+             variant="secondary"
+             className="flex-1"
+             onClick={onReset}
+           >
+             Reset
+           </Button>
+           <SubmitButton
+             onClick={handleAddVideo}
+             isLoading={false}
+             disabled={!hasValidUrl}
+             className="flex-1"
+           />
+         </div>
+       )}
     </div>
   );
 }

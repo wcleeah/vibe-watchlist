@@ -196,7 +196,9 @@ export default function ListPage() {
   const handleDelete = async (id: number) => {
     try {
       const response = await fetch(`/api/videos/${id}`, {
-        method: 'DELETE',
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isWatched: true }),
       });
 
       if (response.ok) {

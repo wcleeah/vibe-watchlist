@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { VideoList } from '@/components/videos/video-list';
+import { NavigationTabs } from '@/components/navigation-tabs';
 import { VideoWithTags as Video } from '@/types/video';
 
 export default function WatchedPage() {
@@ -80,7 +81,7 @@ export default function WatchedPage() {
   const handleMarkWatched = async (id: number) => {
     try {
       const response = await fetch(`/api/videos/${id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isWatched: false }),
       });
@@ -125,6 +126,7 @@ export default function WatchedPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <NavigationTabs />
       <main className="container mx-auto px-4 pt-32 pb-12 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
