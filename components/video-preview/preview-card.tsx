@@ -94,7 +94,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             </a>
             <button
               onClick={() => navigator.clipboard.writeText(video.url)}
-              className="h-8 text-xs px-2 bg-accent text-accent-foreground hover:bg-accent/80 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+              className="h-8 text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
               title="copyUrl()"
             >
               copyUrl()
@@ -111,7 +111,7 @@ export function PreviewCard({ video, showActions = false, onMarkWatched, onDelet
             {!video.isWatched && onMarkWatched && (
               <button
                 onClick={() => onMarkWatched(video.id)}
-                className="h-8 text-xs px-2 bg-accent text-accent-foreground hover:bg-accent/80 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                className="h-8 text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                 title="markWatched()"
               >
                 markWatched()
