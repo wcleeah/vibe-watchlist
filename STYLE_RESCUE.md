@@ -12,12 +12,12 @@
 - [x] **Fix navbar overlap**:
   - [x] My List page: Change `py-12` to `pt-16 pb-12` in `app/list/page.tsx`
   - [x] Analytics page: Change `py-12` to `pt-16 pb-12` in `app/analytics/page.tsx`
-- [ ] **Fix initial form display**:
-  - [ ] Change `showTags={true}` to `showTags={hasContent}` in `app/page.tsx`
-- [ ] **Fix split layout state management**:
-  - [ ] Consolidate URL state: Move `useVideoForm` from `FormLayout` to `page.tsx`
-  - [ ] Pass URL state and handlers as props to `FormLayout`
-  - [ ] This enables `hasContent` to properly track URL input and trigger split
+- [x] **Fix initial form display**:
+  - [x] Change `showTags={true}` to `showTags={hasContent}` in `app/page.tsx`
+- [x] **Fix split layout state management**:
+  - [x] Consolidate URL state: Move `useVideoForm` from `FormLayout` to `page.tsx`
+  - [x] Pass URL state and handlers as props to `FormLayout`
+  - [x] This enables `hasContent` to properly track URL input and trigger split
 - [ ] **Verify fixes**: Test split behavior - URL entry should immediately show two-section layout
 
 ### **Phase 6.1: Foundation - Black/White Design System** - PENDING
@@ -97,7 +97,7 @@
 
 ## ✅ **Progress Tracking**
 
-**Completed Tasks**: 2/25
+**Completed Tasks**: 4/25
 **Current Phase**: 6.0 (Critical Layout & State Bug Fixes)
 
 ---

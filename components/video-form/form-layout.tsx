@@ -6,15 +6,15 @@ import { SubmitButton } from './submit-button';
 import { useVideoForm } from '@/hooks/use-video-form';
 
 interface FormLayoutProps {
+  url: string;
+  setUrl: (url: string) => void;
   onVideoAdded?: () => void;
   className?: string;
   showTags?: boolean;
 }
 
-export function FormLayout({ onVideoAdded, className, showTags = true }: FormLayoutProps) {
+export function FormLayout({ url, setUrl, onVideoAdded, className, showTags = true }: FormLayoutProps) {
   const {
-    url,
-    setUrl,
     parsedUrl,
     selectedTags,
     setTagInput,

@@ -9,6 +9,7 @@ import { useVideoForm } from '@/hooks/use-video-form';
 export default function Home() {
   const {
     url,
+    setUrl,
     parsedUrl,
     metadata,
     selectedTags,
@@ -32,7 +33,7 @@ export default function Home() {
     </div>
   );
 
-  const form = <FormLayout onVideoAdded={() => {}} showTags={true} />;
+  const form = <FormLayout url={url} setUrl={setUrl} onVideoAdded={() => {}} showTags={hasContent} />;
 
   const preview = hasContent ? (
     <PreviewCard
