@@ -27,15 +27,14 @@ export default function RootLayout({
         className="antialiased"
       >
         <PreferencesProvider>
+          <Toaster
+            duration={5000}
+            closeButton={true}
+            richColors={true}
+          />
           <div className="min-h-screen bg-white dark:bg-black">
             {children}
           </div>
-            <Toaster
-              position="top-center"
-              duration={5000}
-              closeButton={true}
-              richColors={true}
-            />
         </PreferencesProvider>
       </body>
     </html>
