@@ -9,8 +9,9 @@ This file contains guidelines and commands for coding agents working on the vide
 - When you need to interact with the db directly, use `neon` tools.
 
 ## After feature development
-- Periordically commit to git
+- Periodically commit to git
 - Update PLAN.md and STYLE.md for any changes
+- Run `bun run lint` and `bun run build` to ensure code quality
 
 ## Build & Development Commands
 
@@ -34,17 +35,17 @@ bun run start
 
 ### Code Quality
 ```bash
-# Run ESLint
+# Run ESLint (includes TypeScript checking)
 bun run lint
 
-# Check TypeScript types (via Next.js build)
+# Build also checks TypeScript types
 bun run build
 ```
 
 ### Testing
-No tests are currently set up. When added:
+No tests currently set up. When added:
 ```bash
-# Run all tests (using Vitest or similar)
+# Run all tests (framework TBD - Vitest recommended)
 bun run test
 
 # Run single test file
@@ -54,23 +55,24 @@ bun run test -- file.test.ts
 ## Code Style Guidelines
 
 ### TypeScript
-- **Strict mode**: Enabled for type safety
+- **Strict mode**: Enabled for type safety (`"strict": true` in tsconfig.json)
 - **Interface vs Type**: Use `interface` for extensible objects, `type` for unions/primitives
 - **Explicit returns**: Required for function parameters and return types
-- **Generics**: Use descriptive names (TVideo, TPlatform)
+- **Generics**: Use descriptive names (TVideo, TPlatform, TMetadata)
+- **Path mapping**: Use `@/*` imports for clean relative paths
 
 ### React/Next.js
-- **App Router**: Use exclusively
-- **Server Components**: Default choice
-- **Client Components**: Only for interactivity/browser APIs
-- **Custom Hooks**: Extract shared logic
-- **Data Fetching**: Server Components for initial data
+- **App Router**: Use exclusively (no pages router)
+- **Server Components**: Default choice for data fetching and static content
+- **Client Components**: Only for interactivity/browser APIs (`'use client'` directive)
+- **Custom Hooks**: Extract shared logic into reusable hooks
+- **Data Fetching**: Server Components for initial data, client for user interactions
 
 ### Database (Drizzle ORM + Neon)
-- **Schema**: Define in `lib/db/schema.ts`
-- **Migrations**: Use Drizzle Kit
-- **Connection**: Use `DATABASE_URL` env var
-- **Queries**: Use prepared statements
+- **Schema**: Define in `lib/db/schema.ts` with proper relations
+- **Migrations**: Use Drizzle Kit for schema changes
+- **Connection**: Use `DATABASE_URL` env var from `.env.local`
+- **Queries**: Use prepared statements and relations for type safety
 
 Schema example:
 ```typescript
@@ -87,70 +89,83 @@ export const videos = pgTable('videos', {
 ```
 
 ### Styling (Tailwind CSS v4 + Shadcn/ui)
-- **Component Library**: Use Shadcn/ui as base
-- **Composition**: Build UIs by composing components
-- **Responsive**: Mobile-first
-- **Dark Mode**: Support both themes
+- **Component Library**: Use Shadcn/ui as base (components.json configured)
+- **Composition**: Build UIs by composing components, avoid custom CSS
+- **Responsive**: Mobile-first approach with `sm:`, `md:`, `lg:` breakpoints
+- **Dark Mode**: Support both themes using `next-themes`
+- **Developer-focused**: Use monospace fonts (JetBrains Mono) for technical content
 
 ### Imports
-Order: React, third-party, local (utilities, components, types)
+Order: React → third-party → local utilities → components → types
+```typescript
+import React from 'react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { extractMetadata } from '@/lib/utils/metadata-extractor';
+import type { Video } from '@/types/video';
+```
 
 ### Naming Conventions
-- **Components**: PascalCase (VideoCard)
-- **Functions/Variables**: camelCase (getVideos, videoList)
-- **Constants**: SCREAMING_SNAKE_CASE (API_TIMEOUT)
-- **Files**: kebab-case (video-card.tsx)
-- **Database**: snake_case (is_watched)
+- **Components**: PascalCase (VideoCard, AddVideoForm)
+- **Functions/Variables**: camelCase (getVideos, videoList, handleSubmit)
+- **Constants**: SCREAMING_SNAKE_CASE (API_TIMEOUT, MAX_RETRIES)
+- **Files**: kebab-case (video-card.tsx, metadata-extractor.ts)
+- **Database**: snake_case columns (is_watched, created_at)
+- **Hooks**: camelCase with 'use' prefix (useVideoMetadata)
 
 ### Error Handling
-- **API Routes**: Return proper HTTP status codes
-- **Client**: Use error boundaries
-- **Database**: Wrap operations in transactions
+- **API Routes**: Return proper HTTP status codes and JSON error responses
+- **Client**: Use try/catch blocks, display user-friendly error messages
+- **Database**: Wrap operations in transactions, handle connection errors
+- **Loading States**: Show skeleton screens and loading indicators
+- **Network Errors**: Graceful fallbacks for failed API calls
 
 ### File Structure
 ```
 ├── app/                    # Next.js App Router
-│   ├── api/videos/         # API routes
-│   ├── videos/             # Video-related pages
-│   └── layout.tsx
+│   ├── api/videos/         # API routes (GET, POST /api/videos)
+│   ├── list/               # Video list page
+│   ├── layout.tsx          # Root layout with providers
+│   └── page.tsx            # Home page (add video form)
 ├── components/
 │   ├── ui/                 # Shadcn/ui components
-│   └── videos/             # Video-specific components
+│   ├── videos/             # Video-specific components
+│   └── navigation-tabs.tsx # App navigation
 ├── lib/
 │   ├── db/                 # Database schemas & connections
-│   ├── api/                # API utilities
+│   ├── api/                # API utilities (future)
 │   └── utils/              # General utilities
-└── types/                  # TypeScript type definitions
+├── hooks/                  # Custom React hooks
+├── types/                  # TypeScript type definitions
+└── app/                    # App-specific pages
 ```
 
 ### ESLint Configuration
-- **Base**: Next.js recommended rules
-- **Tab Width**: 4 spaces
-- **Rules**: No unused vars, consistent imports, no console in prod
-
-### Prettier Configuration
-- **Tab Width**: 4 spaces
-- **Quotes**: Double for JSX, single for JS
-- **Trailing Commas**: ES5 style
+- **Base**: Next.js recommended rules with TypeScript support
+- **Config**: `eslint.config.mjs` with flat config format
+- **Rules**: No unused vars, consistent imports, no console in production
+- **Integration**: Runs via `bun run lint`
 
 ### Database Migrations
 ```bash
-# Generate migration
+# Generate migration from schema changes
 bunx drizzle-kit generate
 
-# Push schema changes
+# Push schema changes to database
 bunx drizzle-kit push
 
-# Check status
+# Check migration status
 bunx drizzle-kit check
 ```
 
 ### Environment Variables
-- `DATABASE_URL`: Neon connection string
+- `DATABASE_URL`: Neon PostgreSQL connection string (required)
 
 ### Additional Notes
-- No Cursor rules (.cursor/rules/ or .cursorrules) or Copilot rules (.github/copilot-instructions.md) found.
-- Focus on clean code for YouTube, Netflix, Nebula, Twitch URL handling.
-- Deploy via Vercel or similar platforms.
-- After code changes, always run `bun run lint` and `bun run build` to check quality.</content>
+- No Cursor rules (.cursor/rules/ or .cursorrules) or Copilot rules found
+- Platform support: YouTube, Netflix, Nebula, Twitch URL handling
+- Deploy via Vercel or similar platforms
+- Use Bun for all package management and scripts
+- Follow developer-focused UI patterns from STYLE.md
+- Always run `bun run lint` and `bun run build` after code changes</content>
 <parameter name="filePath">AGENTS.md

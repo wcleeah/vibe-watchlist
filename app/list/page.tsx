@@ -197,7 +197,7 @@ export default function ListPage() {
     <div className="min-h-screen bg-background text-foreground">
       <NavigationTabs />
 
-      <main className="container mx-auto px-4 py-12 max-w-6xl">
+      <main className="container mx-auto px-4 pt-16 pb-12 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
