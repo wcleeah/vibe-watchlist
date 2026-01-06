@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { VideoPlatform } from '@/lib/utils/url-parser';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
 import { Youtube, Tv, Gamepad2, Globe } from 'lucide-react';
+import { PlatformService } from '@/lib/services/platform-service';
 
 interface PlatformIconProps {
   platform: VideoPlatform;
@@ -11,13 +13,13 @@ interface PlatformIconProps {
 }
 
 export function PlatformIcon({ platform, size = 'md', className }: PlatformIconProps) {
-  const iconMap = {
+  const [iconMap, setIconMap] = useState<Record<string, any>>({
     youtube: Youtube,
     netflix: Tv,
     nebula: Tv,
     twitch: Gamepad2,
     unknown: Globe,
-  };
+  });
 
   const sizeClass = {
     sm: 'w-4 h-4',
@@ -25,13 +27,48 @@ export function PlatformIcon({ platform, size = 'md', className }: PlatformIconP
     lg: 'w-6 h-6',
   }[size];
 
-  const IconComponent = iconMap[platform];
+  useEffect(() => {
+    const loadIcons = async () => {
+      try {
+        const platformIcons = await PlatformService.getPlatformIcons();
+        const dynamicIconMap = { ...iconMap };
+
+        // Map platform icon names to components
+        Object.entries(platformIcons).forEach(([platformId, iconName]) => {
+          const iconComponent = getIconComponent(iconName);
+          if (iconComponent) {
+            dynamicIconMap[platformId] = iconComponent;
+          }
+        });
+
+        setIconMap(dynamicIconMap);
+      } catch (error) {
+        console.error('Failed to load platform icons:', error);
+      }
+    };
+
+    loadIcons();
+  }, []);
+
+  const IconComponent = iconMap[platform] || Globe;
 
   return (
     <div className={`inline-flex items-center justify-center ${sizeClass} ${className || ''}`}>
       <IconComponent />
     </div>
   );
+}
+
+// Helper function to get icon component from string name
+function getIconComponent(iconName: string) {
+  const iconMap: Record<string, any> = {
+    youtube: Youtube,
+    tv: Tv,
+    gamepad2: Gamepad2,
+    globe: Globe,
+    video: Globe, // fallback
+  };
+  return iconMap[iconName.toLowerCase()] || Globe;
 }
 
 interface PlatformBadgeProps {
@@ -41,13 +78,34 @@ interface PlatformBadgeProps {
 }
 
 export function PlatformBadge({ platform, variant = 'default', className }: PlatformBadgeProps) {
-  const colors = {
+  const [colors, setColors] = useState<Record<string, string>>({
     youtube: 'bg-red-100 text-red-800 border-red-200',
     netflix: 'bg-red-100 text-red-800 border-red-200',
     nebula: 'bg-purple-100 text-purple-800 border-purple-200',
     twitch: 'bg-purple-100 text-purple-800 border-purple-200',
     unknown: 'bg-gray-100 text-gray-800 border-gray-200',
-  };
+  });
+
+  useEffect(() => {
+    const loadColors = async () => {
+      try {
+        const platformColors = await PlatformService.getPlatformColors();
+        const dynamicColors: Record<string, string> = {};
+
+        Object.entries(platformColors).forEach(([platformId, color]) => {
+          // Generate Tailwind classes from hex color
+          // For simplicity, map to basic colors - could be enhanced
+          dynamicColors[platformId] = getColorClass(color);
+        });
+
+        setColors(prevColors => ({ ...prevColors, ...dynamicColors }));
+      } catch (error) {
+        console.error('Failed to load platform colors:', error);
+      }
+    };
+
+    loadColors();
+  }, []);
 
   const colorClass = colors[platform] || 'bg-gray-100 text-gray-800 border-gray-200';
 
@@ -59,6 +117,18 @@ export function PlatformBadge({ platform, variant = 'default', className }: Plat
       {PLATFORM_NAMES[platform]}
     </span>
   );
+}
+
+// Helper function to generate Tailwind color classes from hex
+function getColorClass(hexColor: string): string {
+  // Simple mapping for common colors - could be enhanced
+  const colorMap: Record<string, string> = {
+    '#dc2626': 'bg-red-100 text-red-800 border-red-200',     // red-600
+    '#7c3aed': 'bg-purple-100 text-purple-800 border-purple-200', // purple-600
+    '#6b7280': 'bg-gray-100 text-gray-800 border-gray-200',   // gray-500
+  };
+
+  return colorMap[hexColor] || 'bg-gray-100 text-gray-800 border-gray-200';
 }
 
 interface PlatformThemeProps {

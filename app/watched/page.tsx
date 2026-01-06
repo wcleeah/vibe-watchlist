@@ -1,13 +1,27 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, X, Youtube, Tv, Gamepad2, Tag, Globe } from 'lucide-react';
+import { Search, Filter, X, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { VideoList } from '@/components/videos/video-list';
 import { NavigationTabs } from '@/components/navigation-tabs';
 import { VideoWithTags as Video } from '@/types/video';
+import { PlatformService } from '@/lib/services/platform-service';
+import { Youtube, Tv, Gamepad2, Globe } from 'lucide-react';
+
+// Helper function to get icon component from string
+const getIconComponent = (iconName: string) => {
+  const iconMap: Record<string, any> = {
+    youtube: Youtube,
+    tv: Tv,
+    gamepad2: Gamepad2,
+    globe: Globe,
+    video: Globe, // fallback
+  };
+  return iconMap[iconName.toLowerCase()] || Globe;
+};
 
 export default function WatchedPage() {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -124,13 +138,33 @@ export default function WatchedPage() {
     );
   };
 
-  const platforms = [
-    { key: 'youtube', label: 'YouTube', icon: Youtube, color: 'hover:bg-red-50 dark:hover:bg-red-950' },
-    { key: 'netflix', label: 'Netflix', icon: Tv, color: 'hover:bg-red-50 dark:hover:bg-red-950' },
-    { key: 'nebula', label: 'Nebula', icon: Gamepad2, color: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
-    { key: 'twitch', label: 'Twitch', icon: Tv, color: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
-    { key: 'unknown', label: 'Unknown', icon: Globe, color: 'hover:bg-gray-50 dark:hover:bg-gray-950' },
-  ];
+  const [platforms, setPlatforms] = useState<Array<{
+    key: string;
+    label: string;
+    icon: any;
+    color: string;
+  }>>([]);
+
+  // Load platforms dynamically
+  useEffect(() => {
+    const loadPlatforms = async () => {
+      try {
+        const platformFilters = await PlatformService.getPlatformFilters();
+        const platformData = platformFilters.map(p => ({
+          key: p.key,
+          label: p.label,
+          icon: getIconComponent(p.icon),
+          color: p.color,
+        }));
+        setPlatforms(platformData);
+      } catch (error) {
+        console.error('Failed to load platforms:', error);
+        // Fallback to empty array
+        setPlatforms([]);
+      }
+    };
+    loadPlatforms();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">

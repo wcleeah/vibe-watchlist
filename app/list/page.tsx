@@ -7,8 +7,22 @@ import { Video } from '@/lib/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, X, Youtube, Tv, Gamepad2, Globe } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { PlatformService } from '@/lib/services/platform-service';
+import { Youtube, Tv, Gamepad2, Globe } from 'lucide-react';
+
+// Helper function to get icon component from string
+const getIconComponent = (iconName: string) => {
+  const iconMap: Record<string, any> = {
+    youtube: Youtube,
+    tv: Tv,
+    gamepad2: Gamepad2,
+    globe: Globe,
+    video: Globe, // fallback
+  };
+  return iconMap[iconName.toLowerCase()] || Globe;
+};
 
 interface Tag {
   id: number;
@@ -36,6 +50,14 @@ export default function ListPage() {
   const [selectedVideoIds, setSelectedVideoIds] = useState<number[]>([]);
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
+
+  // Platform state
+  const [platforms, setPlatforms] = useState<Array<{
+    key: string;
+    label: string;
+    icon: any;
+    color: string;
+  }>>([]);
 
   const fetchVideos = useCallback(async () => {
     try {
@@ -84,6 +106,26 @@ export default function ListPage() {
     fetchVideos();
     fetchTags();
   }, [fetchVideos, selectedTagIds]);
+
+  // Load platforms dynamically
+  useEffect(() => {
+    const loadPlatforms = async () => {
+      try {
+        const platformFilters = await PlatformService.getPlatformFilters();
+        const platformData = platformFilters.map(p => ({
+          key: p.key,
+          label: p.label,
+          icon: getIconComponent(p.icon),
+          color: p.color,
+        }));
+        setPlatforms(platformData);
+      } catch (error) {
+        console.error('Failed to load platforms:', error);
+        setPlatforms([]);
+      }
+    };
+    loadPlatforms();
+  }, []);
 
   const handleTagFilter = (tagId: number) => {
     setSelectedTagIds(prev =>
@@ -347,13 +389,7 @@ export default function ListPage() {
               Platforms:
             </div>
             <div className="flex flex-wrap gap-2">
-               {[
-                 { key: 'youtube', label: 'YouTube', icon: Youtube, color: 'hover:bg-red-50 dark:hover:bg-red-950' },
-                 { key: 'netflix', label: 'Netflix', icon: Tv, color: 'hover:bg-red-50 dark:hover:bg-red-950' },
-                 { key: 'nebula', label: 'Nebula', icon: Tv, color: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
-                 { key: 'twitch', label: 'Twitch', icon: Gamepad2, color: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
-                 { key: 'unknown', label: 'Unknown', icon: Globe, color: 'hover:bg-gray-50 dark:hover:bg-gray-950' },
-               ].map(({ key, label, icon: Icon, color }) => (
+               {platforms.map(({ key, label, icon: Icon, color }) => (
                 <Button
                   key={key}
                   variant={selectedPlatforms.includes(key) ? "default" : "outline"}
