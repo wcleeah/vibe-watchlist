@@ -1,7 +1,8 @@
 import { MetadataExtractionResponse, MetadataSuggestion, AIMetadataConfig, MetadataCacheEntry, GoogleSearchResult, HtmlMetadata } from '@/lib/types/ai-metadata';
 import { AIService } from '@/lib/services/ai-service';
-import { MetadataService } from '@/lib/services/metadata-service';
-import { VideoPlatform, parseVideoUrl } from '@/lib/utils/url-parser';
+import { SharedMetadataService } from '@/lib/services/shared-metadata-service';
+import { MetascraperService } from '@/lib/services/metascraper-service';
+import { parseVideoUrl } from '@/lib/utils/url-parser';
 import { db } from '@/lib/db';
 import { aiMetadataCache, metadataSuggestions } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -19,87 +20,192 @@ export class AIMetadataService {
     this.aiService = new AIService();
   }
 
-  /**
-   * Main entry point for metadata extraction with AI enhancement
-   */
   async extractMetadata(url: string): Promise<MetadataExtractionResponse> {
     try {
       // Check cache first
       const cached = await this.getCachedResult(url);
       if (cached) {
-      return {
-        success: true,
-        suggestions: cached.aiAnalysis,
-        fallback: {
-          title: cached.extractedMetadata?.title,
-          thumbnailUrl: cached.extractedMetadata?.ogImage || cached.extractedMetadata?.twitterImage,
-        },
-      };
+        return {
+          success: true,
+          suggestions: cached.aiAnalysis,
+          fallback: {
+            title: cached.extractedMetadata?.title,
+            thumbnailUrl: cached.extractedMetadata?.ogImage || cached.extractedMetadata?.twitterImage,
+          },
+        };
       }
 
-      // Detect platform
+      // Detect platform and route accordingly
       const parsed = parseVideoUrl(url);
       const platform = parsed.platform;
+      const strategy = SharedMetadataService.getPlatformStrategy(platform);
 
-      // Parallel processing: search + fetch HTML + basic extraction
-      const [searchResults, htmlContent, basicMetadata] = await Promise.allSettled([
-        this.performGoogleSearch(url),
-        this.fetchHtmlContent(url),
-        MetadataService.fetchMetadata(url, platform as VideoPlatform),
-      ]);
-
-      // Extract data from results
-      const googleResults = searchResults.status === 'fulfilled' ? searchResults.value : [];
-      const html = htmlContent.status === 'fulfilled' ? htmlContent.value : '';
-      const fallback = basicMetadata.status === 'fulfilled' ? basicMetadata.value : { title: undefined, thumbnailUrl: undefined };
-
-      // Perform AI analysis
-      const suggestions = await this.performAIAnalysis(url, googleResults, html, fallback);
-
-      // Cache the results
-      await this.cacheResults(url, googleResults, html, suggestions);
-
-      // Track suggestions for analytics
-      await this.trackSuggestions(url, suggestions);
-
-      return {
-        success: true,
-        suggestions,
-        fallback: {
-          title: fallback?.title,
-          thumbnailUrl: fallback?.thumbnailUrl,
-        },
-      };
+      switch (strategy) {
+        case 'official':
+          return this.handleOfficialPlatform(url, platform);
+        case 'ai':
+          return this.handleAIPlatform(url, platform);
+        default:
+          return this.handleFallbackPlatform(url, platform);
+      }
 
     } catch (error) {
       console.error('AI metadata extraction failed:', error);
+      return {
+        success: false,
+        suggestions: [],
+        error: `Failed to extract metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
 
-      // Fallback to basic extraction
-      try {
-        const parsed = parseVideoUrl(url);
-        const basicMetadata = await MetadataService.fetchMetadata(url, parsed.platform as VideoPlatform);
+  /**
+   * Handle platforms with official APIs (YouTube, Twitch)
+   */
+  private async handleOfficialPlatform(url: string, platform: string): Promise<MetadataExtractionResponse> {
+    try {
+      let metadata;
 
-        return {
-          success: true,
-          suggestions: [{
-            title: basicMetadata.title || 'Untitled Video',
-            thumbnailUrl: basicMetadata.thumbnailUrl || undefined,
-            platform: parsed.platform,
-            confidence: 0.3,
-            reasoning: 'Fallback to basic extraction due to AI service failure',
-          }],
-          fallback: {
-            title: basicMetadata.title || undefined,
-            thumbnailUrl: basicMetadata.thumbnailUrl || undefined,
-          },
-        };
-      } catch (fallbackError) {
-        return {
-          success: false,
-          suggestions: [],
-          error: `Failed to extract metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        };
+      if (platform === 'youtube') {
+        metadata = await SharedMetadataService.extractYouTubeMetadata(url);
+      } else if (platform === 'twitch') {
+        metadata = await SharedMetadataService.extractTwitchMetadata(url);
+      } else {
+        throw new Error(`Unsupported official platform: ${platform}`);
       }
+
+      return {
+        success: true,
+        suggestions: [{
+          title: metadata.title || 'Untitled Video',
+          thumbnailUrl: metadata.thumbnailUrl || undefined,
+          platform,
+          confidence: 1.0, // Official API = perfect confidence
+          reasoning: `Official ${platform} API`
+        }],
+        fallback: {
+          title: metadata.title || undefined,
+          thumbnailUrl: metadata.thumbnailUrl || undefined,
+        }
+      };
+    } catch (error) {
+      // Official API failed - fallback to AI
+      console.warn(`Official ${platform} API failed, falling back to AI:`, error);
+      return this.handleAIPlatform(url, platform);
+    }
+  }
+
+  /**
+   * Handle unknown platforms with full AI analysis
+   */
+  private async handleAIPlatform(url: string, platform: string): Promise<MetadataExtractionResponse> {
+    // Google Search + HTML + Metascraper + AI Analysis
+    const [searchResults, htmlContent] = await Promise.allSettled([
+      this.performGoogleSearch(url),
+      this.fetchHtmlContent(url),
+    ]);
+
+    const googleResults = searchResults.status === 'fulfilled' ? searchResults.value : [];
+    const html = htmlContent.status === 'fulfilled' ? htmlContent.value : '';
+
+    // Use Metascraper instead of manual regex
+    const extractedMetadata = await MetascraperService.extractMetadata(html, url);
+
+    // AI analysis with Google context
+    const suggestions = await this.performAIAnalysis(url, googleResults, html, extractedMetadata);
+
+    // Cache the results
+    await this.cacheResults(url, googleResults, html, suggestions);
+
+    // Track suggestions for analytics
+    await this.trackSuggestions(url, suggestions);
+
+    return {
+      success: true,
+      suggestions,
+      fallback: {
+        title: extractedMetadata.title,
+        thumbnailUrl: extractedMetadata.ogImage || extractedMetadata.twitterImage,
+      }
+    };
+  }
+
+  /**
+   * Handle fallback cases with basic HTML extraction
+   */
+  private async handleFallbackPlatform(url: string, platform: string): Promise<MetadataExtractionResponse> {
+    try {
+      const metadata = await SharedMetadataService.extractHtmlMetadata(url);
+
+      return {
+        success: true,
+        suggestions: [{
+          title: metadata.title || 'Untitled Video',
+          thumbnailUrl: metadata.thumbnailUrl || undefined,
+          platform,
+          confidence: 0.1, // Basic extraction only
+          reasoning: 'Basic HTML extraction only'
+        }],
+        fallback: {
+          title: metadata.title || undefined,
+          thumbnailUrl: metadata.thumbnailUrl || undefined,
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        suggestions: [],
+        error: `Fallback extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
+
+  /**
+   * Perform AI analysis using OpenRouter
+   */
+  private async performAIAnalysis(
+    url: string,
+    searchResults: GoogleSearchResult[],
+    htmlContent: string,
+    extractedMetadata: HtmlMetadata
+  ): Promise<MetadataSuggestion[]> {
+    try {
+      // Prepare context for AI analysis
+      const context = {
+        url,
+        searchResults: searchResults.slice(0, 2).map(r => ({
+          title: r.title,
+          snippet: r.snippet,
+          hasImage: !!(r.pagemap?.cse_image?.[0]?.src),
+        })),
+        htmlSnippet: htmlContent.slice(0, 2000), // First 2KB of HTML
+        extractedMetadata: {
+          title: extractedMetadata.title,
+          description: extractedMetadata.description,
+          hasImage: !!(extractedMetadata.ogImage || extractedMetadata.twitterImage),
+        },
+      };
+
+      // Use existing AIService for title suggestions
+      const titleSuggestions = await this.aiService.generateTitleSuggestions({
+        url,
+        title: extractedMetadata.title,
+      }, searchResults);
+
+      // Convert to our format
+      const suggestions: MetadataSuggestion[] = titleSuggestions.suggestions.map(suggestion => ({
+        title: suggestion.title,
+        platform: this.inferPlatform(url, suggestion.title, context),
+        confidence: suggestion.confidence,
+        reasoning: suggestion.source,
+        thumbnailUrl: this.inferThumbnail(url, htmlContent, searchResults),
+      }));
+
+      return suggestions.slice(0, 3); // Limit to 3 suggestions
+
+    } catch (error) {
+      console.error('AI analysis failed:', error);
+      return [];
     }
   }
 
@@ -160,58 +266,6 @@ export class AIMetadataService {
   }
 
   /**
-   * Perform AI analysis using OpenRouter
-   */
-  private async performAIAnalysis(
-    url: string,
-    searchResults: GoogleSearchResult[],
-    htmlContent: string,
-    fallbackMetadata: any
-  ): Promise<MetadataSuggestion[]> {
-    try {
-      // Prepare context for AI analysis
-      const context = {
-        url,
-        searchResults: searchResults.slice(0, 2).map(r => ({
-          title: r.title,
-          snippet: r.snippet,
-          hasImage: !!(r.pagemap?.cse_image?.[0]?.src),
-        })),
-        htmlSnippet: htmlContent.slice(0, 2000), // First 2KB of HTML
-        basicMetadata: {
-          title: fallbackMetadata?.title,
-          hasThumbnail: !!fallbackMetadata?.thumbnailUrl,
-        },
-      };
-
-      // Use existing AIService for title suggestions
-      const titleSuggestions = await this.aiService.generateTitleSuggestions({
-        url,
-        title: fallbackMetadata?.title,
-      }, searchResults);
-
-      // Convert to our format
-      const suggestions: MetadataSuggestion[] = titleSuggestions.suggestions.map(suggestion => ({
-        title: suggestion.title,
-        platform: this.inferPlatform(url, suggestion.title, context),
-        confidence: suggestion.confidence,
-        reasoning: suggestion.source,
-      }));
-
-      // Add thumbnail inference
-      for (const suggestion of suggestions) {
-        suggestion.thumbnailUrl = this.inferThumbnail(url, htmlContent, searchResults);
-      }
-
-      return suggestions.slice(0, 3); // Limit to 3 suggestions
-
-    } catch (error) {
-      console.error('AI analysis failed:', error);
-      return [];
-    }
-  }
-
-  /**
    * Infer platform from URL and context
    */
   private inferPlatform(url: string, title: string, context: any): string {
@@ -244,20 +298,9 @@ export class AIMetadataService {
       }
     }
 
-    // Try extracted metadata
-    const extractedMetadata = this.extractMetadataFromHtml(htmlContent);
-    if (extractedMetadata.ogImage) return extractedMetadata.ogImage;
-    if (extractedMetadata.twitterImage) return extractedMetadata.twitterImage;
-
+    // For now, return undefined - thumbnails will be handled by AI suggestions
+    // TODO: Extract thumbnails from Metascraper metadata
     return undefined;
-  }
-
-  /**
-   * Extract basic title from HTML as fallback
-   */
-  private extractBasicTitle(htmlContent: string): string | undefined {
-    const extractedMetadata = this.extractMetadataFromHtml(htmlContent);
-    return extractedMetadata.title || extractedMetadata.ogTitle || extractedMetadata.twitterTitle;
   }
 
   /**
@@ -297,65 +340,6 @@ export class AIMetadataService {
   }
 
   /**
-   * Extract structured metadata from HTML content
-   */
-  private extractMetadataFromHtml(htmlContent: string): HtmlMetadata {
-    const metadata: HtmlMetadata = {};
-
-    // Extract title
-    const titleMatch = htmlContent.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (titleMatch) {
-      metadata.title = titleMatch[1].trim();
-    }
-
-    // Extract Open Graph metadata
-    const ogTitleMatch = htmlContent.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i);
-    if (ogTitleMatch) {
-      metadata.ogTitle = ogTitleMatch[1];
-    }
-
-    const ogImageMatch = htmlContent.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
-    if (ogImageMatch) {
-      metadata.ogImage = ogImageMatch[1];
-    }
-
-    const ogDescriptionMatch = htmlContent.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i);
-    if (ogDescriptionMatch) {
-      metadata.ogDescription = ogDescriptionMatch[1];
-    }
-
-    // Extract Twitter Card metadata
-    const twitterTitleMatch = htmlContent.match(/<meta\s+name=["']twitter:title["']\s+content=["']([^"']+)["']/i);
-    if (twitterTitleMatch) {
-      metadata.twitterTitle = twitterTitleMatch[1];
-    }
-
-    const twitterImageMatch = htmlContent.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
-    if (twitterImageMatch) {
-      metadata.twitterImage = twitterImageMatch[1];
-    }
-
-    const twitterDescriptionMatch = htmlContent.match(/<meta\s+name=["']twitter:description["']\s+content=["']([^"']+)["']/i);
-    if (twitterDescriptionMatch) {
-      metadata.twitterDescription = twitterDescriptionMatch[1];
-    }
-
-    // Extract description
-    const descriptionMatch = htmlContent.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
-    if (descriptionMatch) {
-      metadata.description = descriptionMatch[1];
-    }
-
-    // Extract canonical URL
-    const canonicalMatch = htmlContent.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i);
-    if (canonicalMatch) {
-      metadata.canonicalUrl = canonicalMatch[1];
-    }
-
-    return metadata;
-  }
-
-  /**
    * Cache AI analysis results
    */
   private async cacheResults(
@@ -366,7 +350,7 @@ export class AIMetadataService {
   ): Promise<void> {
     try {
       const avgConfidence = suggestions.reduce((sum, s) => sum + s.confidence, 0) / suggestions.length;
-      const extractedMetadata = this.extractMetadataFromHtml(htmlContent);
+      const extractedMetadata = await MetascraperService.extractMetadata(htmlContent, url);
 
       await db.insert(aiMetadataCache).values({
         url,
