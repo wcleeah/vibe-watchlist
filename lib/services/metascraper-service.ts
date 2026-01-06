@@ -1,3 +1,5 @@
+import * as cheerio from 'cheerio';
+
 export interface HtmlMetadata {
   title?: string;
   description?: string;
@@ -26,56 +28,30 @@ export class MetascraperService {
   }
 
   /**
-   * Simple HTML metadata extraction using regex patterns
+   * Robust HTML metadata extraction using Cheerio
    * Extracts Open Graph, Twitter Cards, and standard meta tags
    */
   private static simpleHtmlExtraction(html: string): HtmlMetadata {
+    const $ = cheerio.load(html);
     const metadata: HtmlMetadata = {};
 
     // Extract title
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (titleMatch) {
-      metadata.title = titleMatch[1].trim();
-    }
+    metadata.title = $('title').first().text().trim();
 
     // Extract Open Graph metadata
-    const ogTitleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i);
-    if (ogTitleMatch) {
-      metadata.ogTitle = ogTitleMatch[1];
-    }
-
-    const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
-    if (ogImageMatch) {
-      metadata.ogImage = ogImageMatch[1];
-    }
-
-    const ogDescriptionMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i);
-    if (ogDescriptionMatch) {
-      metadata.ogDescription = ogDescriptionMatch[1];
-    }
+    metadata.ogTitle = $('meta[property="og:title"]').attr('content');
+    metadata.ogImage = $('meta[property="og:image"]').attr('content');
+    metadata.ogDescription = $('meta[property="og:description"]').attr('content');
 
     // Extract Twitter Card metadata
-    const twitterTitleMatch = html.match(/<meta\s+name=["']twitter:title["']\s+content=["']([^"']+)["']/i);
-    if (twitterTitleMatch) {
-      metadata.twitterTitle = twitterTitleMatch[1];
-    }
-
-    const twitterImageMatch = html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
-    if (twitterImageMatch) {
-      metadata.twitterImage = twitterImageMatch[1];
-    }
+    metadata.twitterTitle = $('meta[name="twitter:title"]').attr('content');
+    metadata.twitterImage = $('meta[name="twitter:image"]').attr('content');
 
     // Extract description
-    const descriptionMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
-    if (descriptionMatch) {
-      metadata.description = descriptionMatch[1];
-    }
+    metadata.description = $('meta[name="description"]').attr('content');
 
     // Extract canonical URL
-    const canonicalMatch = html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i);
-    if (canonicalMatch) {
-      metadata.canonicalUrl = canonicalMatch[1];
-    }
+    metadata.canonicalUrl = $('link[rel="canonical"]').attr('href');
 
     // Use Open Graph data as fallback for basic fields
     if (!metadata.title && metadata.ogTitle) {

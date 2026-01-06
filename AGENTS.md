@@ -3,38 +3,46 @@
 This file contains guidelines and commands for coding agents working on the video watchlist application.
 
 ## Project Overview
-- **Framework**: Next.js 16 with App Router, React 19, TypeScript, Tailwind CSS v4, Shadcn/ui
+- **Framework**: Next.js 15.5.9 with App Router, React 19.1.4, TypeScript, Tailwind CSS v4, Shadcn/ui
 - **Database**: PostgreSQL with Drizzle ORM and Neon
-- **Package Manager**: Bun (scripts use standard npm format)
+- **Deployment**: Cloudflare Pages with OpenNext.js
+- **Package Manager**: Yarn (scripts use standard npm format)
 - **Current State**: Core video watchlist functionality implemented with AI metadata integration
 
 ## Build & Development Commands
 
 ### Development Server
 ```bash
-bun run dev          # Start dev server (http://localhost:3000)
-bun run build        # Production build
-bun run start        # Start production server
+yarn dev          # Start dev server (http://localhost:3000)
+yarn build        # Production build
+yarn start        # Start production server
+```
+
+### Deployment
+```bash
+yarn preview      # Preview Cloudflare deployment locally
+yarn deploy       # Deploy to Cloudflare Pages
+yarn cf-typegen   # Generate Cloudflare environment types
 ```
 
 ### Database Management
 ```bash
-bun run drizzle-kit generate  # Generate migration files from schema changes
-bun run drizzle-kit migrate   # Apply pending migrations to database
-bun run drizzle-kit push      # Push schema changes directly (for development)
-bun run drizzle-kit studio    # Launch Drizzle Studio for database exploration
+yarn drizzle-kit generate  # Generate migration files from schema changes
+yarn drizzle-kit migrate   # Apply pending migrations to database
+yarn drizzle-kit push      # Push schema changes directly (for development)
+yarn drizzle-kit studio    # Launch Drizzle Studio for database exploration
 ```
 
 ### Code Quality & Linting
 ```bash
-bun run lint         # Run ESLint (includes TypeScript checking)
-bun run lint --fix   # Fix auto-fixable issues (recommended before committing)
+yarn lint         # Run ESLint (includes TypeScript checking)
+yarn lint --fix   # Fix auto-fixable issues (recommended before committing)
 ```
 
 ### Testing
 - **Current State**: No test framework configured yet
 - **Future**: Vitest for unit tests, Playwright for E2E tests
-- **Single Test**: `bun run test path/to/test.file` (when implemented)
+- **Single Test**: `yarn test path/to/test.file` (when implemented)
 - **Note**: Always run linting before testing - tests will fail if linting fails
 
 ## Code Style Guidelines
@@ -45,7 +53,7 @@ bun run lint --fix   # Fix auto-fixable issues (recommended before committing)
 - **Libraries**: DOM, DOM.Iterable, ESNext
 - **Module Resolution**: Bundler resolution for optimal tree-shaking
 - **Path Mapping**: `@/*` maps to project root
-- **JSX**: `"react-jsx"` transform for modern React
+- **JSX**: `"preserve"` transform (handled by Next.js)
 - **Incremental Builds**: Enabled for faster compilation
 - **ES Modules**: Enabled with isolated modules checking
 
@@ -92,32 +100,30 @@ bun run lint --fix   # Fix auto-fixable issues (recommended before committing)
 - **Data Attributes**: Use data-slot, data-variant, data-size for component styling hooks
 
 ### Import Organization
-Order imports consistently:
+Current patterns observed in codebase (organize by logical grouping):
 ```typescript
-// 1. React/Next.js imports
+// React/Next.js imports first
 import type { Metadata } from "next";
 
-// 2. Third-party libraries (alphabetical, before local imports)
-import { Toaster } from 'sonner';
-import "@fontsource/inter/400.css";
-
-// 3. Local imports (by type, then alphabetical)
-// Context/providers first
+// Local context/providers
 import { PreferencesProvider } from "@/lib/preferences-context";
 
-// Components (UI components before feature components)
-import { Button } from "@/components/ui/button";
-import { VideoList } from "@/components/videos/video-list";
+// Third-party libraries
+import { Toaster } from 'sonner';
 
-// Services and utilities
-import { VideoService } from "@/lib/services/video-service";
-
-// Types and schemas
-import type { VideoCreateRequest } from '@/types/api';
-import { Video } from '@/lib/db/schema';
-
-// Styles last
+// CSS imports (fonts, styles)
+import "@fontsource/inter/400.css";
 import "./globals.css";
+
+// Local imports grouped by type:
+// - Components
+import { Button } from "@/components/ui/button";
+// - Hooks
+import { useVideoMetadata } from "@/hooks/use-video-metadata";
+// - Services
+import { VideoService } from "@/lib/services/video-service";
+// - Types
+import type { VideoCreateRequest } from '@/types/api';
 ```
 
 ### Naming Conventions
@@ -141,66 +147,24 @@ import "./globals.css";
 - **URL Building**: Use template literals for dynamic API endpoints
 - **Query Parameters**: Use `URLSearchParams` for complex query building
 
-### Additional Technologies & Libraries
-- **Icons**: Lucide React for consistent iconography
-- **Forms**: React Hook Form with Hookform Resolvers for form management
-- **Notifications**: Sonner for toast notifications
-- **Fonts**: Fontsource for self-hosted fonts (Inter, JetBrains Mono)
-- **Validation**: Zod for runtime type validation
-- **Animations**: Custom animation components with Tailwind CSS
+### Key Libraries & Technologies
+- **UI**: Shadcn/ui components with Radix UI primitives
+- **Forms**: React Hook Form with Zod validation
+- **Icons**: Lucide React
+- **Notifications**: Sonner
+- **Fonts**: Fontsource (Inter, JetBrains Mono)
+- **Animations**: Tailwind CSS with custom components
+- **Database**: Drizzle ORM with prepared statements for security
 
-### Performance Considerations
-- **React Optimization**: Use `React.memo`, `useMemo`, `useCallback` appropriately
-- **Database**: Use prepared statements and proper indexing
-- **Bundle**: Leverage Next.js production optimizations
-- **Images**: Use Next.js Image component for automatic optimization
-
-### Security Best Practices
-- **Input Validation**: Use Zod schemas for all user inputs
-- **SQL Injection**: Use parameterized queries (Drizzle handles this)
+### Performance & Security
+- **React**: Use `React.memo`, `useMemo`, `useCallback` for optimization
+- **Database**: Parameterized queries (handled by Drizzle)
+- **Validation**: Zod schemas for all inputs
 - **Secrets**: Never commit environment variables or API keys
-- **Error Messages**: Don't expose sensitive information in error responses
-
-### File Structure
-```
-├── app/                          # Next.js App Router
-│   ├── api/                      # API routes
-│   │   ├── videos/               # Video CRUD operations
-│   │   ├── metadata/             # Metadata extraction
-│   │   ├── platforms/            # Platform management
-│   │   ├── tags/                 # Tag management
-│   │   └── config/               # User configuration
-│   ├── layout.tsx                # Root layout with providers
-│   ├── page.tsx                  # Home page
-│   ├── watched/                  # Watched videos page
-│   ├── list/                     # Video list page
-│   ├── tags/                     # Tags management page
-│   ├── analytics/                # Analytics dashboard
-│   └── globals.css               # Global styles
-├── components/                   # React components
-│   ├── ui/                       # Shadcn/ui base components
-│   ├── videos/                   # Video-specific components
-│   ├── video-form/               # Form-related components
-│   ├── video-preview/            # Preview and metadata components
-│   ├── layout/                   # Layout components
-│   ├── platform/                 # Platform components
-│   └── animations/               # Animation components
-├── lib/                          # Utility libraries
-│   ├── db/                       # Database configuration and schemas
-│   ├── services/                 # Business logic services
-│   ├── utils/                    # General utilities
-│   ├── platforms/                # Platform detection utilities
-│   └── types/                    # Local type definitions
-├── hooks/                        # Custom React hooks
-├── types/                        # Global TypeScript type definitions
-├── drizzle/                      # Database migrations
-└── public/                       # Static assets
-```
-
-
+- **Errors**: Don't expose sensitive information in error messages
 ### Linting Configuration
-- **ESLint Config**: Uses `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`
-- **Auto-fixable Issues**: Run `bun run lint --fix` before committing
+- **ESLint Config**: Uses `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` with flat config
+- **Auto-fixable Issues**: Run `yarn lint --fix` before committing
 - **TypeScript Checking**: Included in linting process
 
 ### IDE/Editor Integration

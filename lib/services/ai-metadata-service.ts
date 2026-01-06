@@ -164,6 +164,41 @@ export class AIMetadataService {
             }
 
             console.log(
+                "🎯 OFFICIAL PLATFORM HANDLER: Fetching HTML content for thumbnail prioritization",
+            );
+            // Fetch HTML content to prioritize meta tag thumbnails
+            const htmlContent = await this.fetchHtmlContent(url);
+            console.log(
+                "🎯 OFFICIAL PLATFORM HANDLER: HTML content fetched, length:",
+                htmlContent.length,
+            );
+
+            console.log(
+                "🎯 OFFICIAL PLATFORM HANDLER: Extracting metadata from HTML",
+            );
+            const extractedMetadata = await MetascraperService.extractMetadata(
+                htmlContent,
+                url,
+            );
+            console.log(
+                "🎯 OFFICIAL PLATFORM HANDLER: HTML metadata extracted - ogImage:",
+                !!extractedMetadata.ogImage,
+                "twitterImage:",
+                !!extractedMetadata.twitterImage,
+            );
+
+            // Prioritize thumbnails: HTML meta tags → API thumbnails → undefined
+            const prioritizedThumbnail =
+                extractedMetadata.ogImage ||
+                extractedMetadata.twitterImage ||
+                metadata.thumbnailUrl;
+
+            console.log(
+                "🎯 OFFICIAL PLATFORM HANDLER: Prioritized thumbnail selected:",
+                prioritizedThumbnail ? "HTML meta tag" : "API thumbnail",
+            );
+
+            console.log(
                 "🎯 OFFICIAL PLATFORM HANDLER: Creating response with confidence 1.0",
             );
             const response = {
@@ -171,15 +206,15 @@ export class AIMetadataService {
                 suggestions: [
                     {
                         title: metadata.title || "Untitled Video",
-                        thumbnailUrl: metadata.thumbnailUrl || undefined,
+                        thumbnailUrl: prioritizedThumbnail || undefined,
                         platform,
                         confidence: 1.0, // Official API = perfect confidence
-                        reasoning: `Official ${platform} API`,
+                        reasoning: `Official ${platform} API with meta tag thumbnail prioritization`,
                     },
                 ],
                 fallback: {
                     title: metadata.title || undefined,
-                    thumbnailUrl: metadata.thumbnailUrl || undefined,
+                    thumbnailUrl: prioritizedThumbnail || undefined,
                 },
             };
 
@@ -457,6 +492,7 @@ export class AIMetadataService {
                         url,
                         htmlContent,
                         searchResults,
+                        extractedMetadata,
                     );
 
                     console.log("🧠 AI ANALYSIS: Converting suggestion:", {
@@ -737,21 +773,30 @@ export class AIMetadataService {
     }
 
     /**
-     * Infer thumbnail URL from available sources
+     * Infer thumbnail URL from available sources, prioritizing meta tags
      */
     private inferThumbnail(
         url: string,
         htmlContent: string,
         searchResults: GoogleSearchResult[],
+        extractedMetadata: HtmlMetadata,
     ): string | undefined {
         console.log("🖼 THUMBNAIL INFERENCE: Inferring thumbnail for URL:", url);
+
+        // PRIORITY 1: Meta tag thumbnails (og:image, twitter:image)
+        const metaThumbnail = extractedMetadata.ogImage || extractedMetadata.twitterImage;
+        if (metaThumbnail) {
+            console.log("🖼 THUMBNAIL INFERENCE: Using meta tag thumbnail:", metaThumbnail);
+            return metaThumbnail;
+        }
+
         console.log(
-            "🖼 THUMBNAIL INFERENCE: Checking",
+            "🖼 THUMBNAIL INFERENCE: No meta tag thumbnails found, checking",
             searchResults.length,
             "search results for images",
         );
 
-        // Try search results first
+        // PRIORITY 2: Search results
         for (const result of searchResults) {
             if (result.pagemap?.cse_image?.[0]?.src) {
                 const thumbnailUrl = result.pagemap.cse_image[0].src;
@@ -763,15 +808,7 @@ export class AIMetadataService {
             }
         }
 
-        console.log(
-            "🖼 THUMBNAIL INFERENCE: No thumbnail found in search results",
-        );
-        console.log(
-            "🖼 THUMBNAIL INFERENCE: TODO: Extract thumbnails from Metascraper metadata (not implemented yet)",
-        );
-
-        // For now, return undefined - thumbnails will be handled by AI suggestions
-        // TODO: Extract thumbnails from Metascraper metadata
+        console.log("🖼 THUMBNAIL INFERENCE: No thumbnail found");
         return undefined;
     }
 

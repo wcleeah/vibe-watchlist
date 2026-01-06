@@ -4,6 +4,7 @@ export interface ParsedUrl {
   url: string;
   platform: VideoPlatform;
   videoId?: string;
+  playlistId?: string;
   isValid: boolean;
 }
 
@@ -19,11 +20,21 @@ export function parseVideoUrl(url: string): ParsedUrl {
     // YouTube detection
     if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
       const videoId = extractYouTubeId(urlObj);
+      const playlistId = extractYouTubePlaylistId(urlObj);
+
       if (videoId) {
         return {
           url,
           platform: 'youtube',
           videoId,
+          isValid: true,
+        };
+      }
+      if (playlistId) {
+        return {
+          url,
+          platform: 'youtube',
+          playlistId,
           isValid: true,
         };
       }
@@ -88,6 +99,14 @@ function extractYouTubeId(urlObj: URL): string | null {
     }
   }
 
+  return null;
+}
+
+function extractYouTubePlaylistId(urlObj: URL): string | null {
+  const playlistId = urlObj.searchParams.get('list');
+  if (playlistId && playlistId.startsWith('PL') && playlistId.length > 2) {
+    return playlistId;
+  }
   return null;
 }
 
