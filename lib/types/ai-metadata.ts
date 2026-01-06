@@ -36,7 +36,7 @@ export interface MetadataCacheEntry {
   id: number;
   url: string;
   searchResults: any[];
-  htmlContent: string;
+  extractedMetadata: HtmlMetadata;
   aiAnalysis: MetadataSuggestion[];
   confidenceScore: number;
   createdAt: Date;

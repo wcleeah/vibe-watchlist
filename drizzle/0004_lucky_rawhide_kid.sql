@@ -2,7 +2,7 @@ CREATE TABLE "ai_metadata_cache" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"url" text NOT NULL,
 	"search_results" jsonb NOT NULL,
-	"html_content" text NOT NULL,
+	"extracted_metadata" jsonb NOT NULL,
 	"ai_analysis" jsonb NOT NULL,
 	"confidence_score" numeric(3, 2),
 	"created_at" timestamp DEFAULT now(),

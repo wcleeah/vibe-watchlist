@@ -31,8 +31,8 @@ export class AIMetadataService {
         success: true,
         suggestions: cached.aiAnalysis,
         fallback: {
-          title: cached.htmlContent ? this.extractBasicTitle(cached.htmlContent) : undefined,
-          thumbnailUrl: undefined,
+          title: cached.extractedMetadata?.title,
+          thumbnailUrl: cached.extractedMetadata?.ogImage || cached.extractedMetadata?.twitterImage,
         },
       };
       }
@@ -244,12 +244,10 @@ export class AIMetadataService {
       }
     }
 
-    // Try HTML meta tags
-    const ogImageMatch = htmlContent.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
-    if (ogImageMatch) return ogImageMatch[1];
-
-    const twitterImageMatch = htmlContent.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
-    if (twitterImageMatch) return twitterImageMatch[1];
+    // Try extracted metadata
+    const extractedMetadata = this.extractMetadataFromHtml(htmlContent);
+    if (extractedMetadata.ogImage) return extractedMetadata.ogImage;
+    if (extractedMetadata.twitterImage) return extractedMetadata.twitterImage;
 
     return undefined;
   }
@@ -258,8 +256,8 @@ export class AIMetadataService {
    * Extract basic title from HTML as fallback
    */
   private extractBasicTitle(htmlContent: string): string | undefined {
-    const titleMatch = htmlContent.match(/<title[^>]*>([^<]+)<\/title>/i);
-    return titleMatch ? titleMatch[1].trim() : undefined;
+    const extractedMetadata = this.extractMetadataFromHtml(htmlContent);
+    return extractedMetadata.title || extractedMetadata.ogTitle || extractedMetadata.twitterTitle;
   }
 
   /**
@@ -286,7 +284,7 @@ export class AIMetadataService {
         id: cache.id,
         url: cache.url,
         searchResults: cache.searchResults as any[],
-        htmlContent: cache.htmlContent,
+        extractedMetadata: cache.extractedMetadata as HtmlMetadata,
         aiAnalysis: cache.aiAnalysis as MetadataSuggestion[],
         confidenceScore: Number(cache.confidenceScore),
         createdAt: cache.createdAt ? new Date(cache.createdAt) : new Date(),
@@ -296,6 +294,65 @@ export class AIMetadataService {
       console.error('Cache lookup failed:', error);
       return null;
     }
+  }
+
+  /**
+   * Extract structured metadata from HTML content
+   */
+  private extractMetadataFromHtml(htmlContent: string): HtmlMetadata {
+    const metadata: HtmlMetadata = {};
+
+    // Extract title
+    const titleMatch = htmlContent.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleMatch) {
+      metadata.title = titleMatch[1].trim();
+    }
+
+    // Extract Open Graph metadata
+    const ogTitleMatch = htmlContent.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i);
+    if (ogTitleMatch) {
+      metadata.ogTitle = ogTitleMatch[1];
+    }
+
+    const ogImageMatch = htmlContent.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+    if (ogImageMatch) {
+      metadata.ogImage = ogImageMatch[1];
+    }
+
+    const ogDescriptionMatch = htmlContent.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i);
+    if (ogDescriptionMatch) {
+      metadata.ogDescription = ogDescriptionMatch[1];
+    }
+
+    // Extract Twitter Card metadata
+    const twitterTitleMatch = htmlContent.match(/<meta\s+name=["']twitter:title["']\s+content=["']([^"']+)["']/i);
+    if (twitterTitleMatch) {
+      metadata.twitterTitle = twitterTitleMatch[1];
+    }
+
+    const twitterImageMatch = htmlContent.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
+    if (twitterImageMatch) {
+      metadata.twitterImage = twitterImageMatch[1];
+    }
+
+    const twitterDescriptionMatch = htmlContent.match(/<meta\s+name=["']twitter:description["']\s+content=["']([^"']+)["']/i);
+    if (twitterDescriptionMatch) {
+      metadata.twitterDescription = twitterDescriptionMatch[1];
+    }
+
+    // Extract description
+    const descriptionMatch = htmlContent.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+    if (descriptionMatch) {
+      metadata.description = descriptionMatch[1];
+    }
+
+    // Extract canonical URL
+    const canonicalMatch = htmlContent.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i);
+    if (canonicalMatch) {
+      metadata.canonicalUrl = canonicalMatch[1];
+    }
+
+    return metadata;
   }
 
   /**
@@ -309,11 +366,12 @@ export class AIMetadataService {
   ): Promise<void> {
     try {
       const avgConfidence = suggestions.reduce((sum, s) => sum + s.confidence, 0) / suggestions.length;
+      const extractedMetadata = this.extractMetadataFromHtml(htmlContent);
 
       await db.insert(aiMetadataCache).values({
         url,
         searchResults,
-        htmlContent,
+        extractedMetadata,
         aiAnalysis: suggestions,
         confidenceScore: avgConfidence.toString(),
         expiresAt: new Date(Date.now() + this.config.cacheTtl),
