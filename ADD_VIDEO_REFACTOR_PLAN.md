@@ -91,24 +91,24 @@ useVideoForm (330 lines, 6 concerns)
 
 ---
 
-### **⏳ Phase 3: UI/UX Improvements (PENDING)**
+### **🚧 Phase 3: UI/UX Improvements (IN PROGRESS)**
 **Goal:** Fix manual mode UX and loading states
 
-#### **3.1 Always-Visible Manual Mode Toggle**
-- **Status:** PENDING
+#### **3.1 Always-Visible Manual Mode Toggle** ✅
+- **Status:** COMPLETED
 - **Files:** `components/video-preview/preview-card.tsx` (modify)
 - **Changes:**
-  - Add manual toggle button to preview header when metadata available
-  - Implement smart state transitions (auto ↔ manual)
-  - Preserve manual inputs when switching modes
+  - ✅ Add manual toggle button to preview header when metadata available
+  - ✅ Implement smart state transitions (auto ↔ manual)
+  - ✅ Preserve manual inputs when switching modes
 
-#### **3.2 Improve Loading State Logic**
-- **Status:** PENDING
+#### **3.2 Improve Loading State Logic** ✅
+- **Status:** COMPLETED
 - **Files:** `app/page.tsx` (modify)
 - **Changes:**
-  - Only show full-page loading when actually fetching metadata
-  - Add skeleton loading in preview area
-  - Context-appropriate loading indicators
+  - ✅ Only show full-page loading when actually fetching metadata
+  - ✅ Add skeleton loading in preview area
+  - ✅ Context-appropriate loading indicators
 
 #### **3.3 Enhanced Error Handling**
 - **Status:** PENDING
@@ -143,10 +143,10 @@ useVideoForm (330 lines, 6 concerns)
 
 ## 📊 Progress Tracking
 
-### **Current Status:** Phase 2 in progress
+### **Current Status:** Phase 3 in progress
 - ✅ Phase 1 completed (3/3 tasks) - Infrastructure ready
-- 🚧 Phase 2 in progress (0/2 tasks) - Core hook extraction
-- ⏳ Phase 3 pending (3/3 tasks) - UI improvements
+- ✅ Phase 2 completed (2/2 tasks) - Core hook extraction complete
+- 🚧 Phase 3 in progress (0/3 tasks) - UI improvements
 - ⏳ Phase 4 pending (2/2 tasks) - Migration & cleanup
 
 ### **Test Coverage Required:**

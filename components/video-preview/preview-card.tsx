@@ -85,9 +85,21 @@ export function PreviewCard({
                 </button>
               </div>
             ) : (
-              <h3 className="text-lg font-bold text-black dark:text-white font-mono truncate text-center sm:text-left" title={video.title || 'Untitled Video'}>
-                {video.title || 'Untitled Video'}
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-black dark:text-white font-mono truncate text-center sm:text-left flex-1" title={video.title || 'Untitled Video'}>
+                  {video.title || 'Untitled Video'}
+                </h3>
+                {/* Manual mode toggle - only show when metadata is available */}
+                {video.metadata && !video.error && (
+                  <button
+                    onClick={() => onToggleManual?.()}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline ml-2 flex-shrink-0"
+                    title="Switch to manual entry mode"
+                  >
+                    Edit manually
+                  </button>
+                )}
+              </div>
             )}
           </div>
 

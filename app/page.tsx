@@ -40,7 +40,8 @@ export default function Home() {
   });
 
   const hasContent = url.trim().length > 0 && parsedUrl?.isValid === true;
-  const shouldShowLoading = hasContent && (isLoadingMetadata || !metadata);
+  // Only show full-page loading when actually fetching metadata (not just typing URLs)
+  const shouldShowLoading = hasContent && isLoadingMetadata;
 
   // Show full-page loading during metadata fetch
   if (shouldShowLoading) {
