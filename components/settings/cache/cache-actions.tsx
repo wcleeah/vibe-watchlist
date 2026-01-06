@@ -85,7 +85,7 @@ export function CacheActions({ onStatsRefresh }: CacheActionsProps) {
         Manage cached metadata entries. Clearing cache will force fresh API calls and may temporarily slow down video processing.
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col lg:flex-row gap-4">
         <div className="flex-1">
           <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
             Clear Expired Entries

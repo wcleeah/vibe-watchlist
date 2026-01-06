@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Settings, Database, MonitorSpeaker, Tag } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, Database, MonitorSpeaker, Tag, RefreshCw } from 'lucide-react';
 import { NavigationTabs } from '@/components/navigation-tabs';
+import { Button } from '@/components/ui/button';
 import { CacheStats } from '@/components/settings/cache/cache-stats';
 import { CacheActions } from '@/components/settings/cache/cache-actions';
 import { CacheEntries } from '@/components/settings/cache/cache-entries';
@@ -23,6 +24,13 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('cache');
   const [platformFormOpen, setPlatformFormOpen] = useState(false);
   const [editingPlatform, setEditingPlatform] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handlePageRefresh = () => {
+    setRefreshing(true);
+    // Trigger refresh for current tab content
+    window.location.reload();
+  };
 
   const handleStatsRefresh = () => {
     // This will be called when cache operations complete
@@ -107,9 +115,21 @@ export default function SettingsPage() {
       <main className="container mx-auto px-4 pt-32 pb-12 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Settings className="w-8 h-8 text-gray-600 dark:text-gray-400" />
-            <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <Settings className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+              <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
+            </div>
+            <Button
+              onClick={handlePageRefresh}
+              disabled={refreshing}
+              variant="outline"
+              size="sm"
+              className="hidden sm:flex"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh Page
+            </Button>
           </div>
           <p className="text-gray-600 dark:text-gray-400">
             Manage application settings, cache, platforms, and tags
@@ -118,18 +138,18 @@ export default function SettingsPage() {
 
         {/* Tab Navigation */}
         <div className="border-b border-gray-200 dark:border-gray-800 mb-8">
-          <nav className="flex space-x-8">
+          <nav className="flex flex-col sm:flex-row sm:space-x-8">
             {tabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-1 py-4 border-b-2 font-medium text-sm transition-colors ${
+                className={`flex items-center gap-2 px-1 py-4 border-b-2 sm:border-b-2 font-medium text-sm transition-colors text-left ${
                   activeTab === id
                     ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    : 'border-transparent sm:border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-4 h-4 flex-shrink-0" />
                 {label}
               </button>
             ))}

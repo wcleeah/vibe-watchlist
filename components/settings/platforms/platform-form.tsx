@@ -5,6 +5,7 @@ import { X, Plus, Trash2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface PlatformConfig {
   id?: string;
@@ -121,6 +122,7 @@ export function PlatformForm({ platform, isOpen, onClose, onSave }: PlatformForm
       });
 
       if (response.ok) {
+        toast.success(platform ? 'Platform updated successfully!' : 'Platform created successfully!');
         onSave();
         onClose();
       } else {
@@ -164,7 +166,7 @@ export function PlatformForm({ platform, isOpen, onClose, onSave }: PlatformForm
       <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4 sm:m-6">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {platform ? 'Edit Platform' : 'Add New Platform'}
@@ -268,7 +270,7 @@ export function PlatformForm({ platform, isOpen, onClose, onSave }: PlatformForm
           </div>
 
           {/* Configuration */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="extractor" className="text-sm font-medium">
                 Extractor

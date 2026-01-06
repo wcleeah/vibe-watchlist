@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface Tag {
   id: number;
@@ -55,6 +56,7 @@ export function TagsManager() {
         setNewTagName('');
         setNewTagColor('#6b7280');
         fetchTags();
+        toast.success('Tag added successfully!');
       }
     } catch (error) {
       console.error('Error adding tag:', error);
@@ -82,6 +84,7 @@ export function TagsManager() {
       if (response.ok) {
         setEditingId(null);
         fetchTags();
+        toast.success('Tag updated successfully!');
       }
     } catch (error) {
       console.error('Error updating tag:', error);
@@ -104,6 +107,7 @@ export function TagsManager() {
 
       if (response.ok) {
         fetchTags();
+        toast.success('Tag deleted successfully!');
       }
     } catch (error) {
       console.error('Error deleting tag:', error);
