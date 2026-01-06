@@ -5,6 +5,7 @@ import { LayoutManager } from '@/components/layout/layout-manager';
 import { FormLayout } from '@/components/video-form';
 import { PreviewCard } from '@/components/video-preview';
 import { useAddVideoForm } from '@/hooks/use-add-video-form';
+import { useAIMetadataFetching } from '@/hooks/use-ai-metadata-fetching';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -36,10 +37,18 @@ export default function Home() {
     isSubmitting,
     handleSubmit,
     submitError,
+    reset,
   } = useAddVideoForm({
     onVideoAdded: () => {
       toast.success('Video added successfully!');
     }
+  });
+
+  // AI Metadata fetching
+  const aiMetadata = useAIMetadataFetching({
+    url,
+    platform: parsedUrl?.platform || 'unknown',
+    enabled: parsedUrl?.isValid && !!url.trim(),
   });
 
   const hasContent = url.trim().length > 0 && parsedUrl?.isValid === true;
@@ -87,6 +96,14 @@ export default function Home() {
               submitError={submitError}
               onVideoAdded={() => {}}
               showTags={hasContent}
+              // AI Metadata props
+              aiSuggestions={aiMetadata.suggestions}
+              selectedSuggestion={aiMetadata.selectedSuggestion}
+              onSuggestionSelect={aiMetadata.setSelectedSuggestion}
+              isLoadingAIMetadata={aiMetadata.isLoading}
+              aiMetadataError={aiMetadata.error}
+              onManualEdit={() => setManualMode(!manualMode)}
+              // Tag props
               selectedTags={selectedTags}
               tagInput={tagInput}
               setTagInput={setTagInput}
@@ -99,7 +116,7 @@ export default function Home() {
               isLoadingTags={isLoadingTags}
               tagError={tagError}
               onAddTag={addTag}
-              onReset={() => setUrl('')}
+              onReset={reset}
             />
           }
           preview={hasContent ? (

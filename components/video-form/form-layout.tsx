@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { UrlInput } from './url-input';
+import { MetadataSelector } from './metadata-selector';
 import { TagInput } from './tag-input';
 import { SubmitButton } from './submit-button';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/types/tag';
+import { MetadataSuggestion } from '@/lib/types/ai-metadata';
 
 interface FormLayoutProps {
   url: string;
@@ -17,6 +19,13 @@ interface FormLayoutProps {
   submitError: string | null;
   className?: string;
   showTags?: boolean;
+  // AI Metadata props
+  aiSuggestions?: MetadataSuggestion[];
+  selectedSuggestion?: MetadataSuggestion;
+  onSuggestionSelect?: (suggestion: MetadataSuggestion | undefined) => void;
+  isLoadingAIMetadata?: boolean;
+  aiMetadataError?: string | null;
+  onManualEdit?: () => void;
   // Tag props to sync with preview
   selectedTags: Tag[];
   tagInput: string;
@@ -43,6 +52,14 @@ export function FormLayout({
   onVideoAdded,
   className,
   showTags = true,
+  // AI Metadata props
+  aiSuggestions = [],
+  selectedSuggestion,
+  onSuggestionSelect,
+  isLoadingAIMetadata = false,
+  aiMetadataError,
+  onManualEdit,
+  // Tag props
   selectedTags,
   tagInput,
   setTagInput,
@@ -79,6 +96,22 @@ export function FormLayout({
         error={urlError || undefined}
         disabled={isSubmitting}
       />
+
+      {/* AI Metadata Selector - show when URL is valid */}
+      {hasValidUrl && (
+        <MetadataSelector
+          suggestions={aiSuggestions}
+          selectedIndex={selectedSuggestion ? aiSuggestions.findIndex(s => s === selectedSuggestion) : undefined}
+          onSelect={(index) => {
+            const suggestion = aiSuggestions[index];
+            onSuggestionSelect?.(suggestion);
+          }}
+          onManualEdit={onManualEdit}
+          isLoading={isLoadingAIMetadata}
+          error={aiMetadataError || undefined}
+          disabled={isSubmitting}
+        />
+      )}
 
       {/* Tag Input - show only if showTags */}
       {showTags && (
