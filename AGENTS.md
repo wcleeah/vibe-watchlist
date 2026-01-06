@@ -3,9 +3,9 @@
 This file contains guidelines and commands for coding agents working on the video watchlist application.
 
 ## Project Overview
-- **Framework**: Next.js 16 with App Router, TypeScript, Tailwind CSS v4, Shadcn/ui
+- **Framework**: Next.js 16 with App Router, React 19, TypeScript, Tailwind CSS v4, Shadcn/ui
 - **Database**: PostgreSQL with Drizzle ORM and Neon
-- **Package Manager**: Bun
+- **Package Manager**: Bun (scripts use standard npm format)
 - **Current State**: Core video watchlist functionality implemented with AI metadata integration
 
 ## Build & Development Commands
@@ -42,10 +42,12 @@ bun run lint --fix   # Fix auto-fixable issues (recommended before committing)
 ### TypeScript Configuration
 - **Strict Mode**: Enabled for maximum type safety (`"strict": true`)
 - **Target**: ES2017 for modern browser compatibility
+- **Libraries**: DOM, DOM.Iterable, ESNext
 - **Module Resolution**: Bundler resolution for optimal tree-shaking
-- **Path Mapping**: `@/*` for clean imports (maps to project root)
+- **Path Mapping**: `@/*` maps to project root
 - **JSX**: `"react-jsx"` transform for modern React
 - **Incremental Builds**: Enabled for faster compilation
+- **ES Modules**: Enabled with isolated modules checking
 
 ### React/Next.js Patterns
 
@@ -73,47 +75,52 @@ bun run lint --fix   # Fix auto-fixable issues (recommended before committing)
 - **Enums**: `snake_case` with descriptive names (`video_platform`)
 - **Relations**: Use proper foreign key constraints with cascading deletes
 - **Timestamps**: Include `createdAt` and `updatedAt` for audit trails
+- **JSON**: Use `jsonb` for flexible metadata storage (ai_metadata_cache, user_config)
+- **Arrays**: Use `text().array()` for pattern matching (platform_configs.patterns)
 
 #### Query Patterns
 - **Relations**: Use `with` for efficient queries with related data
 - **Prepared Statements**: Use for performance-critical queries
+- **Caching**: Implement AI metadata caching with expiration (aiMetadataCache.expiresAt)
 
 ### Styling (Tailwind CSS v4 + Shadcn/ui)
 - **Base Components**: Use Shadcn/ui components from `@/components/ui/*`
-- **Utility Function**: Use `cn()` helper for conditional classes
+- **Utility Function**: Use `cn()` helper for conditional classes (clsx + tailwind-merge)
+- **Component Variants**: Use `class-variance-authority` (cva) for component variants
 - **Dark Mode**: Use `next-themes` with `class` strategy for SSR compatibility
 - **Mobile-First**: Start with mobile styles, enhance for larger screens
+- **Data Attributes**: Use data-slot, data-variant, data-size for component styling hooks
 
 ### Import Organization
 Order imports consistently:
 ```typescript
-// 1. React imports (with 'use client' directive if needed)
-'use client';
-import { useMemo } from 'react';
+// 1. React/Next.js imports
+import type { Metadata } from "next";
 
-// 2. Third-party libraries (alphabetical)
-import { PreviewCard } from '@/components/video-preview';
+// 2. Third-party libraries (alphabetical, before local imports)
+import { Toaster } from 'sonner';
+import "@fontsource/inter/400.css";
 
-// 3. Local types and schemas
+// 3. Local imports (by type, then alphabetical)
+// Context/providers first
+import { PreferencesProvider } from "@/lib/preferences-context";
+
+// Components (UI components before feature components)
+import { Button } from "@/components/ui/button";
+import { VideoList } from "@/components/videos/video-list";
+
+// Services and utilities
+import { VideoService } from "@/lib/services/video-service";
+
+// Types and schemas
+import type { VideoCreateRequest } from '@/types/api';
 import { Video } from '@/lib/db/schema';
-import type { Tag } from '@/types/tag';
 
-// 4. Local utilities and services
-import { VideoService } from '@/lib/services/video-service';
-
-// 5. Local hooks
-import { useVideoFormState } from '@/hooks/use-video-form-state';
-
-// 6. UI components
-import { Button } from '@/components/ui/button';
-
-// 7. Local components
-import { VideoList } from '@/components/videos/video-list';
+// Styles last
+import "./globals.css";
 ```
 
 ### Naming Conventions
-
-#### Naming Conventions
 - **Files**: `pascal-case` for components, `kebab-case` for utilities, `camelCase` for hooks
 - **Variables/Functions**: `camelCase` (`getVideos`, `parseUrl`)
 - **Constants**: `SCREAMING_SNAKE_CASE` (`API_TIMEOUT`)
@@ -124,6 +131,23 @@ import { VideoList } from '@/components/videos/video-list';
 - **API Routes**: Use try-catch blocks, return proper HTTP status codes, log errors
 - **Client-Side**: Handle loading states, display user-friendly error messages
 - **Validation**: Use Zod schemas for input validation on both client and server
+- **Service Layer**: Throw descriptive Error objects with user-friendly messages
+- **Network Requests**: Check `response.ok` and parse error responses from API
+
+### API Patterns
+- **Service Classes**: Use static methods for API calls (e.g., `VideoService.create()`)
+- **Response Handling**: Always check `response.ok` before parsing JSON
+- **Error Propagation**: Extract error messages from API responses (`error.error`)
+- **URL Building**: Use template literals for dynamic API endpoints
+- **Query Parameters**: Use `URLSearchParams` for complex query building
+
+### Additional Technologies & Libraries
+- **Icons**: Lucide React for consistent iconography
+- **Forms**: React Hook Form with Hookform Resolvers for form management
+- **Notifications**: Sonner for toast notifications
+- **Fonts**: Fontsource for self-hosted fonts (Inter, JetBrains Mono)
+- **Validation**: Zod for runtime type validation
+- **Animations**: Custom animation components with Tailwind CSS
 
 ### Performance Considerations
 - **React Optimization**: Use `React.memo`, `useMemo`, `useCallback` appropriately
@@ -142,27 +166,46 @@ import { VideoList } from '@/components/videos/video-list';
 ├── app/                          # Next.js App Router
 │   ├── api/                      # API routes
 │   │   ├── videos/               # Video CRUD operations
-│   │   └── metadata/             # Metadata extraction
+│   │   ├── metadata/             # Metadata extraction
+│   │   ├── platforms/            # Platform management
+│   │   ├── tags/                 # Tag management
+│   │   └── config/               # User configuration
 │   ├── layout.tsx                # Root layout with providers
 │   ├── page.tsx                  # Home page
+│   ├── watched/                  # Watched videos page
+│   ├── list/                     # Video list page
+│   ├── tags/                     # Tags management page
+│   ├── analytics/                # Analytics dashboard
 │   └── globals.css               # Global styles
 ├── components/                   # React components
 │   ├── ui/                       # Shadcn/ui base components
 │   ├── videos/                   # Video-specific components
 │   ├── video-form/               # Form-related components
 │   ├── video-preview/            # Preview and metadata components
-│   └── layout/                   # Layout components
+│   ├── layout/                   # Layout components
+│   ├── platform/                 # Platform components
+│   └── animations/               # Animation components
 ├── lib/                          # Utility libraries
 │   ├── db/                       # Database configuration and schemas
 │   ├── services/                 # Business logic services
-│   └── utils/                    # General utilities
+│   ├── utils/                    # General utilities
+│   ├── platforms/                # Platform detection utilities
+│   └── types/                    # Local type definitions
 ├── hooks/                        # Custom React hooks
-├── types/                        # TypeScript type definitions
+├── types/                        # Global TypeScript type definitions
 ├── drizzle/                      # Database migrations
 └── public/                       # Static assets
 ```
 
 
+### Linting Configuration
+- **ESLint Config**: Uses `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`
+- **Auto-fixable Issues**: Run `bun run lint --fix` before committing
+- **TypeScript Checking**: Included in linting process
+
+### IDE/Editor Integration
+- **Cursor Rules**: No .cursor/rules/ or .cursorrules files found
+- **Copilot Instructions**: No .github/copilot-instructions.md found
 
 This guide ensures consistent, maintainable, and scalable code across the video watchlist application.</content>
 <parameter name="filePath">AGENTS.md
