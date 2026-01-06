@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { Settings, Database, MonitorSpeaker, Tag } from 'lucide-react';
 import { NavigationTabs } from '@/components/navigation-tabs';
+import { CacheStats } from '@/components/settings/cache/cache-stats';
+import { CacheActions } from '@/components/settings/cache/cache-actions';
+import { CacheEntries } from '@/components/settings/cache/cache-entries';
 
 type TabId = 'cache' | 'platforms' | 'tags';
 
@@ -15,20 +18,19 @@ const tabs = [
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('cache');
 
+  const handleStatsRefresh = () => {
+    // This will be called when cache operations complete
+    // The individual components handle their own refresh logic
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'cache':
         return (
           <div className="space-y-6">
-            <div className="text-center py-12">
-              <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                Cache Management
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-                View and manage cached metadata entries. Clear expired entries or reset the entire cache.
-              </p>
-            </div>
+            <CacheStats />
+            <CacheActions onStatsRefresh={handleStatsRefresh} />
+            <CacheEntries onRefresh={handleStatsRefresh} />
           </div>
         );
       case 'platforms':
