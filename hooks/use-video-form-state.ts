@@ -233,6 +233,8 @@ export function useVideoFormState({
         tagIds: selectedTags.map(tag => tag.id),
       };
 
+
+
       const response = await fetch('/api/videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

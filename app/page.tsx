@@ -34,6 +34,8 @@ export default function Home() {
     manualThumbnailUrl,
     setManualThumbnailUrl,
     isSubmitting,
+    handleSubmit,
+    submitError,
   } = useAddVideoForm({
     onVideoAdded: () => {
       toast.success('Video added successfully!');
@@ -80,6 +82,9 @@ export default function Home() {
               url={url}
               setUrl={setUrl}
               parsedUrl={parsedUrl}
+              handleSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
+              submitError={submitError}
               onVideoAdded={() => {}}
               showTags={hasContent}
               selectedTags={selectedTags}

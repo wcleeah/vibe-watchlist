@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { url, tagIds } = body;
+    const { url, title, platform, thumbnailUrl, tagIds } = body;
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json(
@@ -172,13 +172,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate URL and detect platform
+    // Parse and validate URL
     const parsedUrl = parseVideoUrl(url);
     if (!parsedUrl.isValid) {
       return NextResponse.json(
         { error: 'Invalid or unsupported video URL' },
         { status: 400 }
       );
+    }
+
+    // Use client-provided metadata if available, otherwise extract server-side
+    let finalTitle = title;
+    let finalThumbnailUrl = thumbnailUrl;
+
+    if (!finalTitle || !finalThumbnailUrl) {
+      console.log('Client metadata incomplete, extracting server-side...');
+      try {
+        const serverMetadata = await extractVideoMetadata(url, parsedUrl.platform);
+        finalTitle = finalTitle || serverMetadata.title;
+        finalThumbnailUrl = finalThumbnailUrl || serverMetadata.thumbnailUrl;
+      } catch (metadataError) {
+        console.error('Server-side metadata extraction failed:', metadataError);
+        // Continue with client data or fallbacks
+      }
     }
 
     // Check if video already exists
@@ -195,8 +211,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract metadata
-    const metadata = await extractVideoMetadata(url, parsedUrl.platform);
+    // Use the final metadata (client + server fallback)
+    const finalPlatform = platform || parsedUrl.platform;
 
     let newVideo;
     try {
@@ -204,9 +220,9 @@ export async function POST(request: NextRequest) {
         .insert(videos)
         .values({
           url,
-          platform: parsedUrl.platform,
-          title: metadata.title,
-          thumbnailUrl: metadata.thumbnailUrl,
+          platform: finalPlatform,
+          title: finalTitle || `Video from ${parsedUrl.platform}`,
+          thumbnailUrl: finalThumbnailUrl,
         })
         .returning();
     } catch (error: unknown) {

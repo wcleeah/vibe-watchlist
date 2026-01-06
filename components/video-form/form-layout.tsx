@@ -12,6 +12,9 @@ interface FormLayoutProps {
   setUrl: (url: string) => void;
   parsedUrl?: { isValid: boolean; platform?: string } | null;
   onVideoAdded?: () => void;
+  handleSubmit: () => Promise<void>;
+  isSubmitting: boolean;
+  submitError: string | null;
   className?: string;
   showTags?: boolean;
   // Tag props to sync with preview
@@ -34,6 +37,9 @@ export function FormLayout({
   url,
   setUrl,
   parsedUrl,
+  handleSubmit,
+  isSubmitting,
+  submitError,
   onVideoAdded,
   className,
   showTags = true,
@@ -51,44 +57,10 @@ export function FormLayout({
   onAddTag,
   onReset,
 }: FormLayoutProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const hasValidUrl = parsedUrl?.isValid ?? false;
   const urlError = parsedUrl && !parsedUrl.isValid && url.trim()
     ? "Please enter a valid YouTube, Netflix, Nebula, or Twitch URL"
     : null;
-
-  // Custom handleAddVideo that uses external URL state
-  const handleAddVideo = async () => {
-    if (!url.trim() || !parsedUrl?.isValid) return;
-
-    setIsSubmitting(true);
-    try {
-      const videoData = {
-        url: url.trim(),
-        platform: parsedUrl.platform,
-        tagIds: selectedTags.map(tag => tag.id),
-      };
-
-      const response = await fetch('/api/videos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(videoData),
-      });
-
-      if (response.ok) {
-        onVideoAdded?.();
-        // Reset form
-        setUrl('');
-      } else {
-        console.error('Failed to add video');
-      }
-    } catch (error) {
-      console.error('Error adding video:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -136,7 +108,7 @@ export function FormLayout({
              Reset
            </Button>
            <SubmitButton
-             onClick={handleAddVideo}
+              onClick={handleSubmit}
              isLoading={isSubmitting}
              disabled={!hasValidUrl || isSubmitting}
              className="flex-1"
