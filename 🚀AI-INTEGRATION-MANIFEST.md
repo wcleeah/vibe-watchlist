@@ -78,6 +78,24 @@ components/video-preview/
 - Maintain existing tag functionality
 - Integrate with existing video creation flow
 
+### ✅ Phase 3: Enhanced Backend APIs (Week 5-6) - IN PROGRESS (40% Complete)
+
+#### ✅ 3.1 Upgrade Metadata API - COMPLETED
+**New Endpoints Created**:
+```
+POST /api/metadata/extract     # ✅ CREATED: Returns AI suggestions array
+GET  /api/platforms/domains    # ✅ CREATED: Platform mapping lookups
+POST /api/platforms/map        # ✅ CREATED: Update platform mappings
+GET  /api/metadata/suggestions/:url  # NEW: Get cached AI suggestions
+POST /api/metadata/feedback    # NEW: Track user selections
+```
+
+**API Response Changes**:
+- ✅ **Old**: Single metadata object `{ success: true, metadata: {...} }`
+- ✅ **New**: AI suggestions array `{ success: true, suggestions: [...], fallback: {...} }`
+- ✅ **Caching**: Database-backed cache for expensive AI calls
+- ✅ **Platform Learning**: Domain pattern matching for platform detection
+
 ### Phase 3: Enhanced Backend APIs (Week 5-6)
 
 #### 3.1 Upgrade Metadata API
