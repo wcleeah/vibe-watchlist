@@ -13,10 +13,7 @@ export default function Home() {
     url,
     setUrl,
     parsedUrl,
-    metadata,
     selectedTags,
-    isLoadingMetadata,
-    metadataError,
     tagInput,
     setTagInput,
     showTagSuggestions,
@@ -38,6 +35,12 @@ export default function Home() {
     handleSubmit,
     submitError,
     reset,
+    // AI metadata (unified approach)
+    aiSuggestions,
+    selectedSuggestion,
+    isLoadingAIMetadata,
+    aiMetadataError,
+    setSelectedSuggestion,
   } = useAddVideoForm({
     onVideoAdded: () => {
       toast.success('Video added successfully!');
@@ -52,8 +55,8 @@ export default function Home() {
   });
 
   const hasContent = url.trim().length > 0 && parsedUrl?.isValid === true;
-  // Only show full-page loading when actually fetching metadata (not just typing URLs)
-  const shouldShowLoading = hasContent && isLoadingMetadata;
+  // Only show full-page loading when actually fetching AI metadata (not just typing URLs)
+  const shouldShowLoading = hasContent && isLoadingAIMetadata;
 
   // Show full-page loading during metadata fetch
   if (shouldShowLoading) {
@@ -124,14 +127,17 @@ export default function Home() {
               video={{
                 id: 0,
                 url,
-                title: manualMode ? manualTitle : (metadata?.title || null),
-                platform: parsedUrl?.platform || 'youtube',
-                thumbnailUrl: manualMode ? manualThumbnailUrl : (metadata?.thumbnailUrl || null),
+                title: manualMode ? manualTitle : (selectedSuggestion?.title || null),
+                platform: selectedSuggestion?.platform || parsedUrl?.platform || 'unknown',
+                thumbnailUrl: manualMode ? manualThumbnailUrl : (selectedSuggestion?.thumbnailUrl || null),
                 isWatched: false,
                 tags: selectedTags,
-                metadata,
-                isLoading: isLoadingMetadata,
-                error: metadataError || undefined,
+                metadata: selectedSuggestion ? {
+                  title: selectedSuggestion.title,
+                  thumbnailUrl: selectedSuggestion.thumbnailUrl || null,
+                } : null,
+                isLoading: isLoadingAIMetadata,
+                error: aiMetadataError || undefined,
               }}
               showActions={false}
               onToggleManual={() => setManualMode(!manualMode)}

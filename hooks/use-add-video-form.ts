@@ -1,7 +1,7 @@
 'use client';
 
 import { useVideoFormState } from './use-video-form-state';
-import { useMetadataFetching } from './use-metadata-fetching';
+// Removed: import { useMetadataFetching } from './use-metadata-fetching';
 import { useAIMetadataFetching } from './use-ai-metadata-fetching';
 import { useUrlValidation } from './use-url-validation';
 import { usePreferences } from '@/lib/preferences-context';
@@ -18,19 +18,12 @@ interface UseAddVideoFormReturn {
   isValidUrl: boolean;
   urlError: string | null;
 
-  // AI Metadata state
+  // AI Metadata state (unified approach)
   aiSuggestions: Array<{ title: string; thumbnailUrl?: string; platform: string; confidence: number; reasoning?: string }>;
   selectedSuggestion: { title: string; thumbnailUrl?: string; platform: string; confidence: number; reasoning?: string } | undefined;
   isLoadingAIMetadata: boolean;
   aiMetadataError: string | null;
   setSelectedSuggestion: (suggestion: { title: string; thumbnailUrl?: string; platform: string; confidence: number; reasoning?: string } | undefined) => void;
-
-  // Legacy metadata state (for backwards compatibility)
-  metadata: { title: string; thumbnailUrl: string | null; authorName?: string; authorUrl?: string } | null;
-  isLoadingMetadata: boolean;
-  metadataError: string | null;
-  refetchMetadata: () => Promise<void>;
-  cancelMetadataFetch: () => void;
 
   // Manual mode
   manualMode: boolean;
@@ -86,25 +79,17 @@ export function useAddVideoForm({
     enabled: urlValidation.isValid,
   });
 
-  // Legacy metadata fetching hook (depends on URL validation)
-  const metadata = useMetadataFetching({
-    url: urlValidation.url,
-    platform: urlValidation.platform || 'unknown',
-    enabled: urlValidation.isValid && preferences.autoPreview,
-  });
+  // Removed: Legacy metadata fetching hook
 
   // Enhanced reset function that resets all hooks
   const reset = () => {
     urlValidation.setUrl('');
-    metadata.cancel();
     aiMetadata.cancel();
-    formState.reset();
   };
 
-  // Form state hook (depends on URL validation and metadata)
+  // Form state hook (depends on URL validation and AI metadata)
   const formState = useVideoFormState({
     parsedUrl: urlValidation.parsedUrl,
-    metadata: metadata.metadata,
     selectedSuggestion: aiMetadata.selectedSuggestion,
     onVideoAdded,
     onReset: reset,
@@ -126,12 +111,7 @@ export function useAddVideoForm({
     aiMetadataError: aiMetadata.error,
     setSelectedSuggestion: aiMetadata.setSelectedSuggestion,
 
-    // Legacy metadata state
-    metadata: metadata.metadata,
-    isLoadingMetadata: metadata.isLoading,
-    metadataError: metadata.error,
-    refetchMetadata: metadata.refetch,
-    cancelMetadataFetch: metadata.cancel,
+    // Removed: Legacy metadata state (now using AI metadata only)
 
     // Manual mode (from form state)
     manualMode: formState.manualMode,

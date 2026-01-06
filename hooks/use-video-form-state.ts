@@ -13,8 +13,7 @@ interface Tag {
 
 interface UseVideoFormStateOptions {
   parsedUrl: ParsedUrl | null;
-  metadata: VideoMetadata | null;
-  selectedSuggestion?: MetadataSuggestion; // AI-selected metadata
+  selectedSuggestion?: MetadataSuggestion; // AI-selected metadata (primary source)
   onVideoAdded?: () => void;
   onReset?: () => void;
 }
@@ -57,7 +56,6 @@ interface UseVideoFormStateReturn {
 
 export function useVideoFormState({
   parsedUrl,
-  metadata,
   selectedSuggestion,
   onVideoAdded,
   onReset,
@@ -104,17 +102,17 @@ export function useVideoFormState({
 
     if (mode) {
       // Switching to manual: preserve current inputs
-      setManualTitle(prev => prev || (metadata?.title || ''));
-      setManualThumbnailUrl(prev => prev || (metadata?.thumbnailUrl || ''));
+      setManualTitle(prev => prev || (selectedSuggestion?.title || ''));
+      setManualThumbnailUrl(prev => prev || (selectedSuggestion?.thumbnailUrl || ''));
     } else {
-      // Switching to auto: clear manual inputs if they match metadata
-      if (manualTitle === metadata?.title) setManualTitle('');
-      if (manualThumbnailUrl === metadata?.thumbnailUrl) setManualThumbnailUrl('');
+      // Switching to auto: clear manual inputs if they match AI suggestion
+      if (manualTitle === selectedSuggestion?.title) setManualTitle('');
+      if (manualThumbnailUrl === selectedSuggestion?.thumbnailUrl) setManualThumbnailUrl('');
     }
 
     setValidationErrors({});
     setSubmitError(null);
-  }, [metadata]);
+  }, [selectedSuggestion]);
 
   // Tag management functions
   const handleTagInputChange = useCallback((value: string) => {
@@ -232,9 +230,9 @@ export function useVideoFormState({
     try {
       const videoData = {
         url: parsedUrl.url,
-        title: manualMode ? manualTitle : (selectedSuggestion?.title || metadata?.title),
+        title: manualMode ? manualTitle : (selectedSuggestion?.title || 'Untitled Video'),
         platform: selectedSuggestion?.platform || parsedUrl.platform,
-        thumbnailUrl: manualMode ? manualThumbnailUrl : (selectedSuggestion?.thumbnailUrl || metadata?.thumbnailUrl),
+        thumbnailUrl: manualMode ? manualThumbnailUrl : (selectedSuggestion?.thumbnailUrl || null),
         tagIds: selectedTags.map(tag => tag.id),
       };
 
@@ -264,7 +262,7 @@ export function useVideoFormState({
     } finally {
       setIsSubmitting(false);
     }
-  }, [parsedUrl, metadata, selectedSuggestion, selectedTags, manualMode, manualTitle, manualThumbnailUrl, validateForm, onVideoAdded]);
+  }, [parsedUrl, selectedSuggestion, selectedTags, manualMode, manualTitle, manualThumbnailUrl, validateForm, onVideoAdded]);
 
   // Reset internal form state (manual mode, tags, etc.)
   const resetFormState = useCallback(() => {
