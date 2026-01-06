@@ -1,90 +1,32 @@
 # AGENTS.md - Video Watchlist Project
 
-This file contains comprehensive guidelines and commands for coding agents working on the video watchlist application. It serves as the definitive reference for development practices, tooling, and code standards.
+This file contains guidelines and commands for coding agents working on the video watchlist application.
 
 ## Project Overview
-- **Framework**: Next.js 16 with App Router
-- **Language**: TypeScript with strict mode enabled
-- **Styling**: Tailwind CSS v4 with Shadcn/ui components
+- **Framework**: Next.js 16 with App Router, TypeScript, Tailwind CSS v4, Shadcn/ui
 - **Database**: PostgreSQL with Drizzle ORM and Neon
 - **Package Manager**: Bun
-- **Current State**: Core video watchlist functionality implemented, analytics dashboard in progress
-
-## Development Setup
-
-### Package Manager
-- **Bun**: Primary package manager and runtime
-- **Commands**: Use `bun run <script>` instead of `npm run <script>`
-- **Lockfile**: `bun.lockb` (binary format for faster installs)
-
-### Development Workflow
-
-#### Tools Available
-- **Context7**: Use for searching documentation and code examples from libraries/frameworks
-- **Playwright**: Use for browser automation, UI testing, and visual verification
-- **Neon Tools**: Use for direct database interactions and schema management
-
-### After Feature Development
-- Run `bun run lint` and `bun run build` to ensure code quality
-- Update `PLAN.md` and `STYLE.md` for any architectural or design changes
-- Commit changes with descriptive messages following conventional commit format
-- Test on mobile devices (iPhone 13 Pro baseline: 390px width)
+- **Current State**: Core video watchlist functionality implemented
 
 ## Build & Development Commands
 
 ### Development Server
 ```bash
-# Start development server (default: http://localhost:3000)
-bun run dev
-
-# Start with custom port
-bun run dev --port 3001
-
-# Start with specific hostname
-bun run dev --hostname 0.0.0.0
-```
-
-### Production Build & Deployment
-```bash
-# Build for production
-bun run build
-
-# Start production server
-bun run start
-
-# Preview production build locally
-bun run build && bun run start
+bun run dev          # Start dev server (http://localhost:3000)
+bun run build        # Production build
+bun run start        # Start production server
 ```
 
 ### Code Quality & Linting
 ```bash
-# Run ESLint (includes TypeScript checking)
-bun run lint
-
-# Fix auto-fixable ESLint issues
-bun run lint --fix
-
-# Type-check only (runs during build)
-bun run build
+bun run lint         # Run ESLint (includes TypeScript checking)
+bun run lint --fix   # Fix auto-fixable issues
 ```
 
 ### Testing
-```bash
-# Run all tests (when implemented - currently no tests configured)
-# Future: bun run test
-
-# Run tests in watch mode (when implemented)
-# Future: bun run test --watch
-
-# Run single test file (when implemented)
-# Future: bun run test path/to/test.file
-
-# Run tests with coverage (when implemented)
-# Future: bun run test --coverage
-
-# Run e2e tests with Playwright (when implemented)
-# Future: bun run test:e2e
-```
+- **Current State**: No test framework configured yet
+- **Future**: Vitest for unit tests, Playwright for E2E tests
+- **Single Test**: `bun run test path/to/test.file` (when implemented)
 
 ## Code Style Guidelines
 
@@ -95,13 +37,6 @@ bun run build
 - **Path Mapping**: `@/*` for clean imports (maps to project root)
 - **JSX**: `"react-jsx"` transform for modern React
 - **Incremental Builds**: Enabled for faster compilation
-
-### TypeScript Best Practices
-- **Interface vs Type**: Use `interface` for object shapes, `type` for unions/aliases
-- **Explicit Types**: Always specify return types for functions and parameters
-- **Generic Naming**: Use descriptive names (`TVideo`, `TApiResponse`, `TError`)
-- **Type Assertions**: Use sparingly, prefer type guards and proper typing
-- **Utility Types**: Leverage built-in types (`Partial<T>`, `Omit<T>`, `Pick<T>`)
 
 ### React/Next.js Patterns
 
@@ -114,9 +49,9 @@ bun run build
 - **Component Composition**: Build complex UIs by composing smaller components
 
 #### Custom Hooks
-- Extract reusable logic into custom hooks prefixed with `use`
-- Hooks should follow single responsibility principle
-- Use proper dependency arrays in `useEffect`, `useMemo`, `useCallback`
+- **Naming**: `camelCase` with `use` prefix (e.g., `useVideoMetadata`)
+- **Single Responsibility**: Each hook should focus on one concern
+- **Proper Dependencies**: Use correct dependency arrays in `useEffect`, `useMemo`, `useCallback`
 
 #### Data Fetching Strategy
 ```typescript
@@ -143,10 +78,10 @@ function VideoActions({ videoId }: { videoId: number }) {
 ### Database (Drizzle ORM + Neon)
 
 #### Schema Design
-- Define schemas in `lib/db/schema.ts` with proper relations
-- Use enums for constrained values (`videoPlatformEnum`)
-- Include created/updated timestamps for audit trails
-- Use cascading deletes for referential integrity
+- **Naming**: `snake_case` for tables and columns (`videos`, `video_tags`, `is_watched`)
+- **Enums**: `snake_case` with descriptive names (`video_platform`)
+- **Relations**: Use proper foreign key constraints with cascading deletes
+- **Timestamps**: Include `createdAt` and `updatedAt` for audit trails
 
 #### Query Patterns
 ```typescript
@@ -165,35 +100,23 @@ const videosWithTags = await db.query.videos.findMany({
 const getVideoById = db.select().from(videos).where(eq(videos.id, placeholder('id'))).prepare();
 ```
 
-#### Migration Workflow
-```bash
-# After schema changes in schema.ts
-bunx drizzle-kit generate  # Generate migration files
-bunx drizzle-kit push      # Apply to database (development)
-bunx drizzle-kit check     # Validate migration integrity
-```
-
 ### Styling (Tailwind CSS v4 + Shadcn/ui)
 
 #### Component Library
 - **Base Components**: Use Shadcn/ui components from `@/components/ui/*`
 - **Composition**: Build complex components by combining base components
 - **Custom Styling**: Avoid custom CSS, extend with Tailwind utilities
+- **Utility Function**: Use `cn()` helper for conditional classes
 
 #### Responsive Design
 - **Mobile-First**: Start with mobile styles, enhance for larger screens
 - **Breakpoint Order**: `sm:`, `md:`, `lg:`, `xl:`, `2xl:`
-- **Container Queries**: Use `@container` for component-based responsive design
+- **Touch Targets**: Minimum 44px height for interactive elements
 
 #### Dark Mode
 - **Theme Provider**: `next-themes` handles theme switching
 - **CSS Variables**: Shadcn/ui uses CSS variables for theme consistency
 - **Class Strategy**: Use `class` strategy for SSR compatibility
-
-#### Developer-Focused Design
-- **Typography**: Use JetBrains Mono for code elements and technical content
-- **Color Coding**: Use semantic colors (gray for neutral, blue for primary actions)
-- **Spacing**: Consistent spacing scale using Tailwind's spacing utilities
 
 ### Import Organization
 Order imports consistently:
@@ -227,7 +150,6 @@ import type { VideoFormData } from '@/types/forms';
 - **Components**: `pascal-case` (e.g., `VideoCard.tsx`, `AddVideoForm.tsx`)
 - **Utilities**: `kebab-case` (e.g., `url-parser.ts`, `platform-utils.ts`)
 - **Hooks**: `camelCase` with `use` prefix (e.g., `useVideoMetadata.ts`)
-- **Types**: `kebab-case` (e.g., `video-types.ts`)
 - **Directories**: `kebab-case` for grouping (e.g., `video-preview/`, `video-form/`)
 
 #### Code Elements
@@ -237,39 +159,10 @@ import type { VideoFormData } from '@/types/forms';
 - **Types/Interfaces**: `PascalCase` (`Video`, `ApiResponse`, `TVideoData`)
 - **Enums**: `PascalCase` with descriptive names (`VideoPlatform`, `UserRole`)
 
-#### Database
-- **Tables**: `snake_case` (`videos`, `video_tags`, `user_sessions`)
-- **Columns**: `snake_case` (`is_watched`, `created_at`, `video_id`)
-- **Enums**: `snake_case` (`video_platform`)
-
 ### Error Handling
-
-#### Form Validation & User Feedback
-```typescript
-// Consistent error display patterns
-const [error, setError] = useState<string>('');
-
-// Clear errors on new attempts
-const handleSubmit = async () => {
-  setError('');
-  try {
-    // ... operation
-  } catch (err) {
-    setError(err instanceof Error ? err.message : 'An error occurred');
-  }
-};
-
-// Error display in UI
-{error && (
-  <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-lg p-4">
-    <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-  </div>
-)}
-```
 
 #### API Routes
 ```typescript
-// Consistent error response format
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -296,13 +189,6 @@ export async function POST(request: Request) {
 
 #### Client-Side Error Handling
 ```typescript
-// Use error boundaries for React components
-'use client';
-class ErrorBoundary extends Component {
-  // Implementation
-}
-
-// Handle async operations with proper error states
 function VideoForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -323,193 +209,55 @@ function VideoForm() {
 }
 ```
 
-#### Database Error Handling
-- Wrap database operations in transactions for consistency
-- Handle connection errors gracefully with retry logic
-- Log errors for debugging while exposing user-friendly messages
-
 ### Performance Considerations
-
-#### React Optimization
-- **Memoization**: Use `React.memo`, `useMemo`, `useCallback` appropriately
-- **Lazy Loading**: Use `React.lazy` for route-based code splitting
-- **Virtual Scrolling**: Implement for large video lists (future enhancement)
-
-#### Database Optimization
-- **Prepared Statements**: Use for repeated queries
-- **Proper Indexing**: Index frequently queried columns
-- **Pagination**: Implement cursor-based pagination for large datasets
-- **Connection Pooling**: Neon handles this automatically
-
-#### Bundle Optimization
-- **Tree Shaking**: Leverage ES modules for dead code elimination
-- **Image Optimization**: Use Next.js Image component for automatic optimization
-- **Font Loading**: Preload critical fonts, use `font-display: swap`
+- **React Optimization**: Use `React.memo`, `useMemo`, `useCallback` appropriately
+- **Database**: Use prepared statements and proper indexing
+- **Bundle**: Leverage Next.js production optimizations
+- **Images**: Use Next.js Image component for automatic optimization
 
 ### Security Best Practices
-
-#### Input Validation
-- **Zod Schemas**: Validate all user inputs on both client and server
+- **Input Validation**: Use Zod schemas for all user inputs
 - **SQL Injection**: Use parameterized queries (Drizzle handles this)
-- **XSS Prevention**: Sanitize user-generated content
-
-#### Authentication & Authorization
-- **API Security**: Implement proper authentication for sensitive operations
-- **Rate Limiting**: Protect against abuse (future implementation)
-- **CORS**: Configure appropriate CORS policies
-
-#### Data Protection
-- **Environment Variables**: Never commit secrets or API keys
+- **Secrets**: Never commit environment variables or API keys
 - **Error Messages**: Don't expose sensitive information in error responses
-- **Logging**: Log security events without exposing sensitive data
 
 ### File Structure
 ```
 ├── app/                          # Next.js App Router
 │   ├── api/                      # API routes
 │   │   ├── videos/               # Video CRUD operations
-│   │   └── tags/                 # Tag management
+│   │   └── metadata/             # Metadata extraction
 │   ├── layout.tsx                # Root layout with providers
 │   ├── page.tsx                  # Home page
 │   ├── list/                     # Video list page
 │   ├── watched/                  # Watched videos page
-│   ├── tags/                     # Tag management page
-│   ├── analytics/                # Analytics dashboard page
 │   └── globals.css               # Global styles
 ├── components/                   # React components
 │   ├── ui/                       # Shadcn/ui base components
 │   ├── videos/                   # Video-specific components
-│   │   ├── video-list.tsx        # Video list display
-│   │   ├── add-video-form.tsx    # Video creation form
-│   │   └── video-card.tsx        # Individual video card
 │   ├── video-form/               # Form-related components
 │   ├── video-preview/            # Preview and metadata components
 │   ├── layout/                   # Layout components
 │   └── animations/               # Animation utilities
 ├── lib/                          # Utility libraries
 │   ├── db/                       # Database configuration and schemas
-│   ├── utils/                    # General utilities
-│   │   ├── url-parser.ts         # URL parsing logic
-│   │   ├── platform-utils.ts     # Platform detection
-│   │   └── metadata-extractor.ts # Video metadata extraction
-│   └── api/                      # API client utilities
+│   └── utils/                    # General utilities
 ├── hooks/                        # Custom React hooks
-│   ├── use-videos.ts             # Video data management
-│   └── use-theme.ts              # Theme management
+│   ├── use-video-metadata.ts     # Video metadata management
+│   └── use-video-form.ts         # Form state management
 ├── types/                        # TypeScript type definitions
-│   ├── video.ts                  # Video-related types
-│   ├── form.ts                   # Form data types
-│   └── api.ts                    # API response types
-├── drizzle/                      # Database migrations
-├── public/                       # Static assets
-└── styles/                       # Additional stylesheets
+└── public/                       # Static assets
 ```
-
-### Mobile Optimization
-- **Viewport Configuration**: Proper meta tags in `app/layout.tsx`
-- **Touch Targets**: Minimum 44px height for all interactive elements
-- **Responsive Navigation**: Slide-out drawer for mobile navigation
-- **Card Layouts**: Vertical stacking on mobile, maintain 16:9 aspect ratios
-- **Typography Scaling**: Responsive text sizes (`text-2xl sm:text-3xl`)
-- **Performance**: Lazy loading for video thumbnails
-- **Testing Baseline**: iPhone 13 Pro (390px width) and modern mobile devices
 
 ### ESLint Configuration
 - **Configuration**: `eslint.config.mjs` using flat config format
 - **Base Rules**: Next.js recommended rules with TypeScript support
-- **Custom Rules**: No unused variables, consistent import ordering
-- **Integration**: Runs via `bun run lint`, includes in CI pipeline
 - **Auto-fix**: Supports `--fix` flag for auto-fixable issues
+- **Integration**: Runs via `bun run lint`
 
 ### Environment Variables
-Required environment variables:
-- `DATABASE_URL`: Neon PostgreSQL connection string (required for database operations)
+- **Required**: `DATABASE_URL` for Neon PostgreSQL connection
+- **Optional**: Public variables prefixed with `NEXT_PUBLIC_`
 
-Optional environment variables:
-- `NEXT_PUBLIC_*`: Public variables accessible in browser
-- `NODE_ENV`: Development/production environment detection
-
-### Additional Guidelines
-
-#### Git Workflow
-- **Commit Messages**: Use conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`)
-- **Branch Naming**: `feature/`, `bugfix/`, `hotfix/` prefixes
-- **Pull Requests**: Include description, link related issues, request reviews
-
-#### Documentation
-- **Code Comments**: Explain complex business logic, not obvious code
-- **README Updates**: Keep setup and usage instructions current
-- **API Documentation**: Document API endpoints with examples
-
-#### Testing Strategy (Future Implementation)
-- **Unit Tests**: Component and utility function testing (framework TBD - Vitest recommended)
-- **Integration Tests**: API route testing
-- **E2E Tests**: Critical user flows with Playwright
-- **Visual Regression**: Component appearance testing
-
-#### Deployment
-- **Platform**: Vercel or similar serverless platform
-- **Build Optimization**: Leverage Next.js production optimizations
-- **CDN**: Automatic static asset optimization
-- **Environment**: Separate staging and production environments
-
-### Tool-Specific Usage
-
-#### Context7 Integration
-- Use for library documentation and code examples
-- Search with specific queries: "React useState hook examples"
-- Prefer for API documentation and framework guides
-
-#### Playwright Integration
-- Use for UI verification and browser automation
-- Test responsive design across different viewports
-- Validate accessibility features
-
-#### Neon Database Tools
-- Use for direct database queries during development
-- Validate schema changes before migration
-- Monitor query performance and optimization
-
-### Additional Guidelines
-
-#### Git Workflow
-- **Commit Messages**: Use conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`)
-- **Branch Naming**: `feature/`, `bugfix/`, `hotfix/` prefixes
-- **Pull Requests**: Include description, link related issues, request reviews
-
-#### Documentation
-- **Code Comments**: Explain complex business logic, not obvious code
-- **README Updates**: Keep setup and usage instructions current
-- **API Documentation**: Document API endpoints with examples
-
-#### Testing Strategy (Future Implementation)
-- **Unit Tests**: Component and utility function testing (framework TBD - Vitest recommended)
-- **Integration Tests**: API route testing
-- **E2E Tests**: Critical user flows with Playwright
-- **Visual Regression**: Component appearance testing
-
-#### Deployment
-- **Platform**: Vercel or similar serverless platform
-- **Build Optimization**: Leverage Next.js production optimizations
-- **CDN**: Automatic static asset optimization
-- **Environment**: Separate staging and production environments
-
-### Tool-Specific Usage
-
-#### Context7 Integration
-- Use for library documentation and code examples
-- Search with specific queries: "React useState hook examples"
-- Prefer for API documentation and framework guides
-
-#### Playwright Integration
-- Use for UI verification and browser automation
-- Test responsive design across different viewports
-- Validate accessibility features
-
-#### Neon Database Tools
-- Use for direct database queries during development
-- Validate schema changes before migration
-- Monitor query performance and optimization
-
-This comprehensive guide ensures consistent, maintainable, and scalable code across the video watchlist application. Always refer to this document before implementing new features or modifying existing code.</content>
+This guide ensures consistent, maintainable, and scalable code across the video watchlist application.</content>
 <parameter name="filePath">AGENTS.md
