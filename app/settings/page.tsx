@@ -9,6 +9,7 @@ import { CacheEntries } from '@/components/settings/cache/cache-entries';
 import { PlatformList } from '@/components/settings/platforms/platform-list';
 import { PlatformForm } from '@/components/settings/platforms/platform-form';
 import { PlatformTester } from '@/components/settings/platforms/platform-tester';
+import { TagsManager } from '@/components/settings/tags-manager';
 
 type TabId = 'cache' | 'platforms' | 'tags';
 
@@ -64,6 +65,8 @@ export default function SettingsPage() {
             <PlatformTester />
           </div>
         );
+      case 'tags':
+        return <TagsManager />;
       case 'platforms':
         return (
           <div className="space-y-6">

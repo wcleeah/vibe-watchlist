@@ -10,4 +10,5 @@ The current Analytics page looks pretty good, wanna add more statistics, not sur
   - Token usage
   - Search count
   - Average accuracy
+  - many more
 - I do know i want it to be a event driven data collection system
