@@ -77,15 +77,7 @@ export const aiMetadataCache = pgTable('ai_metadata_cache', {
   expiresAt: timestamp('expires_at').notNull(),
 });
 
-// Metadata suggestions tracking for analytics
-export const metadataSuggestions = pgTable('metadata_suggestions', {
-  id: serial('id').primaryKey(),
-  url: text('url').notNull(),
-  suggestions: jsonb('suggestions').notNull(), // Array of {title, thumbnail_url, platform, confidence}
-  selectedIndex: integer('selected_index'),
-  userFeedback: text('user_feedback'),
-  createdAt: timestamp('created_at').defaultNow(),
-});
+
 
 // Relations
 export const videosRelations = relations(videos, ({ many }) => ({
@@ -112,8 +104,7 @@ export type NewVideo = typeof videos.$inferInsert;
 export type Tag = typeof tags.$inferSelect;
 export type AIMetadataCache = typeof aiMetadataCache.$inferSelect;
 export type NewAIMetadataCache = typeof aiMetadataCache.$inferInsert;
-export type MetadataSuggestion = typeof metadataSuggestions.$inferSelect;
-export type NewMetadataSuggestion = typeof metadataSuggestions.$inferInsert;
+
 export type NewTag = typeof tags.$inferInsert;
 export type VideoTag = typeof videoTags.$inferSelect;
 export type NewVideoTag = typeof videoTags.$inferInsert;

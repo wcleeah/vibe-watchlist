@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { VideoIcon, ListVideo, BarChart3, CheckCircle, Tag, Menu, X } from 'lucide-react';
+import { VideoIcon, ListVideo, BarChart3, CheckCircle, Tag, Settings, Menu, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export function NavigationTabs() {
@@ -17,8 +17,8 @@ export function NavigationTabs() {
     { href: '/', label: 'Add Video', icon: VideoIcon },
     { href: '/list', label: 'My List', icon: ListVideo },
     { href: '/watched', label: 'Watched', icon: CheckCircle },
-    { href: '/tags', label: 'Tags', icon: Tag },
     { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+    { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
   return (

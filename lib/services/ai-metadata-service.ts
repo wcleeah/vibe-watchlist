@@ -11,7 +11,7 @@ import { SharedMetadataService } from "@/lib/services/shared-metadata-service";
 import { MetascraperService } from "@/lib/services/metascraper-service";
 import { parseVideoUrl } from "@/lib/utils/url-parser";
 import { db } from "@/lib/db";
-import { aiMetadataCache, metadataSuggestions } from "@/lib/db/schema";
+import { aiMetadataCache } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 /**
@@ -330,11 +330,7 @@ export class AIMetadataService {
         console.log("🤖 AI PLATFORM HANDLER: Caching results");
         await this.cacheResults(url, googleResults, html, suggestions);
 
-        // Track suggestions for analytics
-        console.log(
-            "🤖 AI PLATFORM HANDLER: Tracking suggestions for analytics",
-        );
-        await this.trackSuggestions(url, suggestions);
+
 
         const response = {
             success: true,
@@ -959,23 +955,7 @@ export class AIMetadataService {
         }
     }
 
-    /**
-     * Track user suggestions for analytics
-     */
-    private async trackSuggestions(
-        url: string,
-        suggestions: MetadataSuggestion[],
-    ): Promise<void> {
-        try {
-            await db.insert(metadataSuggestions).values({
-                url,
-                suggestions,
-            });
-        } catch (error) {
-            console.error("Suggestion tracking failed:", error);
-            // Don't fail the operation
-        }
-    }
+
 }
 
 // Export singleton instance
