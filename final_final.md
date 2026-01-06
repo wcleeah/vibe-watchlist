@@ -173,6 +173,15 @@ All UI/UX refinements completed successfully! The app now provides an excellent 
 - ✅ Clean, polished interface
 - ✅ Full TypeScript compilation and build success
 
+## Phase 2 Summary
+All metadata extraction enhancements completed with security improvements! The app now securely extracts metadata from multiple platforms:
+- ✅ Twitch Helix API integration (server-side only)
+- ✅ Google Custom Search API fallback (server-side only)
+- ✅ Manual metadata input system
+- ✅ Secure backend API architecture (no client-side credentials)
+- ✅ Comprehensive error handling and fallbacks
+- ✅ Full integration testing and production build
+
 ## Quick Fixes Applied
 - **Add Video Page Padding**: Further reduced mobile top padding from pt-12 to pt-8 for tighter layout
 - **Toast Notifications**: Fixed visibility by repositioning Toaster before children in layout
@@ -191,7 +200,9 @@ After implementing the dev work, you need to perform these manual steps:
 
 1. **Twitch API Setup**:
    - Go to https://dev.twitch.tv/console/apps
-   - Create a new application with your app details
+   - Create a new application with name "vibe-watchlist"
+   - Add OAuth Redirect URL: `https://example.com/callback`
+   - Select Category: "Website Integration"
    - Copy the Client ID and Client Secret
    - Update .env.local with the actual values for TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET
 
@@ -203,13 +214,18 @@ After implementing the dev work, you need to perform these manual steps:
    - Copy the Search Engine ID
    - Update .env.local with GOOGLE_API_KEY and GOOGLE_CSE_ID
 
-3. **Testing**:
+3. **Security Verification**:
+   - Confirm API credentials are NOT exposed in browser network requests
+   - Verify all external API calls happen server-side
+   - Check that client-side code only calls /api/metadata
+
+4. **Testing**:
    - Test with various URLs from YouTube, Twitch, Netflix, Nebula
    - Verify metadata extraction works
    - Test manual input fallback
    - Check mobile responsiveness on iPhone 13 Pro
 
-4. **Deployment**:
+5. **Deployment**:
    - Run `bun run build` to ensure production build works
    - Deploy to Vercel or your hosting platform
    - Verify environment variables are set in production
