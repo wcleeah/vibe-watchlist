@@ -4,7 +4,7 @@ import { NavigationTabs } from '@/components/navigation-tabs';
 import { LayoutManager } from '@/components/layout/layout-manager';
 import { FormLayout } from '@/components/video-form';
 import { PreviewCard } from '@/components/video-preview';
-import { useVideoForm } from '@/hooks/use-video-form';
+import { useAddVideoForm } from '@/hooks/use-add-video-form';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -15,7 +15,7 @@ export default function Home() {
     metadata,
     selectedTags,
     isLoadingMetadata,
-    previewError,
+    metadataError,
     tagInput,
     setTagInput,
     showTagSuggestions,
@@ -33,7 +33,8 @@ export default function Home() {
     setManualTitle,
     manualThumbnailUrl,
     setManualThumbnailUrl,
-  } = useVideoForm({
+    isSubmitting,
+  } = useAddVideoForm({
     onVideoAdded: () => {
       toast.success('Video added successfully!');
     }
@@ -108,7 +109,7 @@ export default function Home() {
                 tags: selectedTags,
                 metadata,
                 isLoading: isLoadingMetadata,
-                error: previewError || undefined,
+                error: metadataError || undefined,
               }}
               showActions={false}
               onToggleManual={() => setManualMode(!manualMode)}
