@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, CheckCircle, Trash2, Loader2 } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 import { usePreferences } from '@/lib/preferences-context';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
-import { MetadataDisplay, ThumbnailDisplay } from './metadata-components';
-import { LoadingSkeleton } from './loading-skeleton';
+import { ThumbnailDisplay } from './metadata-components';
 import { ErrorDisplay } from './error-display';
 import { PreviewCardProps } from './types';
 
@@ -41,21 +40,6 @@ export function PreviewCard({
       </div>
     );
   }
-
-  // Platform background colors
-  const platformBackgrounds = {
-    youtube: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
-    netflix: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
-    nebula: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
-    twitch: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
-  };
-
-  const platformAccentColors = {
-    youtube: 'text-red-600 dark:text-red-400',
-    netflix: 'text-red-600 dark:text-red-400',
-    nebula: 'text-purple-600 dark:text-purple-400',
-    twitch: 'text-purple-600 dark:text-purple-400',
-  };
 
   const borderClass = showActions ? 'border border-black dark:border-white' : '';
 
@@ -107,7 +91,7 @@ export function PreviewCard({
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Thumbnail */}
             {preferences.showThumbnails && (
-              <div className="w-full sm:w-[304px] aspect-video sm:aspect-auto sm:flex-shrink-0 sm:h-[171px]">
+              <div className="w-full sm:w-[304px] aspect-video sm:aspect-auto sm:flex-shrink-0 sm:h-[171px] pt-4">
                 {manualMode ? (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Thumbnail URL</label>
