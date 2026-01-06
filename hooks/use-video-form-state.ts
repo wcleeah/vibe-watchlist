@@ -235,13 +235,13 @@ export function useVideoFormState({
         tagIds: selectedTags.map(tag => tag.id),
       };
 
-
-
       const response = await fetch('/api/videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(videoData),
       });
+
+      console.log('📥 API Response:', response.status, response.statusText);
 
       if (!response.ok) {
         if (response.status === 409) {
