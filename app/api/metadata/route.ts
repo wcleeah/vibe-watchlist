@@ -9,6 +9,20 @@ interface VideoMetadata {
   authorUrl?: string;
 }
 
+/**
+ * Resolves Twitch thumbnail URL templates by replacing width/height placeholders
+ * Twitch API returns URLs like: thumb/thumb0-%{width}x%{height}.jpg
+ * We convert to: thumb/thumb0-320x180.jpg
+ */
+function resolveTwitchThumbnailUrl(templateUrl: string, width = 320, height = 180): string {
+  if (!templateUrl) return templateUrl;
+
+  return templateUrl
+    .replace(/%{width}/g, width.toString())
+    .replace(/%{height}/g, height.toString())
+    .replace(/{width}/g, width.toString())    // Alternative format
+    .replace(/{height}/g, height.toString());
+}
 async function extractYouTubeMetadata(url: string): Promise<VideoMetadata> {
   const oEmbedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
 
@@ -66,7 +80,7 @@ async function extractTwitchMetadata(url: string): Promise<VideoMetadata> {
 
   return {
     title: video.title || 'Untitled Twitch Video',
-    thumbnailUrl: video.thumbnail_url || null,
+    thumbnailUrl: video.thumbnail_url ? resolveTwitchThumbnailUrl(video.thumbnail_url) : null,
     authorName: video.user_name,
     authorUrl: video.user_login ? `https://twitch.tv/${video.user_login}` : undefined,
   };
