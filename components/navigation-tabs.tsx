@@ -36,7 +36,7 @@ export function NavigationTabs() {
             </button>
 
             {/* Desktop navigation */}
-            <div className="hidden sm:flex space-x-8">
+            <div className="hidden sm:flex space-x-4">
               {navLinks.map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
