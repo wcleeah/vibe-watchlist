@@ -253,7 +253,13 @@ async function extractVideoMetadata(url: string, platform: VideoPlatform): Promi
   }
 }
 
+// DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+// Use /api/metadata/extract instead for enhanced AI-powered metadata extraction.
+
 export async function POST(request: NextRequest) {
+  console.warn('⚠️ DEPRECATED: /api/metadata is deprecated. Use /api/metadata/extract instead.');
+
+  // Return deprecation notice for now, but still provide basic functionality
   try {
     const { url, platform } = await request.json();
 
