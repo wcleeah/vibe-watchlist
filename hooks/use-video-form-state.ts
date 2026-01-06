@@ -14,6 +14,7 @@ interface UseVideoFormStateOptions {
   parsedUrl: ParsedUrl | null;
   metadata: VideoMetadata | null;
   onVideoAdded?: () => void;
+  onReset?: () => void;
 }
 
 interface UseVideoFormStateReturn {
@@ -55,7 +56,8 @@ interface UseVideoFormStateReturn {
 export function useVideoFormState({
   parsedUrl,
   metadata,
-  onVideoAdded
+  onVideoAdded,
+  onReset
 }: UseVideoFormStateOptions): UseVideoFormStateReturn {
   // Manual mode state
   const [manualMode, setManualMode] = useState(false);
@@ -249,7 +251,8 @@ export function useVideoFormState({
           setSubmitError('Failed to add video');
         }
       } else {
-        reset();
+        resetFormState(); // Reset internal form state
+        onReset?.(); // Reset URL and global state
         onVideoAdded?.();
       }
     } catch (error) {
@@ -260,8 +263,8 @@ export function useVideoFormState({
     }
   }, [parsedUrl, metadata, selectedTags, manualMode, manualTitle, manualThumbnailUrl, validateForm, onVideoAdded]);
 
-  // Reset function
-  const reset = useCallback(() => {
+  // Reset internal form state (manual mode, tags, etc.)
+  const resetFormState = useCallback(() => {
     setManualMode(false);
     setManualTitle('');
     setManualThumbnailUrl('');
@@ -306,7 +309,7 @@ export function useVideoFormState({
     validationErrors,
 
     // Reset
-    reset,
+    reset: resetFormState,
   };
 }
 

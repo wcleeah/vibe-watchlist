@@ -78,19 +78,20 @@ export function useAddVideoForm({
     enabled: urlValidation.isValid && preferences.autoPreview,
   });
 
-  // Form state hook (depends on URL validation and metadata)
-  const formState = useVideoFormState({
-    parsedUrl: urlValidation.parsedUrl,
-    metadata: metadata.metadata,
-    onVideoAdded,
-  });
-
   // Enhanced reset function that resets all hooks
   const reset = () => {
     urlValidation.setUrl('');
     metadata.cancel();
     formState.reset();
   };
+
+  // Form state hook (depends on URL validation and metadata)
+  const formState = useVideoFormState({
+    parsedUrl: urlValidation.parsedUrl,
+    metadata: metadata.metadata,
+    onVideoAdded,
+    onReset: reset,
+  });
 
   // Return unified interface matching original useVideoForm
   return {
