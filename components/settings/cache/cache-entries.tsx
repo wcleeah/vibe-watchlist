@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ExternalLink, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface CacheEntry {
   id: string;
@@ -52,6 +53,29 @@ export function CacheEntries({ onRefresh }: CacheEntriesProps) {
 
   const handlePageChange = (page: number) => {
     fetchEntries(page);
+  };
+
+  const handleDeleteEntry = async (cacheId: string) => {
+    if (!confirm('Are you sure you want to delete this cache entry?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/cache/${cacheId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Cache entry deleted successfully');
+        fetchEntries(currentPage); // Refresh current page
+        onRefresh(); // Refresh stats
+      } else {
+        throw new Error('Failed to delete cache entry');
+      }
+    } catch (error) {
+      console.error('Error deleting cache entry:', error);
+      toast.error('Failed to delete cache entry');
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -144,6 +168,9 @@ export function CacheEntries({ onRefresh }: CacheEntriesProps) {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Expires
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -179,6 +206,16 @@ export function CacheEntries({ onRefresh }: CacheEntriesProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {formatDate(entry.expiresAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Button
+                        onClick={() => handleDeleteEntry(entry.id)}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </td>
                   </tr>
                 ))}

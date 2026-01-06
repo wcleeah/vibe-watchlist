@@ -39,7 +39,7 @@ export function PlatformList({ onEdit, onAdd, onRefresh }: PlatformListProps) {
       if (response.ok) {
         const data = await response.json();
         // Include disabled platforms for management
-        setPlatforms(data);
+        setPlatforms(data.data || []);
       }
     } catch (error) {
       console.error('Failed to fetch platforms:', error);

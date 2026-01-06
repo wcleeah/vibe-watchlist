@@ -20,9 +20,9 @@ export class PlatformService {
       const response = await fetch('/api/platforms');
       if (response.ok) {
         const data = await response.json();
-        this.cache = data;
+        this.cache = data.data || [];
         this.cacheExpiry = Date.now() + this.CACHE_TTL;
-        return data;
+        return data.data || [];
       }
     } catch (error) {
       console.error('Failed to fetch platforms:', error);
