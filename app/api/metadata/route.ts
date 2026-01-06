@@ -116,7 +116,7 @@ async function extractGoogleMetadata(url: string): Promise<VideoMetadata> {
     const path = urlObj.pathname.slice(1, 50); // first 50 chars of path
     const query = `site:${domain} ${path}`;
 
-    const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_API_KEY}&cx=${process.env.GOOGLE_CSE_ID}&q=${encodeURIComponent(query)}&num=1`;
+    const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_API_KEY}&cx=${process.env.GOOGLE_CSE_ID}&q=${encodeURIComponent(query)}&num=1`;
 
     const response = await fetch(searchUrl);
 

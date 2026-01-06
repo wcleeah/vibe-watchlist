@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp, pgEnum, integer } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, boolean, timestamp, pgEnum, integer, jsonb, decimal } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const videoPlatformEnum = pgEnum('video_platform', ['youtube', 'netflix', 'nebula', 'twitch', 'unknown']);
@@ -27,6 +27,44 @@ export const videoTags = pgTable('video_tags', {
   tagId: integer('tag_id').references(() => tags.id, { onDelete: 'cascade' }).notNull(),
 });
 
+// User configuration storage for settings
+export const userConfig = pgTable('user_config', {
+  id: serial('id').primaryKey(),
+  configKey: text('config_key').notNull().unique(),
+  configValue: jsonb('config_value').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Analytics events for tracking usage
+export const analyticsEvents = pgTable('analytics_events', {
+  id: serial('id').primaryKey(),
+  eventType: text('event_type').notNull(),
+  eventData: jsonb('event_data'),
+  userId: text('user_id'), // For future multi-user support
+  sessionId: text('session_id'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Platform configuration registry for dynamic platform support
+export const platformConfigs = pgTable('platform_configs', {
+  id: serial('id').primaryKey(),
+  platformId: text('platform_id').notNull().unique(),
+  name: text('name').notNull(),
+  displayName: text('display_name').notNull(),
+  patterns: text('patterns').array().notNull(),
+  extractor: text('extractor').default('fallback'),
+  color: text('color').default('#6b7280'),
+  icon: text('icon').default('Video'),
+  enabled: boolean('enabled').default(true),
+  isPreset: boolean('is_preset').default(false),
+  addedBy: text('added_by').default('system'),
+  confidenceScore: decimal('confidence_score', { precision: 3, scale: 2 }).default('1.0'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 // Relations
 export const videosRelations = relations(videos, ({ many }) => ({
   videoTags: many(videoTags),
@@ -53,3 +91,9 @@ export type Tag = typeof tags.$inferSelect;
 export type NewTag = typeof tags.$inferInsert;
 export type VideoTag = typeof videoTags.$inferSelect;
 export type NewVideoTag = typeof videoTags.$inferInsert;
+export type UserConfig = typeof userConfig.$inferSelect;
+export type NewUserConfig = typeof userConfig.$inferInsert;
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert;
+export type PlatformConfig = typeof platformConfigs.$inferSelect;
+export type NewPlatformConfig = typeof platformConfigs.$inferInsert;
