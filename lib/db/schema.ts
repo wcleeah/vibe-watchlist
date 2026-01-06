@@ -65,6 +65,28 @@ export const platformConfigs = pgTable('platform_configs', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// AI metadata cache for expensive API calls
+export const aiMetadataCache = pgTable('ai_metadata_cache', {
+  id: serial('id').primaryKey(),
+  url: text('url').notNull().unique(),
+  searchResults: jsonb('search_results').notNull(),
+  htmlContent: text('html_content').notNull(),
+  aiAnalysis: jsonb('ai_analysis').notNull(),
+  confidenceScore: decimal('confidence_score', { precision: 3, scale: 2 }),
+  createdAt: timestamp('created_at').defaultNow(),
+  expiresAt: timestamp('expires_at').notNull(),
+});
+
+// Metadata suggestions tracking for analytics
+export const metadataSuggestions = pgTable('metadata_suggestions', {
+  id: serial('id').primaryKey(),
+  url: text('url').notNull(),
+  suggestions: jsonb('suggestions').notNull(), // Array of {title, thumbnail_url, platform, confidence}
+  selectedIndex: integer('selected_index'),
+  userFeedback: text('user_feedback'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 // Relations
 export const videosRelations = relations(videos, ({ many }) => ({
   videoTags: many(videoTags),
@@ -88,6 +110,10 @@ export const videoTagsRelations = relations(videoTags, ({ one }) => ({
 export type Video = typeof videos.$inferSelect;
 export type NewVideo = typeof videos.$inferInsert;
 export type Tag = typeof tags.$inferSelect;
+export type AIMetadataCache = typeof aiMetadataCache.$inferSelect;
+export type NewAIMetadataCache = typeof aiMetadataCache.$inferInsert;
+export type MetadataSuggestion = typeof metadataSuggestions.$inferSelect;
+export type NewMetadataSuggestion = typeof metadataSuggestions.$inferInsert;
 export type NewTag = typeof tags.$inferInsert;
 export type VideoTag = typeof videoTags.$inferSelect;
 export type NewVideoTag = typeof videoTags.$inferInsert;
