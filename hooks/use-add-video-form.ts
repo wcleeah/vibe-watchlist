@@ -2,6 +2,7 @@
 
 import { useVideoFormState } from './use-video-form-state';
 import { useMetadataFetching } from './use-metadata-fetching';
+import { useAIMetadataFetching } from './use-ai-metadata-fetching';
 import { useUrlValidation } from './use-url-validation';
 import { usePreferences } from '@/lib/preferences-context';
 
@@ -17,7 +18,14 @@ interface UseAddVideoFormReturn {
   isValidUrl: boolean;
   urlError: string | null;
 
-  // Metadata state
+  // AI Metadata state
+  aiSuggestions: Array<{ title: string; thumbnailUrl?: string; platform: string; confidence: number; reasoning?: string }>;
+  selectedSuggestion: { title: string; thumbnailUrl?: string; platform: string; confidence: number; reasoning?: string } | undefined;
+  isLoadingAIMetadata: boolean;
+  aiMetadataError: string | null;
+  setSelectedSuggestion: (suggestion: { title: string; thumbnailUrl?: string; platform: string; confidence: number; reasoning?: string } | undefined) => void;
+
+  // Legacy metadata state (for backwards compatibility)
   metadata: { title: string; thumbnailUrl: string | null; authorName?: string; authorUrl?: string } | null;
   isLoadingMetadata: boolean;
   metadataError: string | null;
@@ -71,7 +79,14 @@ export function useAddVideoForm({
   // URL validation hook
   const urlValidation = useUrlValidation();
 
-  // Metadata fetching hook (depends on URL validation)
+  // AI Metadata fetching hook
+  const aiMetadata = useAIMetadataFetching({
+    url: urlValidation.url,
+    platform: urlValidation.platform || 'unknown',
+    enabled: urlValidation.isValid,
+  });
+
+  // Legacy metadata fetching hook (depends on URL validation)
   const metadata = useMetadataFetching({
     url: urlValidation.url,
     platform: urlValidation.platform || 'unknown',
@@ -82,6 +97,7 @@ export function useAddVideoForm({
   const reset = () => {
     urlValidation.setUrl('');
     metadata.cancel();
+    aiMetadata.cancel();
     formState.reset();
   };
 
@@ -89,6 +105,7 @@ export function useAddVideoForm({
   const formState = useVideoFormState({
     parsedUrl: urlValidation.parsedUrl,
     metadata: metadata.metadata,
+    selectedSuggestion: aiMetadata.selectedSuggestion,
     onVideoAdded,
     onReset: reset,
   });
@@ -102,7 +119,14 @@ export function useAddVideoForm({
     isValidUrl: urlValidation.isValid,
     urlError: urlValidation.error,
 
-    // Metadata state
+    // AI Metadata state
+    aiSuggestions: aiMetadata.suggestions,
+    selectedSuggestion: aiMetadata.selectedSuggestion,
+    isLoadingAIMetadata: aiMetadata.isLoading,
+    aiMetadataError: aiMetadata.error,
+    setSelectedSuggestion: aiMetadata.setSelectedSuggestion,
+
+    // Legacy metadata state
     metadata: metadata.metadata,
     isLoadingMetadata: metadata.isLoading,
     metadataError: metadata.error,

@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { VideoMetadata } from '@/lib/utils/metadata-extractor';
 import { ParsedUrl } from '@/lib/utils/url-parser';
+import { MetadataSuggestion } from '@/lib/types/ai-metadata';
 
 interface Tag {
   id: number;
@@ -13,6 +14,7 @@ interface Tag {
 interface UseVideoFormStateOptions {
   parsedUrl: ParsedUrl | null;
   metadata: VideoMetadata | null;
+  selectedSuggestion?: MetadataSuggestion; // AI-selected metadata
   onVideoAdded?: () => void;
   onReset?: () => void;
 }
@@ -56,8 +58,9 @@ interface UseVideoFormStateReturn {
 export function useVideoFormState({
   parsedUrl,
   metadata,
+  selectedSuggestion,
   onVideoAdded,
-  onReset
+  onReset,
 }: UseVideoFormStateOptions): UseVideoFormStateReturn {
   // Manual mode state
   const [manualMode, setManualMode] = useState(false);
@@ -229,9 +232,9 @@ export function useVideoFormState({
     try {
       const videoData = {
         url: parsedUrl.url,
-        title: manualMode ? manualTitle : metadata?.title,
-        platform: parsedUrl.platform,
-        thumbnailUrl: manualMode ? manualThumbnailUrl : metadata?.thumbnailUrl,
+        title: manualMode ? manualTitle : (selectedSuggestion?.title || metadata?.title),
+        platform: selectedSuggestion?.platform || parsedUrl.platform,
+        thumbnailUrl: manualMode ? manualThumbnailUrl : (selectedSuggestion?.thumbnailUrl || metadata?.thumbnailUrl),
         tagIds: selectedTags.map(tag => tag.id),
       };
 
@@ -261,7 +264,7 @@ export function useVideoFormState({
     } finally {
       setIsSubmitting(false);
     }
-  }, [parsedUrl, metadata, selectedTags, manualMode, manualTitle, manualThumbnailUrl, validateForm, onVideoAdded]);
+  }, [parsedUrl, metadata, selectedSuggestion, selectedTags, manualMode, manualTitle, manualThumbnailUrl, validateForm, onVideoAdded]);
 
   // Reset internal form state (manual mode, tags, etc.)
   const resetFormState = useCallback(() => {
