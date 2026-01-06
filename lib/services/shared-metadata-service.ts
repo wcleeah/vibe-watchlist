@@ -35,9 +35,28 @@ async function getTwitchAccessToken(): Promise<string> {
     }),
   });
 
-  if (!response.ok) {
-    throw new Error(`Twitch token request failed: ${response.status}`);
-  }
+    if (!response.ok) {
+      console.log(
+        "🔑 TWITCH TOKEN: Token request failed with status:",
+        response.status,
+      );
+
+      // Log response body for debugging
+      try {
+        const errorBody = await response.text();
+        console.log(
+          "🔑 TWITCH TOKEN: Error response body:",
+          errorBody.substring(0, 500),
+        );
+      } catch (bodyError) {
+        console.log(
+          "🔑 TWITCH TOKEN: Could not read error response body:",
+          bodyError,
+        );
+      }
+
+      throw new Error(`Twitch token request failed: ${response.status}`);
+    }
 
   const data = await response.json();
   return data.access_token;
@@ -57,6 +76,25 @@ export class SharedMetadataService {
     });
 
     if (!response.ok) {
+      console.log(
+        "📺 YOUTUBE OEMBED: API request failed with status:",
+        response.status,
+      );
+
+      // Log response body for debugging
+      try {
+        const errorBody = await response.text();
+        console.log(
+          "📺 YOUTUBE OEMBED: Error response body:",
+          errorBody.substring(0, 500),
+        );
+      } catch (bodyError) {
+        console.log(
+          "📺 YOUTUBE OEMBED: Could not read error response body:",
+          bodyError,
+        );
+      }
+
       throw new Error(`YouTube oEmbed API error: ${response.status}`);
     }
 
@@ -93,6 +131,25 @@ export class SharedMetadataService {
     });
 
     if (!response.ok) {
+      console.log(
+        "🎮 TWITCH HELIX: API request failed with status:",
+        response.status,
+      );
+
+      // Log response body for debugging
+      try {
+        const errorBody = await response.text();
+        console.log(
+          "🎮 TWITCH HELIX: Error response body:",
+          errorBody.substring(0, 500),
+        );
+      } catch (bodyError) {
+        console.log(
+          "🎮 TWITCH HELIX: Could not read error response body:",
+          bodyError,
+        );
+      }
+
       if (response.status === 404) {
         throw new Error('Twitch video not found or private');
       }
@@ -127,6 +184,25 @@ export class SharedMetadataService {
       });
 
       if (!response.ok) {
+        console.log(
+          "🌐 HTML METADATA FETCH: HTTP request failed with status:",
+          response.status,
+        );
+
+        // Log response body for debugging
+        try {
+          const errorBody = await response.text();
+          console.log(
+            "🌐 HTML METADATA FETCH: Error response body:",
+            errorBody.substring(0, 500),
+          );
+        } catch (bodyError) {
+          console.log(
+            "🌐 HTML METADATA FETCH: Could not read error response body:",
+            bodyError,
+          );
+        }
+
         throw new Error(`Failed to fetch HTML: ${response.status}`);
       }
 

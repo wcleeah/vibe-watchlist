@@ -273,6 +273,7 @@ export class AIMetadataService {
             hasOgImage: !!extractedMetadata.ogImage,
             hasTwitterImage: !!extractedMetadata.twitterImage,
         });
+        console.log("🤖 AI PLATFORM HANDLER: Full extracted metadata:", JSON.stringify(extractedMetadata, null, 2));
 
         // AI analysis with Google context
         console.log(
@@ -405,10 +406,24 @@ export class AIMetadataService {
                 context.extractedMetadata.hasImage,
             );
 
+            // Log the full context object for debugging
+            console.log("🧠 AI ANALYSIS: Full context object:", JSON.stringify(context, null, 2));
+
             // Use existing AIService for title suggestions
             console.log(
                 "🧠 AI ANALYSIS: Calling AIService.generateTitleSuggestions",
             );
+
+            // Log the request parameters being sent to AI service
+            const aiServiceRequestParams = {
+                metadata: {
+                    url,
+                    title: extractedMetadata.title,
+                },
+                searchResults: searchResults,
+            };
+            console.log("🧠 AI ANALYSIS: Request parameters to AIService:", JSON.stringify(aiServiceRequestParams, null, 2));
+
             const titleSuggestions =
                 await this.aiService.generateTitleSuggestions(
                     {
@@ -423,6 +438,9 @@ export class AIMetadataService {
                 titleSuggestions.suggestions?.length || 0,
                 "raw suggestions",
             );
+
+            // Log the full response from AI service
+            console.log("🧠 AI ANALYSIS: Full AIService response:", JSON.stringify(titleSuggestions, null, 2));
 
             // Convert to our format
             console.log(
@@ -467,6 +485,7 @@ export class AIMetadataService {
                 limitedSuggestions.length,
                 "suggestions after limiting",
             );
+            console.log("🧠 AI ANALYSIS: Final suggestions array:", JSON.stringify(limitedSuggestions, null, 2));
 
             return limitedSuggestions;
         } catch (error) {
@@ -522,10 +541,27 @@ export class AIMetadataService {
                     "🔍 GOOGLE SEARCH: API request failed with status:",
                     response.status,
                 );
+
+                // Log response body for debugging
+                try {
+                    const errorBody = await response.text();
+                    console.log(
+                        "🔍 GOOGLE SEARCH: Error response body:",
+                        errorBody.substring(0, 500),
+                    );
+                } catch (bodyError) {
+                    console.log(
+                        "🔍 GOOGLE SEARCH: Could not read error response body:",
+                        bodyError,
+                    );
+                }
+
                 throw new Error(`Google Search API error: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log("🔍 GOOGLE SEARCH: Full API response body:", JSON.stringify(data, null, 2));
+
             const results = data.items || [];
             console.log(
                 "🔍 GOOGLE SEARCH: Successfully retrieved",
@@ -567,6 +603,10 @@ export class AIMetadataService {
                 "ms",
             );
 
+            console.log("🌐 HTML FETCH: Request headers:", {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+            });
+
             const response = await fetch(url, {
                 headers: {
                     "User-Agent":
@@ -587,10 +627,27 @@ export class AIMetadataService {
                     "🌐 HTML FETCH: HTTP request failed with status:",
                     response.status,
                 );
+
+                // Log response body for debugging
+                try {
+                    const errorBody = await response.text();
+                    console.log(
+                        "🌐 HTML FETCH: Error response body:",
+                        errorBody.substring(0, 500),
+                    );
+                } catch (bodyError) {
+                    console.log(
+                        "🌐 HTML FETCH: Could not read error response body:",
+                        bodyError,
+                    );
+                }
+
                 throw new Error(`Failed to fetch HTML: ${response.status}`);
             }
 
             const html = await response.text();
+            console.log("🌐 HTML FETCH: Full response body (first 1000 chars):", html.substring(0, 1000));
+
             const limitedHtml = html.slice(0, 50000); // Limit to first 50KB
 
             console.log("🌐 HTML FETCH: Successfully fetched HTML content");
@@ -838,15 +895,18 @@ export class AIMetadataService {
                 expiresAt.toISOString(),
             );
 
-            console.log("💾 CACHE STORAGE: Inserting into database");
-            await db.insert(aiMetadataCache).values({
+            const cacheData = {
                 url,
                 searchResults,
                 extractedMetadata,
                 aiAnalysis: suggestions,
                 confidenceScore: avgConfidence.toString(),
                 expiresAt: expiresAt,
-            });
+            };
+            console.log("💾 CACHE STORAGE: Data being cached:", JSON.stringify(cacheData, null, 2));
+
+            console.log("💾 CACHE STORAGE: Inserting into database");
+            await db.insert(aiMetadataCache).values(cacheData);
 
             console.log("💾 CACHE STORAGE: Successfully cached results");
         } catch (error) {
