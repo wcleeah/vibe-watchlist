@@ -17,6 +17,14 @@ bun run build        # Production build
 bun run start        # Start production server
 ```
 
+### Database Management
+```bash
+bun run drizzle-kit generate  # Generate migration files from schema changes
+bun run drizzle-kit migrate   # Apply pending migrations to database
+bun run drizzle-kit push      # Push schema changes directly (for development)
+bun run drizzle-kit studio    # Launch Drizzle Studio for database exploration
+```
+
 ### Code Quality & Linting
 ```bash
 bun run lint         # Run ESLint (includes TypeScript checking)
@@ -102,11 +110,17 @@ const getVideoById = db.select().from(videos).where(eq(videos.id, placeholder('i
 
 ### Styling (Tailwind CSS v4 + Shadcn/ui)
 
+#### Configuration
+- **CSS Imports**: Use `@import "tailwindcss"` in `app/globals.css`
+- **Inline Theme**: Define custom theme variables using `@theme inline { ... }`
+- **Color Space**: Use `oklch()` color space for better color accuracy
+- **Custom Variants**: Define dark mode with `@custom-variant dark (&:is(.dark *))`
+
 #### Component Library
 - **Base Components**: Use Shadcn/ui components from `@/components/ui/*`
 - **Composition**: Build complex components by combining base components
 - **Custom Styling**: Avoid custom CSS, extend with Tailwind utilities
-- **Utility Function**: Use `cn()` helper for conditional classes
+- **Utility Function**: Use `cn()` helper for conditional classes from `clsx` + `tailwind-merge`
 
 #### Responsive Design
 - **Mobile-First**: Start with mobile styles, enhance for larger screens
@@ -258,6 +272,15 @@ function VideoForm() {
 ### Environment Variables
 - **Required**: `DATABASE_URL` for Neon PostgreSQL connection
 - **Optional**: Public variables prefixed with `NEXT_PUBLIC_`
+- **Config Location**: Environment variables loaded from `.env.local` (for Drizzle config)
+
+### Additional Tools & Features
+- **React Compiler**: Babel plugin enabled for automatic React optimizations
+- **Fonts**: JetBrains Mono for monospace, Inter for UI text
+- **Icons**: Lucide React for consistent iconography
+- **Forms**: React Hook Form with Zod validation
+- **Notifications**: Sonner for toast notifications
+- **Animations**: tw-animate-css for CSS animations
 
 This guide ensures consistent, maintainable, and scalable code across the video watchlist application.</content>
 <parameter name="filePath">AGENTS.md
