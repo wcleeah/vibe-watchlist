@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
 
 interface ParsedUrl {
@@ -10,25 +11,42 @@ interface ParsedUrl {
 }
 
 interface UseUrlValidationReturn {
-  validateUrl: (url: string) => ParsedUrl | null;
+  url: string;
+  setUrl: (url: string) => void;
+  parsedUrl: ParsedUrl | null;
+  isValid: boolean;
+  platform: VideoPlatform | null;
+  error: string | null;
 }
 
 export function useUrlValidation(): UseUrlValidationReturn {
-  const validateUrl = (url: string): ParsedUrl | null => {
-    if (!url || typeof url !== 'string') {
-      return { url, platform: 'youtube' as VideoPlatform, isValid: false };
+  const [url, setUrl] = useState('');
+  const [parsedUrl, setParsedUrl] = useState<ParsedUrl | null>(null);
+
+  const handleUrlChange = useCallback((newUrl: string) => {
+    setUrl(newUrl);
+
+    if (!newUrl.trim()) {
+      setParsedUrl(null);
+      return;
     }
 
-    try {
-      const result = parseVideoUrl(url);
-      return result;
-    } catch (error) {
-      console.error('URL validation error:', error);
-      return { url, platform: 'youtube' as VideoPlatform, isValid: false };
-    }
-  };
+    const parsed = parseVideoUrl(newUrl.trim());
+    setParsedUrl(parsed);
+  }, []);
+
+  const isValid = parsedUrl?.isValid ?? false;
+  const platform = parsedUrl?.platform ?? null;
+  const error = parsedUrl && !parsedUrl.isValid && url.trim()
+    ? "Please enter a valid YouTube, Netflix, Nebula, or Twitch URL"
+    : null;
 
   return {
-    validateUrl,
+    url,
+    setUrl: handleUrlChange,
+    parsedUrl,
+    isValid,
+    platform,
+    error,
   };
 }

@@ -40,6 +40,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
     className,
   }, ref) => {
     const [isFocused, setIsFocused] = useState(false);
+    const [pendingBlur, setPendingBlur] = useState(false);
 
     const handleKeyDown = async (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ',') {
@@ -52,9 +53,22 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
       }
     };
 
+    const handleBlur = () => {
+      setPendingBlur(true);
+      // Use requestAnimationFrame instead of setTimeout for better performance
+      requestAnimationFrame(() => {
+        // Only hide if we're not clicking on a suggestion
+        if (pendingBlur && !isFocused) {
+          setIsFocused(false);
+        }
+        setPendingBlur(false);
+      });
+    };
+
     const handleSuggestionClick = (tag: Tag) => {
       onSelectSuggestion(tag);
       setIsFocused(false);
+      setPendingBlur(false);
     };
 
     return (
@@ -79,11 +93,8 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => {
-                // Delay to allow suggestion clicks
-                setTimeout(() => setIsFocused(false), 150);
-              }}
+               onFocus={() => setIsFocused(true)}
+               onBlur={handleBlur}
               className={cn("flex-1 h-12 text-base rounded-r-none border-r-0", className)}
               disabled={isLoading}
               aria-label="Tag input"

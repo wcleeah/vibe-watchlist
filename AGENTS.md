@@ -2,9 +2,24 @@
 
 This file contains comprehensive guidelines and commands for coding agents working on the video watchlist application. It serves as the definitive reference for development practices, tooling, and code standards.
 
-## Development Workflow
+## Project Overview
+- **Framework**: Next.js 16 with App Router
+- **Language**: TypeScript with strict mode enabled
+- **Styling**: Tailwind CSS v4 with Shadcn/ui components
+- **Database**: PostgreSQL with Drizzle ORM and Neon
+- **Package Manager**: Bun
+- **Current State**: Core video watchlist functionality implemented, analytics dashboard in progress
 
-### Tools Available
+## Development Setup
+
+### Package Manager
+- **Bun**: Primary package manager and runtime
+- **Commands**: Use `bun run <script>` instead of `npm run <script>`
+- **Lockfile**: `bun.lockb` (binary format for faster installs)
+
+### Development Workflow
+
+#### Tools Available
 - **Context7**: Use for searching documentation and code examples from libraries/frameworks
 - **Playwright**: Use for browser automation, UI testing, and visual verification
 - **Neon Tools**: Use for direct database interactions and schema management
@@ -55,20 +70,20 @@ bun run build
 
 ### Testing
 ```bash
-# Run all tests (when implemented)
-bun run test
+# Run all tests (when implemented - currently no tests configured)
+# Future: bun run test
 
-# Run tests in watch mode
-bun run test --watch
+# Run tests in watch mode (when implemented)
+# Future: bun run test --watch
 
-# Run single test file
-bun run test path/to/test.file
+# Run single test file (when implemented)
+# Future: bun run test path/to/test.file
 
-# Run tests with coverage
-bun run test --coverage
+# Run tests with coverage (when implemented)
+# Future: bun run test --coverage
 
 # Run e2e tests with Playwright (when implemented)
-bun run test:e2e
+# Future: bun run test:e2e
 ```
 
 ## Code Style Guidelines
@@ -78,6 +93,8 @@ bun run test:e2e
 - **Target**: ES2017 for modern browser compatibility
 - **Module Resolution**: Bundler resolution for optimal tree-shaking
 - **Path Mapping**: `@/*` for clean imports (maps to project root)
+- **JSX**: `"react-jsx"` transform for modern React
+- **Incremental Builds**: Enabled for faster compilation
 
 ### TypeScript Best Practices
 - **Interface vs Type**: Use `interface` for object shapes, `type` for unions/aliases
@@ -227,6 +244,29 @@ import type { VideoFormData } from '@/types/forms';
 
 ### Error Handling
 
+#### Form Validation & User Feedback
+```typescript
+// Consistent error display patterns
+const [error, setError] = useState<string>('');
+
+// Clear errors on new attempts
+const handleSubmit = async () => {
+  setError('');
+  try {
+    // ... operation
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'An error occurred');
+  }
+};
+
+// Error display in UI
+{error && (
+  <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-lg p-4">
+    <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+  </div>
+)}
+```
+
 #### API Routes
 ```typescript
 // Consistent error response format
@@ -332,6 +372,9 @@ function VideoForm() {
 │   ├── layout.tsx                # Root layout with providers
 │   ├── page.tsx                  # Home page
 │   ├── list/                     # Video list page
+│   ├── watched/                  # Watched videos page
+│   ├── tags/                     # Tag management page
+│   ├── analytics/                # Analytics dashboard page
 │   └── globals.css               # Global styles
 ├── components/                   # React components
 │   ├── ui/                       # Shadcn/ui base components
@@ -376,6 +419,7 @@ function VideoForm() {
 - **Base Rules**: Next.js recommended rules with TypeScript support
 - **Custom Rules**: No unused variables, consistent import ordering
 - **Integration**: Runs via `bun run lint`, includes in CI pipeline
+- **Auto-fix**: Supports `--fix` flag for auto-fixable issues
 
 ### Environment Variables
 Required environment variables:
@@ -398,7 +442,48 @@ Optional environment variables:
 - **API Documentation**: Document API endpoints with examples
 
 #### Testing Strategy (Future Implementation)
-- **Unit Tests**: Component and utility function testing with Vitest
+- **Unit Tests**: Component and utility function testing (framework TBD - Vitest recommended)
+- **Integration Tests**: API route testing
+- **E2E Tests**: Critical user flows with Playwright
+- **Visual Regression**: Component appearance testing
+
+#### Deployment
+- **Platform**: Vercel or similar serverless platform
+- **Build Optimization**: Leverage Next.js production optimizations
+- **CDN**: Automatic static asset optimization
+- **Environment**: Separate staging and production environments
+
+### Tool-Specific Usage
+
+#### Context7 Integration
+- Use for library documentation and code examples
+- Search with specific queries: "React useState hook examples"
+- Prefer for API documentation and framework guides
+
+#### Playwright Integration
+- Use for UI verification and browser automation
+- Test responsive design across different viewports
+- Validate accessibility features
+
+#### Neon Database Tools
+- Use for direct database queries during development
+- Validate schema changes before migration
+- Monitor query performance and optimization
+
+### Additional Guidelines
+
+#### Git Workflow
+- **Commit Messages**: Use conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`)
+- **Branch Naming**: `feature/`, `bugfix/`, `hotfix/` prefixes
+- **Pull Requests**: Include description, link related issues, request reviews
+
+#### Documentation
+- **Code Comments**: Explain complex business logic, not obvious code
+- **README Updates**: Keep setup and usage instructions current
+- **API Documentation**: Document API endpoints with examples
+
+#### Testing Strategy (Future Implementation)
+- **Unit Tests**: Component and utility function testing (framework TBD - Vitest recommended)
 - **Integration Tests**: API route testing
 - **E2E Tests**: Critical user flows with Playwright
 - **Visual Regression**: Component appearance testing
