@@ -6,6 +6,9 @@ import { NavigationTabs } from '@/components/navigation-tabs';
 import { CacheStats } from '@/components/settings/cache/cache-stats';
 import { CacheActions } from '@/components/settings/cache/cache-actions';
 import { CacheEntries } from '@/components/settings/cache/cache-entries';
+import { PlatformList } from '@/components/settings/platforms/platform-list';
+import { PlatformForm } from '@/components/settings/platforms/platform-form';
+import { PlatformTester } from '@/components/settings/platforms/platform-tester';
 
 type TabId = 'cache' | 'platforms' | 'tags';
 
@@ -17,10 +20,27 @@ const tabs = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('cache');
+  const [platformFormOpen, setPlatformFormOpen] = useState(false);
+  const [editingPlatform, setEditingPlatform] = useState<any>(null);
 
   const handleStatsRefresh = () => {
     // This will be called when cache operations complete
     // The individual components handle their own refresh logic
+  };
+
+  const handlePlatformEdit = (platform: any) => {
+    setEditingPlatform(platform);
+    setPlatformFormOpen(true);
+  };
+
+  const handlePlatformAdd = () => {
+    setEditingPlatform(null);
+    setPlatformFormOpen(true);
+  };
+
+  const handlePlatformSave = () => {
+    // Refresh platform data - could be improved with proper state management
+    window.location.reload();
   };
 
   const renderTabContent = () => {
@@ -31,6 +51,17 @@ export default function SettingsPage() {
             <CacheStats />
             <CacheActions onStatsRefresh={handleStatsRefresh} />
             <CacheEntries onRefresh={handleStatsRefresh} />
+          </div>
+        );
+      case 'platforms':
+        return (
+          <div className="space-y-6">
+            <PlatformList
+              onEdit={handlePlatformEdit}
+              onAdd={handlePlatformAdd}
+              onRefresh={() => window.location.reload()}
+            />
+            <PlatformTester />
           </div>
         );
       case 'platforms':
@@ -107,6 +138,17 @@ export default function SettingsPage() {
           {renderTabContent()}
         </div>
       </main>
+
+      {/* Platform Form Modal */}
+      <PlatformForm
+        platform={editingPlatform}
+        isOpen={platformFormOpen}
+        onClose={() => {
+          setPlatformFormOpen(false);
+          setEditingPlatform(null);
+        }}
+        onSave={handlePlatformSave}
+      />
     </div>
   );
 }
