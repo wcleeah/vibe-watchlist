@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { VideoMetadata } from '@/lib/utils/metadata-extractor';
 import { ParsedUrl } from '@/lib/utils/url-parser';
 import { MetadataSuggestion } from '@/lib/types/ai-metadata';
 

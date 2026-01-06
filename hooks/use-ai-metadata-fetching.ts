@@ -9,7 +9,7 @@ interface UseAIMetadataFetchingOptions {
   enabled?: boolean;
 }
 
-interface UseAIMetadataFetchingReturn {
+export interface UseAIMetadataFetchingReturn {
   suggestions: MetadataSuggestion[];
   fallback: { title?: string; thumbnailUrl?: string } | null;
   isLoading: boolean;
@@ -17,7 +17,6 @@ interface UseAIMetadataFetchingReturn {
   selectedSuggestion?: MetadataSuggestion;
   setSelectedSuggestion: (suggestion: MetadataSuggestion | undefined) => void;
   refetch: () => Promise<void>;
-  cancel: () => void;
 }
 
 export function useAIMetadataFetching({
@@ -31,20 +30,12 @@ export function useAIMetadataFetching({
   const [error, setError] = useState<string | null>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<MetadataSuggestion | undefined>();
 
-  const abortControllerRef = useRef<AbortController | null>(null);
   const enabledRef = useRef(enabled);
 
   // Update enabled ref when it changes
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
-
-  const cancel = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-  }, []);
 
   const fetchAIMetadata = useCallback(async () => {
     if (!url || !enabledRef.current) {
@@ -56,21 +47,10 @@ export function useAIMetadataFetching({
       return;
     }
 
-    // Cancel any existing request
-    cancel();
-
-    // Create new abort controller
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
     setIsLoading(true);
     setError(null);
 
     try {
-      // Check if request was cancelled before starting
-      if (controller.signal.aborted) {
-        return;
-      }
 
       const response = await fetch('/api/metadata/extract', {
         method: 'POST',
@@ -78,24 +58,13 @@ export function useAIMetadataFetching({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ url, platform }),
-        signal: controller.signal,
       });
-
-      // Check if request was cancelled after fetch
-      if (controller.signal.aborted) {
-        return;
-      }
 
       if (!response.ok) {
         throw new Error(`Failed to extract metadata: ${response.status}`);
       }
 
       const result: MetadataExtractionResponse = await response.json();
-
-      // Check if request was cancelled after parsing
-      if (controller.signal.aborted) {
-        return;
-      }
 
       if (result.success) {
         setSuggestions(result.suggestions);
@@ -118,10 +87,6 @@ export function useAIMetadataFetching({
         throw new Error(result.error || 'Failed to extract metadata');
       }
     } catch (err) {
-      // Don't set error if request was cancelled
-      if (controller.signal.aborted) {
-        return;
-      }
 
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch AI metadata';
       setError(errorMessage);
@@ -130,12 +95,9 @@ export function useAIMetadataFetching({
       setSelectedSuggestion(undefined);
       console.error('AI metadata fetch failed:', err);
     } finally {
-      // Only clear loading if this is still the current request
-      if (abortControllerRef.current === controller) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
-  }, [url, platform, cancel]);
+  }, [url, platform]);
 
   const refetch = useCallback(async () => {
     await fetchAIMetadata();
@@ -145,19 +107,7 @@ export function useAIMetadataFetching({
   useEffect(() => {
     fetchAIMetadata();
 
-    // Cleanup on unmount or dependency change
-    return () => {
-      cancel();
-    };
-  }, [fetchAIMetadata, cancel]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      cancel();
-    };
-  }, [cancel]);
-
+  }, [fetchAIMetadata]);
   return {
     suggestions,
     fallback,
@@ -165,7 +115,6 @@ export function useAIMetadataFetching({
     error,
     selectedSuggestion,
     setSelectedSuggestion,
-    refetch,
-    cancel,
+    refetch
   };
 }

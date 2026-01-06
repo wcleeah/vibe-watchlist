@@ -3,7 +3,6 @@ import { db } from '@/lib/db';
 import { videos, tags, videoTags } from '@/lib/db/schema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
-import { extractVideoMetadata } from '@/lib/utils/metadata-extractor';
 
 
 
@@ -184,18 +183,6 @@ export async function POST(request: NextRequest) {
     // Use client-provided metadata if available, otherwise extract server-side
     let finalTitle = title;
     let finalThumbnailUrl = thumbnailUrl;
-
-    if (!finalTitle || !finalThumbnailUrl) {
-      console.log('Client metadata incomplete, extracting server-side...');
-      try {
-        const serverMetadata = await extractVideoMetadata(url, parsedUrl.platform);
-        finalTitle = finalTitle || serverMetadata.title;
-        finalThumbnailUrl = finalThumbnailUrl || serverMetadata.thumbnailUrl;
-      } catch (metadataError) {
-        console.error('Server-side metadata extraction failed:', metadataError);
-        // Continue with client data or fallbacks
-      }
-    }
 
     // Check if video already exists
     const existingVideo = await db

@@ -1,5 +1,10 @@
-import { VideoMetadata } from '@/lib/utils/metadata-extractor';
-import { VideoPlatform } from '@/lib/utils/url-parser';
+export interface VideoMetadata {
+  title: string;
+  thumbnailUrl: string | null;
+  authorName?: string;
+  authorUrl?: string;
+}
+
 
 /**
  * Resolves Twitch thumbnail URL templates
