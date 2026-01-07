@@ -84,7 +84,7 @@ export function VideoCard({
                 className={`min-h-[240px] ${showActions ? 'grid grid-cols-1 md:grid-cols-[8fr_2fr]' : ''}`}
             >
                 {/* Content Column (full width when no actions, 80% when actions shown) */}
-                <div className='px-4 pt-4 pb-4 space-y-1'>
+                <div className='px-4 pt-4 pb-4 space-y-1 max-w-full overflow-hidden'>
                     {/* Title Section */}
                     <div className='pb-2 border-b border-black dark:border-white'>
                         {manualMode ? (
