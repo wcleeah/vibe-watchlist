@@ -12,7 +12,7 @@ import "@fontsource/inter/600.css";
 
 export const metadata: Metadata = {
   title: "Video Watchlist",
-  description: "Personal video watchlist for YouTube, Netflix, Nebula, and Twitch",
+  description: "Personal video watchlist supporting multiple video platforms with AI-powered metadata extraction",
   viewport: "width=device-width, initial-scale=1",
 };
 

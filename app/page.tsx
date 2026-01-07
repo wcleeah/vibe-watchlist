@@ -6,8 +6,28 @@ import { FormLayout } from '@/components/video-form';
 import { PreviewCard } from '@/components/video-preview';
 import { useAddVideoForm } from '@/hooks/use-add-video-form';
 import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import { PlatformDataService } from '@/lib/services/platform-data-service';
 
 export default function Home() {
+  const [platformNames, setPlatformNames] = useState<string>('YouTube, Netflix, Nebula, or Twitch');
+
+  useEffect(() => {
+    const loadPlatformNames = async () => {
+      try {
+        const platforms = await PlatformDataService.getPlatforms();
+        if (platforms.length > 0) {
+          const names = platforms.map(p => p.displayName).join(', ');
+          setPlatformNames(names);
+        }
+      } catch (error) {
+        console.error('Failed to load platform names:', error);
+        // Keep default fallback
+      }
+    };
+    loadPlatformNames();
+  }, []);
+
   const {
     url,
     setUrl,
@@ -70,7 +90,7 @@ export default function Home() {
     <div className="text-center mb-4">
       <h1 className="text-2xl sm:text-3xl font-bold mb-4">Add New Video</h1>
       <p className="text-gray-600 dark:text-gray-400">
-        Paste a video URL from YouTube, Netflix, Nebula, or Twitch
+        Paste a video URL from {platformNames}
       </p>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UrlInput } from './url-input';
 import { MetadataSelector } from './metadata-selector';
 import { TagInput } from './tag-input';
@@ -11,6 +11,7 @@ import { MetadataSuggestion } from '@/lib/types/ai-metadata';
 import { PlatformSuggestion } from '@/lib/services/ai-service';
 import { PlatformSuggestions } from './platform-suggestions';
 import { Loader2 } from 'lucide-react';
+import { PlatformDataService } from '@/lib/services/platform-data-service';
 
 interface FormLayoutProps {
   url: string;
@@ -91,9 +92,27 @@ export function FormLayout({
   onAddTag,
   onReset,
 }: FormLayoutProps) {
+  const [platformNames, setPlatformNames] = useState<string>('YouTube, Netflix, Nebula, or Twitch');
+
+  useEffect(() => {
+    const loadPlatformNames = async () => {
+      try {
+        const platforms = await PlatformDataService.getPlatforms();
+        if (platforms.length > 0) {
+          const names = platforms.map(p => p.displayName).join(', ');
+          setPlatformNames(names);
+        }
+      } catch (error) {
+        console.error('Failed to load platform names:', error);
+        // Keep default fallback
+      }
+    };
+    loadPlatformNames();
+  }, []);
+
   const hasValidUrl = parsedUrl?.isValid ?? false;
   const urlError = parsedUrl && !parsedUrl.isValid && url.trim()
-    ? "Please enter a valid YouTube, Netflix, Nebula, or Twitch URL"
+    ? `Please enter a valid video URL from supported platforms: ${platformNames}`
     : null;
 
   return (
@@ -109,6 +128,7 @@ export function FormLayout({
       <UrlInput
         value={url}
         onChange={setUrl}
+        placeholder={`https://example.com/video`}
         isValid={parsedUrl?.isValid}
         error={urlError || undefined}
         disabled={isSubmitting}
