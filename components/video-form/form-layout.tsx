@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { UrlInput } from './url-input';
 import { MetadataSelector } from './metadata-selector';
@@ -12,13 +12,12 @@ import { MetadataSuggestion } from '@/lib/types/ai-metadata';
 import { PlatformSuggestion } from '@/lib/services/ai-service';
 import { PlatformSuggestions } from './platform-suggestions';
 import { Loader2 } from 'lucide-react';
-import { usePlatforms } from '@/hooks/use-platforms';
 import { toast } from 'sonner';
+import { ParsedUrl } from '@/lib/utils/url-parser.js';
 
 interface FormLayoutProps {
-  url: string;
   setUrl: (url: string) => void;
-  parsedUrl?: { isValid: boolean; platform?: string } | null;
+  parsedUrl?: ParsedUrl | null;
   onVideoAdded?: () => void;
   handleSubmit: () => Promise<void>;
   isSubmitting: boolean;
@@ -41,13 +40,10 @@ interface FormLayoutProps {
 }
 
 export function FormLayout({
-  url,
   setUrl,
   parsedUrl,
   handleSubmit,
   isSubmitting,
-  submitError,
-  onVideoAdded,
   className,
   showTags = true,
   // AI Metadata props
@@ -57,8 +53,6 @@ export function FormLayout({
   isLoadingAIMetadata = false,
   aiMetadataError,
   onManualEdit,
-  // Platform Discovery props
-  onDetectPlatform,
   onPlatformCreated,
   // Tag props
   onSelectedTagsChange,
@@ -78,15 +72,11 @@ export function FormLayout({
   const [platformSuggestions, setPlatformSuggestions] = useState<PlatformSuggestion[]>([]);
   const [isDetectingPlatform, setIsDetectingPlatform] = useState(false);
 
-  const { platforms } = usePlatforms();
-  const platformNames = platforms.length > 0
-    ? platforms.map(p => p.displayName).join(', ')
-    : 'YouTube, Netflix, Nebula, or Twitch';
+  // Refs for tracking previous values to prevent unnecessary effect runs
+  const lastUrlRef = useRef<string | undefined>();
+  const lastPlatformUnknownRef = useRef<boolean>();
 
-  const hasValidUrl = parsedUrl?.isValid ?? false;
-  const urlError = parsedUrl && !parsedUrl.isValid && url.trim()
-    ? `Please enter a valid video URL from supported platforms: ${platformNames}`
-    : null;
+  const isUnknownPlatform = parsedUrl?.platform === 'unknown';
 
   // Load available tags on mount
   useEffect(() => {
@@ -116,15 +106,6 @@ export function FormLayout({
     setShowTagSuggestions(value.length > 0);
     setTagError(null);
   }, []);
-
-  const handleTagKeyDown = useCallback(async (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      await addTag(tagInput.trim());
-    } else if (e.key === 'Escape') {
-      setShowTagSuggestions(false);
-    }
-  }, [tagInput]);
 
   const addTag = useCallback(async (tagName: string) => {
     if (!tagName) return;
@@ -195,47 +176,55 @@ export function FormLayout({
     !selectedTags.some(selected => selected.id === tag.id)
   ).slice(0, 5);
 
+
+
   // Platform discovery functions
-  const detectPlatform = useCallback(async () => {
-    if (!url.trim() || isDetectingPlatform) return;
+  useEffect(() => {
+    const currentUrl = parsedUrl?.isValid ? parsedUrl.url : undefined;
+    const currentPlatformUnknown = parsedUrl?.platform === "unknown";
+
+    const urlChanged = lastUrlRef.current !== currentUrl;
+    const platformChanged = lastPlatformUnknownRef.current !== currentPlatformUnknown;
+
+    if (!urlChanged && !platformChanged) {
+      return;
+    }
+
+    lastUrlRef.current = currentUrl;
+    lastPlatformUnknownRef.current = currentPlatformUnknown;
+
+    if (!currentUrl || !currentPlatformUnknown || isDetectingPlatform) return;
 
     setIsDetectingPlatform(true);
-    try {
-      console.log('🔍 Detecting platform for URL:', url);
 
-      // Call the API directly
-      const response = await fetch('/api/platforms/discover', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url }),
-      });
+    // Call the API directly
+    fetch('/api/platforms/discover', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url: currentUrl }),
+    }).then(response => {
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const suggestion: PlatformSuggestion = data.suggestion;
-
-      // Show suggestions with decent confidence
-      if (suggestion.confidence > 0.3) {
-        setPlatformSuggestions([suggestion]);
-        console.log('✅ Platform suggestion found:', suggestion);
-      } else {
-        console.log('⚠️ Low confidence platform suggestion:', suggestion);
-      }
-    } catch (error) {
-      console.error('❌ Platform detection failed:', error);
-    } finally {
-      setIsDetectingPlatform(false);
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
     }
-  }, [url, isDetectingPlatform]);
+    return response.json();
+    }).then(data => {
+    const suggestion: PlatformSuggestion = data.suggestion;
+
+    // Show suggestions with decent confidence
+    if (suggestion.confidence > 0.3) {
+      setPlatformSuggestions([suggestion]);
+    }
+  setIsDetectingPlatform(false);
+    }).catch(error =>  {
+    setIsDetectingPlatform(false);
+  })
+  }, [parsedUrl, isDetectingPlatform, setPlatformSuggestions, setIsDetectingPlatform]);
 
   const acceptPlatformSuggestion = async (suggestion: PlatformSuggestion) => {
     try {
-      console.log('🔧 Creating platform from suggestion:', suggestion);
 
       const response = await fetch('/api/platforms/create', {
         method: 'POST',
@@ -285,38 +274,21 @@ export function FormLayout({
 
       {/* URL Input */}
       <UrlInput
-        value={url}
+        value={parsedUrl?.url}
         onChange={setUrl}
         placeholder={`https://example.com/video`}
         isValid={parsedUrl?.isValid}
-        error={urlError || undefined}
+        error={parsedUrl?.error}
         disabled={isSubmitting}
       />
 
-      {/* Platform Discovery - show when URL is invalid and no suggestions yet */}
-      {!hasValidUrl && url.trim() && platformSuggestions.length === 0 && (
+      {/* Platform Detection Loading - show when detecting unknown platform */}
+      {isUnknownPlatform && platformSuggestions.length === 0 && (
         <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            This URL isn't recognized. Would you like to detect the platform automatically?
-          </p>
-           <Button
-             size="sm"
-             variant="outline"
-             onClick={detectPlatform}
-             disabled={isDetectingPlatform}
-             className="text-xs"
-           >
-            {isDetectingPlatform ? (
-              <>
-                <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                Detecting...
-              </>
-            ) : (
-              <>
-                🔍 Detect Platform
-              </>
-            )}
-          </Button>
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Detecting platform...
+          </div>
         </div>
       )}
 
@@ -332,7 +304,7 @@ export function FormLayout({
       )}
 
       {/* AI Metadata Selector - show when URL is valid */}
-      {hasValidUrl && (
+      {(!!parsedUrl && parsedUrl.isValid) && (
         <MetadataSelector
           suggestions={aiSuggestions}
           selectedIndex={selectedSuggestion ? aiSuggestions.findIndex(s => s === selectedSuggestion) : undefined}
@@ -377,7 +349,7 @@ export function FormLayout({
            <SubmitButton
               onClick={handleSubmit}
              isLoading={isSubmitting}
-             disabled={!hasValidUrl || isSubmitting}
+             disabled={(parsedUrl && !parsedUrl.isValid) || isSubmitting}
              className="flex-1"
            />
          </div>

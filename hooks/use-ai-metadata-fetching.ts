@@ -5,7 +5,7 @@ import { MetadataExtractionResponse, MetadataSuggestion } from '@/lib/types/ai-m
 
 interface UseAIMetadataFetchingOptions {
   url: string;
-  platform: string;
+  platform: string | undefined;
   enabled?: boolean;
 }
 
@@ -21,7 +21,7 @@ export interface UseAIMetadataFetchingReturn {
 
 export function useAIMetadataFetching({
   url,
-  platform,
+  platform = undefined,
   enabled = true
 }: UseAIMetadataFetchingOptions): UseAIMetadataFetchingReturn {
   const [suggestions, setSuggestions] = useState<MetadataSuggestion[]>([]);
@@ -38,7 +38,7 @@ export function useAIMetadataFetching({
   }, [enabled]);
 
   const fetchAIMetadata = useCallback(async () => {
-    if (!url || !enabledRef.current) {
+    if (!url || !enabledRef.current || !platform) {
       setSuggestions([]);
       setFallback(null);
       setError(null);

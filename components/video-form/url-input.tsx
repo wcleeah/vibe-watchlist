@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 interface UrlInputProps {
-  value: string;
+  value: string | undefined;
   onChange: (value: string) => void;
   placeholder?: string;
   isValid?: boolean;
@@ -25,7 +25,7 @@ export const UrlInput = forwardRef<HTMLInputElement, UrlInputProps>(
     disabled = false,
     ...props
   }, ref) => {
-    const hasValue = value.trim().length > 0;
+    const hasValue = value && value.trim().length > 0;
     const showValidation = hasValue && isValid !== undefined;
 
     return (

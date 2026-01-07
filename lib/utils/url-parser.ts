@@ -6,6 +6,7 @@ export interface ParsedUrl {
   videoId?: string;
   playlistId?: string;
   isValid: boolean;
+  error?: string;
 }
 
 /**
@@ -16,8 +17,6 @@ export function parseVideoUrlWithPlatforms(
   url: string,
   platforms: Array<{ platformId: string; patterns: string[]; enabled: boolean | null }>
 ): ParsedUrl {
-    console.log(url);
-    console.log(platforms);
   if (!url || typeof url !== 'string') {
     return { url, platform: 'unknown', isValid: false };
   }
@@ -27,8 +26,6 @@ export function parseVideoUrlWithPlatforms(
 
     // Check against each platform's patterns
     for (const platform of platforms) {
-      console.log(platform);
-      console.log(!platform.enabled || !platform.patterns);
       if (!platform.enabled || !platform.patterns) continue;
 
       console.log(url);
@@ -50,17 +47,6 @@ export function parseVideoUrlWithPlatforms(
       }
     }
 
-    // If no platform matches, check for YouTube playlist (special case)
-    const playlistId = extractYouTubePlaylistId(urlObj);
-    if (playlistId) {
-      return {
-        url,
-        platform: 'youtube', // Fallback for existing YouTube playlists
-        playlistId,
-        isValid: true,
-      };
-    }
-
     // Accept any valid HTTPS URL as unknown platform
     return {
       url,
@@ -68,7 +54,7 @@ export function parseVideoUrlWithPlatforms(
       isValid: true,
     };
   } catch {
-    return { url, platform: 'unknown', isValid: false };
+    return { url, platform: 'unknown', isValid: false, error: "Invalid URL" };
   }
 }
 
@@ -149,7 +135,7 @@ function extractVideoId(urlObj: URL, platformId: string): string | undefined {
 }
 
 export async function detectPlatform(url: string): Promise<VideoPlatform | null> {
-  const parsed = await parseVideoUrl(url);
+  const parsed = await parseVideoUrlClient(url);
   return parsed.isValid ? parsed.platform : null;
 }
 

@@ -4,7 +4,7 @@ import { NavigationTabs } from '@/components/navigation-tabs';
 import { LayoutManager } from '@/components/layout/layout-manager';
 import { FormLayout } from '@/components/video-form';
 import { PreviewCard } from '@/components/video-preview';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,9 +20,11 @@ export default function Home() {
   // AI Metadata fetching hook
   const aiMetadata = useAIMetadataFetching({
     url: urlValidation.url,
-    platform: urlValidation.platform || "unknown",
-    enabled: urlValidation.isValid,
+    platform: urlValidation.parsedUrl?.platform,
+    enabled: urlValidation.parsedUrl?.isValid,
   });
+
+
 
   // Global reset function
   const reset = () => {
@@ -134,6 +136,7 @@ export default function Home() {
   });
 
   const hasContent = urlValidation.url.trim().length > 0 && urlValidation.parsedUrl?.isValid === true;
+
   // Only show full-page loading when actually fetching AI metadata (not just typing URLs)
   const shouldShowLoading = hasContent && aiMetadata.isLoading;
 
@@ -169,33 +172,33 @@ export default function Home() {
         <LayoutManager
           hasContent={hasContent}
           header={header}
-          form={
-            <FormLayout
-              url={urlValidation.url}
-              setUrl={urlValidation.setUrl}
-              parsedUrl={urlValidation.parsedUrl}
-              handleSubmit={onSubmit}
-              isSubmitting={isSubmitting}
-              submitError={submitError}
-              onVideoAdded={() => {}}
-              showTags={hasContent}
-              // AI Metadata props
-              aiSuggestions={aiMetadata.suggestions}
-              selectedSuggestion={aiMetadata.selectedSuggestion}
-              onSuggestionSelect={aiMetadata.setSelectedSuggestion}
-              isLoadingAIMetadata={aiMetadata.isLoading}
-              aiMetadataError={aiMetadata.error}
-              onManualEdit={() => setManualMode(!manualMode)}
-              // Platform Discovery props
-              onPlatformCreated={(platform) => {
-                console.log('Platform created:', platform);
-                // Clear suggestions and refresh platform cache
-                // The PlatformService cache will be invalidated automatically
-              }}
-              // Tag props
-              onSelectedTagsChange={setSelectedTags}
-              onReset={reset}
-            />
+           form={
+             <FormLayout
+               setUrl={urlValidation.setUrl}
+               parsedUrl={urlValidation.parsedUrl}
+               handleSubmit={onSubmit}
+               isSubmitting={isSubmitting}
+               submitError={submitError}
+               onVideoAdded={() => {}}
+               showTags={hasContent}
+               // AI Metadata props
+               aiSuggestions={aiMetadata.suggestions}
+               selectedSuggestion={aiMetadata.selectedSuggestion}
+               onSuggestionSelect={aiMetadata.setSelectedSuggestion}
+               isLoadingAIMetadata={aiMetadata.isLoading}
+               aiMetadataError={aiMetadata.error}
+               onManualEdit={() => setManualMode(!manualMode)}
+               // Platform Discovery props
+               onPlatformCreated={(platform) => {
+                 console.log('Platform created:', platform);
+                 // Clear suggestions and refresh platform cache
+                 // The PlatformService cache will be invalidated automatically
+               }}
+               // Tag props
+               onSelectedTagsChange={setSelectedTags}
+                onReset={reset}
+              />
+            })()
           }
           preview={hasContent ? (
             <PreviewCard
