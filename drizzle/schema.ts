@@ -1,7 +1,6 @@
-import { pgTable, unique, serial, text, jsonb, numeric, timestamp, integer, boolean, foreignKey, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, unique, serial, text, jsonb, numeric, timestamp, foreignKey, boolean, integer } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
-export const videoPlatform = pgEnum("video_platform", ['youtube', 'netflix', 'nebula', 'twitch', 'unknown'])
 
 
 export const aiMetadataCache = pgTable("ai_metadata_cache", {
@@ -26,14 +25,23 @@ export const analyticsEvents = pgTable("analytics_events", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 });
 
-export const metadataSuggestions = pgTable("metadata_suggestions", {
+export const videos = pgTable("videos", {
 	id: serial().primaryKey().notNull(),
 	url: text().notNull(),
-	suggestions: jsonb().notNull(),
-	selectedIndex: integer("selected_index"),
-	userFeedback: text("user_feedback"),
+	title: text(),
+	platform: text().notNull(),
+	thumbnailUrl: text("thumbnail_url"),
+	isWatched: boolean("is_watched").default(false),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
-});
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+			columns: [table.platform],
+			foreignColumns: [platformConfigs.platformId],
+			name: "videos_platform_fkey"
+		}).onDelete("restrict"),
+	unique("videos_url_unique").on(table.url),
+]);
 
 export const platformConfigs = pgTable("platform_configs", {
 	id: serial().primaryKey().notNull(),
@@ -72,19 +80,6 @@ export const tags = pgTable("tags", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 }, (table) => [
 	unique("tags_name_unique").on(table.name),
-]);
-
-export const videos = pgTable("videos", {
-	id: serial().primaryKey().notNull(),
-	url: text().notNull(),
-	title: text(),
-	platform: videoPlatform().notNull(),
-	thumbnailUrl: text("thumbnail_url"),
-	isWatched: boolean("is_watched").default(false),
-	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
-}, (table) => [
-	unique("videos_url_unique").on(table.url),
 ]);
 
 export const videoTags = pgTable("video_tags", {
