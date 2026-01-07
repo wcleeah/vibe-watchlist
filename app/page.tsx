@@ -1,9 +1,9 @@
 'use client';
 
 import { NavigationTabs } from '@/components/navigation-tabs';
-import { LayoutManager } from '@/components/layout/layout-manager';
 import { FormLayout } from '@/components/video-form';
 import { PreviewCard } from '@/components/video-preview';
+import { UrlInputSection } from '@/components/url-input-section';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,8 +24,6 @@ export default function Home() {
     platform: urlValidation.parsedUrl?.platform,
     enabled: urlValidation.parsedUrl?.isValid,
   });
-
-
 
   // Global reset function
   const reset = () => {
@@ -192,33 +190,7 @@ export default function Home() {
     }
   });
 
-  const hasContent = urlValidation.url.trim().length > 0 && urlValidation.parsedUrl?.isValid === true;
 
-  // Only show full-page loading when actually fetching AI metadata (not just typing URLs)
-  const shouldShowLoading = hasContent && aiMetadata.isLoading;
-
-  // Show full-page loading during metadata fetch
-  if (shouldShowLoading) {
-    return (
-      <div className="bg-background text-foreground">
-        <NavigationTabs />
-      <main className="min-h-screen pt-4 sm:pt-16 pb-20 container mx-auto px-4 max-w-6xl flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-lg text-gray-500 dark:text-gray-400">Loading...</div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  const header = hasContent ? null : (
-    <div className="text-center mb-4">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-4">Add New Video</h1>
-      <p className="text-gray-600 dark:text-gray-400">
-        Paste a video URL to start the extraction
-      </p>
-    </div>
-  );
 
   return (
     <FormProvider {...form}>
@@ -226,52 +198,62 @@ export default function Home() {
         <NavigationTabs />
 
         <main className="min-h-screen pt-16 pb-20 container mx-auto px-4 max-w-6xl flex items-center justify-center">
-        <LayoutManager
-          hasContent={hasContent}
-          header={header}
-            form={
-              <FormLayout
-                handleSubmit={onSubmit}
-                isSubmitting={isSubmitting}
-                submitError={submitError}
-                onVideoAdded={() => {}}
-                showTags={hasContent}
-                isUrlValid={urlValidation.parsedUrl?.isValid}
-                // AI Metadata props
-                aiSuggestions={aiMetadata.suggestions}
-                selectedSuggestion={aiMetadata.selectedSuggestion}
-                onSuggestionSelect={aiMetadata.setSelectedSuggestion}
-                isLoadingAIMetadata={aiMetadata.isLoading}
-                aiMetadataError={aiMetadata.error}
-                onManualEdit={() => setManualMode(!manualMode)}
-                // Tag props
-                onSelectedTagsChange={setSelectedTags}
-                onReset={reset}
-              />
-            }
-          preview={hasContent ? (
-            <PreviewCard
-              video={{
-                id: 0,
-                url: urlValidation.url,
-                title: manualMode ? (watchedTitle || null) : (aiMetadata.selectedSuggestion?.title || null),
-                platform: aiMetadata.selectedSuggestion?.platform || urlValidation.parsedUrl?.platform || 'unknown',
-                thumbnailUrl: manualMode ? (watchedThumbnailUrl || null) : (aiMetadata.selectedSuggestion?.thumbnailUrl || null),
-                isWatched: false,
-                tags: selectedTags,
-                metadata: aiMetadata.selectedSuggestion ? {
-                  title: aiMetadata.selectedSuggestion.title,
-                  thumbnailUrl: aiMetadata.selectedSuggestion.thumbnailUrl || null,
-                } : null,
-                isLoading: aiMetadata.isLoading,
-                error: aiMetadata.error || undefined,
-              }}
-              showActions={false}
-              onToggleManual={() => setManualMode(!manualMode)}
-              manualMode={manualMode}
+          {mode === 'input' ? (
+            <UrlInputSection
+              value={urlValidation.url}
+              onChange={urlValidation.setUrl}
+              isValid={urlValidation.parsedUrl?.isValid}
+              error={urlValidation.parsedUrl?.error}
+              disabled={isSubmitting}
             />
-          ) : null}
-        />
+          ) : (
+            <div className="w-full max-w-4xl">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                  <FormLayout
+                    handleSubmit={onSubmit}
+                    isSubmitting={isSubmitting}
+                    submitError={submitError}
+                    onVideoAdded={() => {}}
+                    showTags={true}
+                    isUrlValid={urlValidation.parsedUrl?.isValid}
+                    // AI Metadata props
+                    aiSuggestions={aiMetadata.suggestions}
+                    selectedSuggestion={aiMetadata.selectedSuggestion}
+                    onSuggestionSelect={aiMetadata.setSelectedSuggestion}
+                    isLoadingAIMetadata={aiMetadata.isLoading}
+                    aiMetadataError={aiMetadata.error}
+                    onManualEdit={() => setManualMode(!manualMode)}
+                    // Tag props
+                    onSelectedTagsChange={setSelectedTags}
+                    onReset={reset}
+                  />
+                </div>
+                <div>
+                  <PreviewCard
+                    video={{
+                      id: 0,
+                      url: urlValidation.url,
+                      title: manualMode ? (watchedTitle || null) : (aiMetadata.selectedSuggestion?.title || null),
+                      platform: aiMetadata.selectedSuggestion?.platform || urlValidation.parsedUrl?.platform || 'unknown',
+                      thumbnailUrl: manualMode ? (watchedThumbnailUrl || null) : (aiMetadata.selectedSuggestion?.thumbnailUrl || null),
+                      isWatched: false,
+                      tags: selectedTags,
+                      metadata: aiMetadata.selectedSuggestion ? {
+                        title: aiMetadata.selectedSuggestion.title,
+                        thumbnailUrl: aiMetadata.selectedSuggestion.thumbnailUrl || null,
+                      } : null,
+                      isLoading: aiMetadata.isLoading,
+                      error: aiMetadata.error || undefined,
+                    }}
+                    showActions={false}
+                    onToggleManual={() => setManualMode(!manualMode)}
+                    manualMode={manualMode}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </FormProvider>
