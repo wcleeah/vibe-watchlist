@@ -18,6 +18,8 @@ I need a central page to manage all application settings, configurations, cache,
 - [x] Phase 4: Tags Integration (1-2 hours) - ✅ COMPLETED
 - [x] Phase 5: Polish & Mobile (2-3 hours) - ✅ COMPLETED
 - [x] Phase 6: Dynamic Platform Loading (3-4 hours) - ✅ COMPLETED
+- [ ] Phase 7: Platform Discovery (3-5 hours) - 🔄 UPCOMING
+- [ ] Phase 8: Testing Suite (15-20 hours) - 📋 FUTURE
 
 ---
 
@@ -336,6 +338,78 @@ const validPlatforms = await PlatformService.getPlatforms()
 
 ---
 
+### Phase 7: Platform Discovery (3-5 hours)
+**Goal:** Enable AI-powered platform detection and addition for unknown URLs.
+
+#### 7.1 AI Platform Detection Integration
+```typescript
+// Integrate existing AIService.detectPlatform() into URL validation flow
+// components/settings/platform-discovery.tsx
+- Detect platforms for unknown URLs using AI
+- Show platform suggestions with confidence scores
+- Allow users to accept/reject suggestions
+- One-click platform addition to database
+
+// Update hooks/use-url-validation.ts
+- Add AI platform detection for unknown URLs
+- Return platform suggestions alongside validation results
+- Integrate with existing form validation flow
+```
+
+#### 7.2 Platform Suggestion UI
+```typescript
+// components/video-form/platform-suggestions.tsx
+- Display AI-detected platform suggestions
+- Show confidence scores and platform details
+- Accept/Reject buttons with loading states
+- Preview of platform configuration (color, icon, patterns)
+
+// components/video-form/platform-creator.tsx
+- Quick platform creation form for user-defined platforms
+- Pattern testing interface
+- Color and icon selection
+- Save to platformConfigs table
+```
+
+#### 7.3 Enhanced URL Parser
+```typescript
+// lib/utils/url-parser.ts - Complete dynamic loading
+- Remove hardcoded platform references
+- Use PlatformService for pattern matching
+- Support runtime platform addition
+- Fallback to AI detection for unknown URLs
+
+// Update lib/services/platform-service.ts
+- Add platform creation methods
+- Pattern validation utilities
+- AI integration for platform suggestions
+```
+
+#### 7.4 Platform Addition Workflow
+```typescript
+// app/api/platforms/discover/route.ts
+- POST: AI platform detection endpoint
+- Analyze URL and return platform suggestions
+- Validate patterns and generate confidence scores
+
+// app/api/platforms/create/route.ts
+- POST: Create new platform from user input
+- Validate platform configuration
+- Prevent duplicate platform IDs
+- Return created platform data
+```
+
+#### 7.5 User Experience Integration
+```typescript
+// Update video addition flow
+- For unknown URLs: Show "Platform not recognized" with discovery options
+- AI-powered suggestions appear automatically
+- Quick platform creation for custom video sources
+- Seamless integration with existing form validation
+```
+
+---
+
 ## Technical Architecture
 
 ### Database Schema
@@ -412,21 +486,101 @@ const validPlatforms = await PlatformService.getPlatforms()
 
 ## Success Criteria
 
-- [ ] **Functional Requirements**: All settings management features working
-- [ ] **User Experience**: Clean, intuitive interface following design system
-- [ ] **Performance**: Fast loading and responsive interactions
-- [ ] **Mobile Compatibility**: Works seamlessly on all device sizes
-- [ ] **Maintainability**: Well-structured, documented code
-- [ ] **Extensibility**: Easy to add new settings categories
+### Phase 1-6 (Settings Management Core)
+- [x] **Functional Requirements**: All settings management features working
+- [x] **User Experience**: Clean, intuitive interface following design system
+- [x] **Performance**: Fast loading and responsive interactions
+- [x] **Mobile Compatibility**: Works seamlessly on all device sizes
+- [x] **Maintainability**: Well-structured, documented code
+- [x] **Extensibility**: Easy to add new settings categories
+
+### Phase 7 (Platform Discovery)
+- [ ] **AI Platform Detection**: Unknown URLs trigger platform discovery automatically
+- [ ] **Platform Suggestions**: Users see AI-generated platform suggestions with confidence scores
+- [ ] **One-Click Addition**: Users can save detected platforms with minimal friction
+- [ ] **Dynamic URL Parser**: No hardcoded platform references remain
+- [ ] **Fallback Handling**: Graceful degradation when AI services unavailable
+
+### Phase 8 (Testing Suite)
+- [ ] **Test Infrastructure**: Vitest + Playwright configured and running
+- [ ] **Unit Test Coverage**: 80%+ coverage for core services and utilities
+- [ ] **Integration Tests**: All API routes and service interactions tested
+- [ ] **E2E Test Coverage**: Critical user workflows automated
+- [ ] **CI/CD Integration**: Tests run automatically on commits
+- [ ] **Performance Benchmarks**: Metadata extraction times monitored
 
 ---
 
-## Timeline Estimate: 14-18 hours total
-- **Phase 1**: 1-2 hours (Foundation)
-- **Phase 2**: 2-3 hours (Cache Management)
-- **Phase 3**: 3-4 hours (Platform Management)
-- **Phase 4**: 1-2 hours (Tags Integration)
-- **Phase 5**: 2-3 hours (Polish & Mobile)
-- **Phase 6**: 3-4 hours (Dynamic Platform Loading)
+### Phase 8: Testing Suite (15-20 hours)
+**Goal:** Set up comprehensive testing infrastructure for reliability and maintainability.
+
+#### 8.1 Testing Framework Setup
+```typescript
+// Install and configure testing stack
+- Vitest for unit testing framework
+- @testing-library/react for component testing
+- @testing-library/jest-dom for DOM assertions
+- Playwright for E2E testing
+- Test scripts in package.json: yarn test, yarn test:e2e
+```
+
+#### 8.2 Unit Tests
+```typescript
+// Core service testing
+- lib/utils/url-parser.ts - Platform detection accuracy
+- lib/services/ai-service.ts - AI API integration
+- lib/services/platform-service.ts - Dynamic platform loading
+- lib/services/metascraper-service.ts - HTML parsing
+
+// Component testing
+- components/video-form/ - Form validation and submission
+- components/settings/ - Settings management workflows
+- components/platform/ - Dynamic platform rendering
+```
+
+#### 8.3 Integration Tests
+```typescript
+// API endpoint testing
+- /api/videos - CRUD operations and filtering
+- /api/platforms - Platform management
+- /api/cache - Cache operations
+- Database integration and error handling
+
+// Service integration
+- PlatformService with database operations
+- AIMetadataService full pipeline
+- VideoService business logic
+```
+
+#### 8.4 End-to-End Tests
+```typescript
+// Critical user workflows
+- Adding videos with URL validation
+- Platform discovery and addition
+- Settings management (cache, platforms, tags)
+- Filtering and searching videos
+- Mobile responsiveness testing
+```
+
+#### 8.5 CI/CD Integration
+```typescript
+// GitHub Actions workflow
+- Run tests on every push/PR
+- Test coverage reporting
+- E2E tests in headless browser
+- Performance regression detection
+```
+
+---
+
+## Timeline Estimate: 32-43 hours total
+- **Phase 1**: 1-2 hours (Foundation) ✅
+- **Phase 2**: 2-3 hours (Cache Management) ✅
+- **Phase 3**: 3-4 hours (Platform Management) ✅
+- **Phase 4**: 1-2 hours (Tags Integration) ✅
+- **Phase 5**: 2-3 hours (Polish & Mobile) ✅
+- **Phase 6**: 3-4 hours (Dynamic Platform Loading) ✅
+- **Phase 7**: 3-5 hours (Platform Discovery)
+- **Phase 8**: 15-20 hours (Testing Suite)
 
 *Note: Timeline includes testing, debugging, and refinements. Actual time may vary based on complexity discovered during implementation.*

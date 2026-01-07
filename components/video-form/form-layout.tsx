@@ -8,6 +8,9 @@ import { SubmitButton } from './submit-button';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/types/tag';
 import { MetadataSuggestion } from '@/lib/types/ai-metadata';
+import { PlatformSuggestion } from '@/lib/services/ai-service';
+import { PlatformSuggestions } from './platform-suggestions';
+import { Loader2 } from 'lucide-react';
 
 interface FormLayoutProps {
   url: string;
@@ -26,6 +29,13 @@ interface FormLayoutProps {
   isLoadingAIMetadata?: boolean;
   aiMetadataError?: string | null;
   onManualEdit?: () => void;
+  // Platform Discovery props
+  platformSuggestions?: PlatformSuggestion[];
+  isDetectingPlatform?: boolean;
+  onAcceptPlatformSuggestion?: (suggestion: PlatformSuggestion) => void;
+  onRejectPlatformSuggestions?: () => void;
+  onPlatformCreated?: (platform: any) => void;
+  onDetectPlatform?: () => void;
   // Tag props to sync with preview
   selectedTags: Tag[];
   tagInput: string;
@@ -59,6 +69,13 @@ export function FormLayout({
   isLoadingAIMetadata = false,
   aiMetadataError,
   onManualEdit,
+  // Platform Discovery props
+  platformSuggestions = [],
+  isDetectingPlatform = false,
+  onAcceptPlatformSuggestion,
+  onRejectPlatformSuggestions,
+  onPlatformCreated,
+  onDetectPlatform,
   // Tag props
   selectedTags,
   tagInput,
@@ -96,6 +113,44 @@ export function FormLayout({
         error={urlError || undefined}
         disabled={isSubmitting}
       />
+
+      {/* Platform Discovery - show when URL is invalid and no suggestions yet */}
+      {!hasValidUrl && url.trim() && platformSuggestions.length === 0 && (
+        <div className="text-center">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            This URL isn't recognized. Would you like to detect the platform automatically?
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onDetectPlatform}
+            disabled={isDetectingPlatform}
+            className="text-xs"
+          >
+            {isDetectingPlatform ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                Detecting...
+              </>
+            ) : (
+              <>
+                🔍 Detect Platform
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Platform Suggestions - show when URL is invalid but we have suggestions */}
+      {platformSuggestions.length > 0 && (
+        <PlatformSuggestions
+          suggestions={platformSuggestions}
+          onAccept={onAcceptPlatformSuggestion || (() => {})}
+          onReject={onRejectPlatformSuggestions || (() => {})}
+          onPlatformCreated={onPlatformCreated}
+          isLoading={isDetectingPlatform}
+        />
+      )}
 
       {/* AI Metadata Selector - show when URL is valid */}
       {hasValidUrl && (

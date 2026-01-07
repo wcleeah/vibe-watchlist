@@ -34,7 +34,14 @@ export default function Home() {
     handleSubmit,
     submitError,
     reset,
-    aiMetadata
+    aiMetadata,
+    // Platform Discovery
+    platformSuggestions,
+    isDetectingPlatform,
+    detectPlatformForUrl,
+    acceptPlatformSuggestion,
+    rejectPlatformSuggestions,
+    createCustomPlatform,
   } = useAddVideoForm({
     onVideoAdded: () => {
       toast.success('Video added successfully!');
@@ -93,6 +100,17 @@ export default function Home() {
               isLoadingAIMetadata={aiMetadata.isLoading}
               aiMetadataError={aiMetadata.error}
               onManualEdit={() => setManualMode(!manualMode)}
+              // Platform Discovery props
+              platformSuggestions={platformSuggestions}
+              isDetectingPlatform={isDetectingPlatform}
+              onAcceptPlatformSuggestion={acceptPlatformSuggestion}
+              onRejectPlatformSuggestions={rejectPlatformSuggestions}
+              onPlatformCreated={(platform) => {
+                console.log('Platform created:', platform);
+                // Clear suggestions and refresh platform cache
+                // The PlatformService cache will be invalidated automatically
+              }}
+              onDetectPlatform={detectPlatformForUrl}
               // Tag props
               selectedTags={selectedTags}
               tagInput={tagInput}

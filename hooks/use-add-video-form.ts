@@ -4,6 +4,8 @@ import { useVideoFormState } from "./use-video-form-state";
 // Removed: import { useMetadataFetching } from './use-metadata-fetching';
 import { useAIMetadataFetching, UseAIMetadataFetchingReturn } from "./use-ai-metadata-fetching";
 import { useUrlValidation } from "./use-url-validation";
+import { PlatformSuggestion } from "@/lib/services/ai-service";
+import { toast } from "sonner";
 
 interface UseAddVideoFormOptions {
     onVideoAdded?: () => void;
@@ -21,6 +23,14 @@ interface UseAddVideoFormReturn {
     } | null;
     isValidUrl: boolean;
     urlError: string | null;
+
+    // Platform Discovery
+    platformSuggestions: PlatformSuggestion[];
+    isDetectingPlatform: boolean;
+    detectPlatformForUrl: () => Promise<void>;
+    acceptPlatformSuggestion: (suggestion: PlatformSuggestion) => Promise<void>;
+    rejectPlatformSuggestions: () => void;
+    createCustomPlatform: () => void;
 
     // Manual mode
     manualMode: boolean;
@@ -99,6 +109,56 @@ export function useAddVideoForm({
         onReset: reset,
     });
 
+    // Platform suggestion handlers
+    const acceptPlatformSuggestion = async (suggestion: PlatformSuggestion) => {
+        try {
+            console.log('🔧 Creating platform from suggestion:', suggestion);
+
+            const response = await fetch('/api/platforms/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    platformId: suggestion.platform,
+                    name: suggestion.platform,
+                    displayName: suggestion.platform.charAt(0).toUpperCase() + suggestion.platform.slice(1),
+                    patterns: suggestion.patterns,
+                    color: suggestion.color,
+                    icon: suggestion.icon,
+                    confidenceScore: suggestion.confidence,
+                }),
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Platform created successfully:', result.platform);
+                toast.success(`Platform "${suggestion.platform}" added successfully!`);
+                urlValidation.clearPlatformSuggestions();
+
+                // Clear platform cache to refresh UI
+                // Note: This will be handled by PlatformService cache invalidation
+            } else {
+                const error = await response.json();
+                console.error('❌ Failed to create platform:', error);
+                toast.error(`Failed to add platform: ${error.error}`);
+            }
+        } catch (error) {
+            console.error('❌ Platform creation error:', error);
+            toast.error('Failed to add platform');
+        }
+    };
+
+    const rejectPlatformSuggestions = () => {
+        urlValidation.clearPlatformSuggestions();
+    };
+
+    const createCustomPlatform = () => {
+        // TODO: Open custom platform creation modal
+        console.log('Creating custom platform');
+        urlValidation.clearPlatformSuggestions();
+    };
+
     // Return unified interface matching original useVideoForm
     return {
         // URL state
@@ -107,6 +167,14 @@ export function useAddVideoForm({
         parsedUrl: urlValidation.parsedUrl,
         isValidUrl: urlValidation.isValid,
         urlError: urlValidation.error,
+
+        // Platform Discovery
+        platformSuggestions: urlValidation.platformSuggestions,
+        isDetectingPlatform: urlValidation.isDetectingPlatform,
+        detectPlatformForUrl: urlValidation.detectPlatformForUrl,
+        acceptPlatformSuggestion,
+        rejectPlatformSuggestions,
+        createCustomPlatform,
 
         // AI Metadata state
         aiMetadata,

@@ -3,15 +3,12 @@ import { db } from '@/lib/db';
 import { platformConfigs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const platformId = params.id;
+    const { id: platformId } = await params;
 
     const platform = await db
       .select()
@@ -39,9 +36,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const platformId = params.id;
+    const { id: platformId } = await params;
     const updates = await request.json();
 
     // Check if platform exists and get current data
@@ -131,9 +131,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const platformId = params.id;
+    const { id: platformId } = await params;
 
     // Check if platform exists and if it's a preset
     const existing = await db

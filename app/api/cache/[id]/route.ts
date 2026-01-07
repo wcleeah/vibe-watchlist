@@ -3,15 +3,12 @@ import { db } from '@/lib/db';
 import { aiMetadataCache } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const cacheId = params.id;
+    const { id: cacheId } = await params;
 
     // Validate that the ID is a valid format (should be a string from the database)
     if (!cacheId || typeof cacheId !== 'string') {
