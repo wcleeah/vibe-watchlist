@@ -562,9 +562,6 @@ export default function ListPage() {
                         videos={filteredVideos}
                         onMarkWatched={handleMarkWatched}
                         onDelete={handleDelete}
-                        isSelectable={bulkMode}
-                        selectedIds={selectedVideoIds}
-                        onSelectionChange={handleSelectionChange}
                     />
                 )}
             </main>
