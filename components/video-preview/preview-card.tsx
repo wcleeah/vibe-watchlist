@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
-import { usePreferences } from '@/lib/preferences-context';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
 import { ThumbnailDisplay } from './metadata-components';
 import { ErrorDisplay } from './error-display';
@@ -21,7 +20,6 @@ export function PreviewCard({
   manualThumbnailUrl,
   onManualThumbnailChange,
 }: PreviewCardProps) {
-  const { preferences } = usePreferences();
   const [loadingMarkWatched, setLoadingMarkWatched] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
 
@@ -90,7 +88,6 @@ export function PreviewCard({
           {/* Thumbnail + Content Row */}
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Thumbnail */}
-            {preferences.showThumbnails && (
               <div className="w-full sm:w-[304px] aspect-video sm:aspect-auto sm:flex-shrink-0 sm:h-[171px] pt-4">
                 {manualMode ? (
                   <div className="space-y-2">
@@ -121,7 +118,6 @@ export function PreviewCard({
                   </div>
                 )}
               </div>
-            )}
 
             {/* Content */}
             <div className="flex-1 min-w-0 w-full sm:w-auto sm:flex sm:items-center">

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiMetadataService } from '@/lib/services/ai-metadata-service';
-import { parseVideoUrl } from '@/lib/utils/url-parser';
+import { parseVideoUrlWithPlatforms } from '@/lib/utils/url-parser';
 import { PlatformDataService } from '@/lib/services/platform-data-service';
 
 export async function POST(request: NextRequest) {
@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate URL format
-    const parsedUrl = await parseVideoUrl(url);
+    const platforms = await PlatformDataService.getPlatforms();
+    const parsedUrl = parseVideoUrlWithPlatforms(url, platforms);
     if (!parsedUrl.isValid) {
       return NextResponse.json(
         { error: 'Invalid URL format' },

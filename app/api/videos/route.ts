@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { videos, tags, videoTags } from '@/lib/db/schema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
-import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
+import { parseVideoUrlWithPlatforms, VideoPlatform } from '@/lib/utils/url-parser';
 import { PlatformDataService } from '@/lib/services/platform-data-service';
 
 
@@ -181,7 +181,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse and validate URL
-    const parsedUrl = await parseVideoUrl(url);
+    const platforms = await PlatformDataService.getPlatforms();
+    const parsedUrl = parseVideoUrlWithPlatforms(url, platforms);
     if (!parsedUrl.isValid) {
       return NextResponse.json(
         { error: 'Invalid or unsupported video URL' },

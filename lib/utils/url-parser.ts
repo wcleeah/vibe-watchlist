@@ -16,21 +16,25 @@ export function parseVideoUrlWithPlatforms(
   url: string,
   platforms: Array<{ platformId: string; patterns: string[]; enabled: boolean | null }>
 ): ParsedUrl {
+    console.log(url);
+    console.log(platforms);
   if (!url || typeof url !== 'string') {
     return { url, platform: 'unknown', isValid: false };
   }
 
   try {
     const urlObj = new URL(url);
-    const hostname = urlObj.hostname.toLowerCase();
 
     // Check against each platform's patterns
     for (const platform of platforms) {
+      console.log(platform);
+      console.log(!platform.enabled || !platform.patterns);
       if (!platform.enabled || !platform.patterns) continue;
 
+      console.log(url);
       // Check if hostname matches any of the platform's patterns
       const matchesPattern = platform.patterns.some((pattern: string) =>
-        hostname.includes(pattern.toLowerCase())
+        urlObj.href.includes(pattern.toLowerCase())
       );
 
       if (matchesPattern) {
@@ -66,19 +70,6 @@ export function parseVideoUrlWithPlatforms(
   } catch {
     return { url, platform: 'unknown', isValid: false };
   }
-}
-
-/**
- * Server-side URL parser that gets platforms from PlatformService
- */
-export async function parseVideoUrl(url: string): Promise<ParsedUrl> {
-  // Import PlatformDataService for server-side database access
-  const { PlatformDataService } = await import('@/lib/services/platform-data-service');
-
-  // Get all enabled platforms from database
-  const platforms = await PlatformDataService.getPlatforms();
-
-  return parseVideoUrlWithPlatforms(url, platforms);
 }
 
 /**

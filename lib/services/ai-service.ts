@@ -20,17 +20,14 @@ export interface TitleSuggestions {
 const platformSuggestionSchema = {
     type: "object",
     properties: {
-        platform: {
-            type: "string",
-            enum: ["youtube", "twitch", "netflix", "nebula", "vimeo", "dailymotion", "bilibili", "unknown"]
-        },
+        platform: { type: "string" },
         confidence: { type: "number", minimum: 0, maximum: 1 },
         patterns: { type: "array", items: { type: "string" } },
         color: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" },
-        icon: { type: "string" }
+        icon: { type: "string" },
     },
     required: ["platform", "confidence", "patterns", "color", "icon"],
-    additionalProperties: false
+    additionalProperties: false,
 };
 
 const titleSuggestionsSchema = {
@@ -43,19 +40,19 @@ const titleSuggestionsSchema = {
                 properties: {
                     title: { type: "string" },
                     confidence: { type: "number", minimum: 0, maximum: 1 },
-                    source: { type: "string" }
+                    source: { type: "string" },
                 },
                 required: ["title", "confidence", "source"],
-                additionalProperties: false
+                additionalProperties: false,
             },
             minItems: 1,
-            maxItems: 5
+            maxItems: 5,
         },
         bestGuess: { type: "string" },
-        alternatives: { type: "array", items: { type: "string" } }
+        alternatives: { type: "array", items: { type: "string" } },
     },
     required: ["suggestions", "bestGuess", "alternatives"],
-    additionalProperties: false
+    additionalProperties: false,
 };
 
 const metadataQualitySchema = {
@@ -63,10 +60,10 @@ const metadataQualitySchema = {
     properties: {
         quality: { type: "string", enum: ["high", "medium", "low"] },
         issues: { type: "array", items: { type: "string" } },
-        suggestions: { type: "array", items: { type: "string" } }
+        suggestions: { type: "array", items: { type: "string" } },
     },
     required: ["quality", "issues", "suggestions"],
-    additionalProperties: false
+    additionalProperties: false,
 };
 
 export class AIService {
@@ -101,12 +98,13 @@ export class AIService {
                     messages: [
                         {
                             role: "system",
-                            content: "You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema."
+                            content:
+                                "You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema.",
                         },
                         {
                             role: "user",
-                            content: `Analyze this URL and suggest platform details: ${url}`
-                        }
+                            content: `Analyze this URL and suggest platform details: ${url}`,
+                        },
                     ],
                     provider: {
                         require_parameters: true,
@@ -116,8 +114,8 @@ export class AIService {
                         json_schema: {
                             name: "platform_suggestion",
                             schema: platformSuggestionSchema,
-                            strict: true
-                        }
+                            strict: true,
+                        },
                     },
                 }),
             });
@@ -159,7 +157,9 @@ export class AIService {
             }
 
             // Parse the structured JSON response directly
-            const suggestion: PlatformSuggestion = JSON.parse(data.choices[0].message.content);
+            const suggestion: PlatformSuggestion = JSON.parse(
+                data.choices[0].message.content,
+            );
 
             // Validate the response structure (TypeScript will help, but double-check)
             if (
@@ -167,11 +167,17 @@ export class AIService {
                 typeof suggestion.confidence !== "number" ||
                 !Array.isArray(suggestion.patterns)
             ) {
-                console.error("🤖 AI PLATFORM DETECTION: Invalid response structure:", suggestion);
+                console.error(
+                    "🤖 AI PLATFORM DETECTION: Invalid response structure:",
+                    suggestion,
+                );
                 throw new Error("Invalid AI response structure");
             }
 
-            console.log("🤖 AI PLATFORM DETECTION: Successfully parsed structured response:", suggestion);
+            console.log(
+                "🤖 AI PLATFORM DETECTION: Successfully parsed structured response:",
+                suggestion,
+            );
             return suggestion;
         } catch (error) {
             console.error("🤖 AI PLATFORM DETECTION: Failed:", error);
@@ -190,7 +196,10 @@ export class AIService {
                 searchResults: searchResults.slice(0, 3), // Limit to first 3 results
                 platform: metadata.platform,
             };
-            console.log("🤖 AI TITLE SUGGESTIONS: context:", JSON.stringify(context, null, 2));
+            console.log(
+                "🤖 AI TITLE SUGGESTIONS: context:",
+                JSON.stringify(context, null, 2),
+            );
 
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: "POST",
@@ -207,12 +216,13 @@ export class AIService {
                     messages: [
                         {
                             role: "system",
-                            content: "You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema."
+                            content:
+                                "You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema.",
                         },
                         {
                             role: "user",
-                            content: `Analyze this video metadata and suggeest the actual titles:\n\n${JSON.stringify(context, null, 2)}`
-                        }
+                            content: `Analyze this video metadata and suggeest the actual titles:\n\n${JSON.stringify(context, null, 2)}`,
+                        },
                     ],
                     provider: {
                         require_parameters: true,
@@ -222,8 +232,8 @@ export class AIService {
                         json_schema: {
                             name: "title_suggestions",
                             schema: titleSuggestionsSchema,
-                            strict: true
-                        }
+                            strict: true,
+                        },
                     },
                 }),
             });
@@ -262,7 +272,9 @@ export class AIService {
             }
 
             // Parse the structured JSON response directly
-            const suggestions: TitleSuggestions = JSON.parse(data.choices[0].message.content);
+            const suggestions: TitleSuggestions = JSON.parse(
+                data.choices[0].message.content,
+            );
 
             // Validate structure
             if (
@@ -270,11 +282,17 @@ export class AIService {
                 !Array.isArray(suggestions.suggestions) ||
                 suggestions.suggestions.length === 0
             ) {
-                console.error("🤖 AI TITLE SUGGESTIONS: Invalid response structure:", suggestions);
+                console.error(
+                    "🤖 AI TITLE SUGGESTIONS: Invalid response structure:",
+                    suggestions,
+                );
                 throw new Error("Invalid suggestions format");
             }
 
-            console.log("🤖 AI TITLE SUGGESTIONS: Successfully parsed structured response:", JSON.stringify(suggestions, null, 2));
+            console.log(
+                "🤖 AI TITLE SUGGESTIONS: Successfully parsed structured response:",
+                JSON.stringify(suggestions, null, 2),
+            );
             return suggestions;
         } catch (error) {
             console.error("🤖 AI TITLE SUGGESTIONS: Failed:", error);
@@ -303,7 +321,10 @@ export class AIService {
         suggestions: string[];
     }> {
         try {
-            console.log("🤖 AI METADATA QUALITY: Analyzing metadata:", JSON.stringify(metadata, null, 2));
+            console.log(
+                "🤖 AI METADATA QUALITY: Analyzing metadata:",
+                JSON.stringify(metadata, null, 2),
+            );
 
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: "POST",
@@ -320,20 +341,21 @@ export class AIService {
                     messages: [
                         {
                             role: "system",
-                            content: "You are a helpful assistant that analyzes video metadata quality and provides improvement suggestions. Always respond with valid JSON that matches the required schema."
+                            content:
+                                "You are a helpful assistant that analyzes video metadata quality and provides improvement suggestions. Always respond with valid JSON that matches the required schema.",
                         },
                         {
                             role: "user",
-                            content: `Analyze the quality of this video metadata and suggest improvements:\n\n${JSON.stringify(metadata, null, 2)}`
-                        }
+                            content: `Analyze the quality of this video metadata and suggest improvements:\n\n${JSON.stringify(metadata, null, 2)}`,
+                        },
                     ],
                     response_format: {
                         type: "json_schema",
                         json_schema: {
                             name: "metadata_quality_analysis",
                             schema: metadataQualitySchema,
-                            strict: true
-                        }
+                            strict: true,
+                        },
                     },
                     max_tokens: 300,
                     temperature: 0.1,
@@ -378,12 +400,18 @@ export class AIService {
 
             // Validate and provide defaults
             const result = {
-                quality: (analysis.quality as "high" | "medium" | "low") || "medium",
+                quality:
+                    (analysis.quality as "high" | "medium" | "low") || "medium",
                 issues: Array.isArray(analysis.issues) ? analysis.issues : [],
-                suggestions: Array.isArray(analysis.suggestions) ? analysis.suggestions : [],
+                suggestions: Array.isArray(analysis.suggestions)
+                    ? analysis.suggestions
+                    : [],
             };
 
-            console.log("🤖 AI METADATA QUALITY: Successfully parsed structured response:", JSON.stringify(result, null, 2));
+            console.log(
+                "🤖 AI METADATA QUALITY: Successfully parsed structured response:",
+                JSON.stringify(result, null, 2),
+            );
             return result;
         } catch (error) {
             console.error("🤖 AI METADATA QUALITY: Failed:", error);

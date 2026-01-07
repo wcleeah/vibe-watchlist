@@ -6,13 +6,8 @@ import { FormLayout } from '@/components/video-form';
 import { PreviewCard } from '@/components/video-preview';
 import { useAddVideoForm } from '@/hooks/use-add-video-form';
 import { toast } from 'sonner';
-import { usePlatforms } from '@/hooks/use-platforms';
 
 export default function Home() {
-  const { platforms } = usePlatforms();
-  const platformNames = platforms.length > 0
-    ? platforms.map(p => p.displayName).join(', ')
-    : 'YouTube, Netflix, Nebula, or Twitch';
 
   const {
     url,
@@ -47,7 +42,6 @@ export default function Home() {
     detectPlatformForUrl,
     acceptPlatformSuggestion,
     rejectPlatformSuggestions,
-    createCustomPlatform,
   } = useAddVideoForm({
     onVideoAdded: () => {
       toast.success('Video added successfully!');
@@ -76,7 +70,7 @@ export default function Home() {
     <div className="text-center mb-4">
       <h1 className="text-2xl sm:text-3xl font-bold mb-4">Add New Video</h1>
       <p className="text-gray-600 dark:text-gray-400">
-        Paste a video URL from {platformNames}
+        Paste a video URL to start the extraction
       </p>
     </div>
   );

@@ -2,26 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type ThemeMode = 'light' | 'dark' | 'system';
-export type AccentColor = 'blue' | 'green' | 'purple' | 'red' | 'orange';
-export type VideoPlatform = 'youtube' | 'netflix' | 'nebula' | 'twitch';
+export type ThemeMode = 'light' | 'dark';
 
 export interface UserPreferences {
   theme: ThemeMode;
-  accentColor: AccentColor;
-  defaultPlatform: VideoPlatform | null;
-  compactView: boolean;
-  autoPreview: boolean;
-  showThumbnails: boolean;
 }
 
 const defaultPreferences: UserPreferences = {
-  theme: 'system',
-  accentColor: 'blue',
-  defaultPlatform: null,
-  compactView: false,
-  autoPreview: true,
-  showThumbnails: true,
+  theme: 'light',
 };
 
 const PreferencesContext = createContext<{
@@ -110,19 +98,6 @@ export function PreferencesProvider({ children }: PreferencesProviderProps) {
       return () => mediaQuery.removeEventListener('change', handleChange);
     }
   }, [preferences.theme]);
-
-  // Apply accent color
-  useEffect(() => {
-    const root = document.documentElement;
-    // Remove existing accent classes
-    root.classList.forEach(className => {
-      if (className.startsWith('accent-')) {
-        root.classList.remove(className);
-      }
-    });
-    // Add new accent class
-    root.classList.add(`accent-${preferences.accentColor}`);
-  }, [preferences.accentColor]);
 
   if (!isLoaded) {
     return null; // or a loading spinner

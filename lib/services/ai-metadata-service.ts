@@ -9,10 +9,11 @@ import {
 import { AIService } from "@/lib/services/ai-service";
 import { SharedMetadataService } from "@/lib/services/shared-metadata-service";
 import { MetascraperService } from "@/lib/services/metascraper-service";
-import { parseVideoUrl } from "@/lib/utils/url-parser";
+import { parseVideoUrlWithPlatforms } from "@/lib/utils/url-parser";
 import { db } from "@/lib/db";
 import { aiMetadataCache } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { PlatformDataService } from "./platform-data-service";
 
 /**
  * Main orchestration service for AI-powered metadata extraction
@@ -66,7 +67,8 @@ export class AIMetadataService {
                 "🔍 AI METADATA SERVICE: No cache hit, parsing URL for platform detection",
             );
             // Detect platform and route accordingly
-            const parsed = await parseVideoUrl(url);
+            const platforms = await PlatformDataService.getPlatforms();
+            const parsed = parseVideoUrlWithPlatforms(url, platforms);
             const platform = parsed.platform;
             console.log("🔍 AI METADATA SERVICE: Parsed platform:", platform);
 
@@ -318,6 +320,7 @@ export class AIMetadataService {
             googleResults,
             html,
             extractedMetadata,
+            platform
         );
         console.log(
             "🤖 AI PLATFORM HANDLER: AI analysis complete, generated",
@@ -393,6 +396,7 @@ export class AIMetadataService {
         searchResults: GoogleSearchResult[],
         htmlContent: string,
         extractedMetadata: HtmlMetadata,
+        platform: string
     ): Promise<MetadataSuggestion[]> {
         console.log("🧠 AI ANALYSIS: Starting AI analysis for URL:", url);
 
@@ -478,10 +482,10 @@ export class AIMetadataService {
             );
             const suggestions: MetadataSuggestion[] =
                 await Promise.all(titleSuggestions.suggestions.map(async (suggestion) => {
-                    const platform = await this.inferPlatform(
+                    const platformInfer = await this.inferPlatform(
                         url,
                         suggestion.title,
-                        context,
+                        platform,
                     );
                     const thumbnailUrl = this.inferThumbnail(
                         url,
@@ -499,7 +503,7 @@ export class AIMetadataService {
 
                     return {
                         title: suggestion.title,
-                        platform: platform,
+                        platform: platformInfer,
                         confidence: suggestion.confidence,
                         reasoning: suggestion.source,
                         thumbnailUrl: thumbnailUrl,
@@ -714,24 +718,16 @@ export class AIMetadataService {
     /**
      * Infer platform from URL and context
      */
-    private async inferPlatform(url: string, title: string, context: any): Promise<string> {
+    private async inferPlatform(url: string, title: string, platform: string): Promise<string> {
         console.log("🔍 PLATFORM INFERENCE: Inferring platform for URL:", url);
         console.log("🔍 PLATFORM INFERENCE: Title:", title.substring(0, 50));
 
-        const parsed = await parseVideoUrl(url);
-        console.log(
-            "🔍 PLATFORM INFERENCE: URL parser detected platform:",
-            parsed.platform,
-        );
-
-        // Use AI to potentially override platform detection
-        // For now, stick with URL-based detection enhanced by content analysis
-        if (parsed.platform !== "unknown") {
+        if (platform !== "unknown") {
             console.log(
                 "🔍 PLATFORM INFERENCE: Using URL-detected platform:",
-                parsed.platform,
+                platform,
             );
-            return parsed.platform;
+            return platform;
         }
 
         console.log(

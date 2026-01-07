@@ -1,6 +1,6 @@
 'use client';
 
-import { Moon, Sun, Monitor } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePreferences } from '@/lib/preferences-context';
 
@@ -8,7 +8,7 @@ export function ThemeToggle() {
   const { preferences, updatePreferences } = usePreferences();
 
   const cycleTheme = () => {
-    const themes = ['light', 'dark', 'system'] as const;
+    const themes = ['light', 'dark'] as const;
     const currentIndex = themes.indexOf(preferences.theme);
     const nextIndex = (currentIndex + 1) % themes.length;
     updatePreferences({ theme: themes[nextIndex] });
@@ -20,8 +20,6 @@ export function ThemeToggle() {
         return <Sun className="w-4 h-4" />;
       case 'dark':
         return <Moon className="w-4 h-4" />;
-      case 'system':
-        return <Monitor className="w-4 h-4" />;
     }
   };
 
@@ -31,8 +29,6 @@ export function ThemeToggle() {
         return 'Switch to dark mode';
       case 'dark':
         return 'Switch to system mode';
-      case 'system':
-        return 'Switch to light mode';
     }
   };
 

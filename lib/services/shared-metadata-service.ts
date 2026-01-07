@@ -1,3 +1,7 @@
+import { PlatformDataService } from '@/lib/services/platform-data-service';
+import { parseVideoUrlWithPlatforms } from '../utils/url-parser';
+import { MetascraperService } from './metascraper-service';
+
 export interface VideoMetadata {
   title: string;
   thumbnailUrl: string | null;
@@ -112,8 +116,8 @@ export class SharedMetadataService {
    * Extract metadata from Twitch using Helix API
    */
   static async extractTwitchMetadata(url: string): Promise<VideoMetadata> {
-    const { parseVideoUrl } = await import('@/lib/utils/url-parser');
-    const parsed = await parseVideoUrl(url);
+    const platforms = await PlatformDataService.getPlatforms();
+    const parsed = parseVideoUrlWithPlatforms(url, platforms);
 
     if (!parsed.videoId) {
       throw new Error('Invalid Twitch video URL');
@@ -207,7 +211,6 @@ export class SharedMetadataService {
       }
 
       const html = await response.text();
-      const { MetascraperService } = await import('./metascraper-service');
       const metadata = await MetascraperService.extractMetadata(html, url);
 
       return {
@@ -224,28 +227,10 @@ export class SharedMetadataService {
   }
 
   /**
-    * Determine the extraction strategy for a given platform (legacy sync method)
-    * @deprecated Use getPlatformStrategyAsync for dynamic platform support
-    */
-   static getPlatformStrategy(platform: string): 'official' | 'ai' | 'fallback' {
-     // Fallback to basic logic for backward compatibility
-     if (['youtube', 'twitch'].includes(platform)) {
-       return 'official';
-     }
-     if (['unknown', 'netflix', 'nebula', 'vimeo'].includes(platform)) {
-       return 'ai';
-     }
-     return 'fallback';
-   }
-
-  /**
    * Determine the extraction strategy for a given platform using database configs
    */
   static async getPlatformStrategyAsync(platform: string): Promise<'official' | 'ai' | 'fallback'> {
     try {
-      // Dynamic import to avoid circular dependency
-      const { PlatformDataService } = await import('@/lib/services/platform-data-service');
-
       const platformConfig = await PlatformDataService.getPlatformById(platform);
 
       if (!platformConfig) {
