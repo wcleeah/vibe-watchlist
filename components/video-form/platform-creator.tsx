@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 interface PlatformCreatorProps {
-    onPlatformCreated?: (platform: any) => void
+    onPlatformCreated?: (platform: string) => void
 }
 
 export function PlatformCreator({ onPlatformCreated }: PlatformCreatorProps) {

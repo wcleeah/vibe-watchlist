@@ -1,8 +1,8 @@
 import { z } from 'zod'
+import type { PlatformSuggestion } from '@/lib/services/ai-service'
+import type { MetadataSuggestion } from '@/lib/types/ai-metadata'
 import type { Tag } from './tag'
 import type { ParsedUrl, VideoMetadata } from './video'
-import type { MetadataSuggestion } from '@/lib/types/ai-metadata'
-import type { PlatformSuggestion } from '@/lib/services/ai-service'
 
 export interface VideoFormState {
     url: string
@@ -37,9 +37,12 @@ export interface VideoFormOptions {
 
 // Video addition form schema and types
 export const videoSchema = z.object({
+    url: z.string(),
     title: z.string().min(1, 'Title is required'),
     thumbnailUrl: z.string().optional(),
-    tags: z.array(z.number()),
+    platform: z.string(),
+    tags: z.array(z.number()).min(1).optional(),
+    tagStrs: z.array(z.string()).min(1).optional(),
 })
 
 export type VideoFormData = z.infer<typeof videoSchema>

@@ -1,35 +1,72 @@
 'use client'
 
-import { FileText } from 'lucide-react'
-import { PLATFORM_NAMES } from '@/lib/utils/platform-utils'
+import { FileText, Loader2 } from 'lucide-react'
+import Image from 'next/image'
+import { useState } from 'react'
 import { ErrorDisplay } from './error-display'
-import { ThumbnailDisplay } from './metadata-components'
-import type { VideoData } from './types'
-import type { Tag } from '@/types/tag'
+import type { PreviewCardProps, VideoData } from './types'
 
-interface VideoCardViewProps {
+interface ThumbnailDisplayProps {
     video: VideoData
-    showActions?: boolean
-    onMarkWatched?: (id: number) => void
-    onDelete?: (id: number) => void
     className?: string
-    showBackground?: boolean
 }
 
-export function VideoCardView({
+export function ThumbnailDisplay({ video, className }: ThumbnailDisplayProps) {
+    if (!video.thumbnailUrl) {
+        return (
+            <div
+                className={`w-full max-w-xs mx-auto h-32 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center ${className}`}
+            >
+                <span className='text-gray-500 dark:text-gray-400 text-sm'>
+                    No thumbnail
+                </span>
+            </div>
+        )
+    }
+
+    return (
+        <div className={`relative w-full h-full ${className}`}>
+            <Image
+                src={video.thumbnailUrl}
+                alt={video.title || 'Video thumbnail'}
+                fill
+                loading='lazy'
+                className='object-contain rounded'
+            />
+        </div>
+    )
+}
+
+export function VideoCard({
     video,
     showActions = false,
     onMarkWatched,
     onDelete,
+    onThumbnailUrlChange,
+    onTitleChange,
     className,
     showBackground = true,
-}: VideoCardViewProps) {
+    editable = false,
+}: PreviewCardProps) {
+    const [loadingMarkWatched, setLoadingMarkWatched] = useState(false)
+    const [loadingDelete, setLoadingDelete] = useState(false)
+
+    // Internal manual mode state - overrides external if provided
+    const [manualMode, setManualMode] = useState(false)
+
+    const toggleManual = () => {
+        setManualMode(!manualMode)
+    }
+
     if (video.error) {
         return (
             <div
                 className={`bg-white dark:bg-black rounded-lg border border-black dark:border-white p-6 min-h-[300px] ${className}`}
             >
-                <ErrorDisplay error={video.error} />
+                <ErrorDisplay
+                    error={video.error}
+                    onToggleManual={toggleManual}
+                />
             </div>
         )
     }
@@ -50,19 +87,87 @@ export function VideoCardView({
                 <div className='px-4 pt-4 pb-4 space-y-1'>
                     {/* Title Section */}
                     <div className='pb-2 border-b border-black dark:border-white'>
-                        <h3
-                            className='text-lg font-bold text-black dark:text-white font-mono truncate text-center sm:text-left flex-1'
-                            title={video.title || 'Untitled Video'}
-                        >
-                            {video.title || 'Untitled Video'}
-                        </h3>
+                        {manualMode ? (
+                            <div className='space-y-2'>
+                                <label
+                                    htmlFor='title'
+                                    className='text-sm font-medium text-gray-700 dark:text-gray-300'
+                                >
+                                    Title
+                                </label>
+                                <input
+                                    id='title'
+                                    value={video.title ?? undefined}
+                                    type='text'
+                                    placeholder='Enter video title'
+                                    className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono'
+                                    onChange={(e) => {
+                                        if (onTitleChange) {
+                                            onTitleChange(e.target.value)
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type='button'
+                                    onClick={toggleManual}
+                                    className='text-sm text-blue-600 dark:text-blue-400 hover:underline'
+                                >
+                                    Cancel manual entry
+                                </button>
+                            </div>
+                        ) : (
+                            <div className='flex items-center justify-between'>
+                                <h3
+                                    className='text-lg font-bold text-black dark:text-white font-mono truncate text-center sm:text-left flex-1 min-w-0'
+                                    title={video.title || 'Untitled Video'}
+                                >
+                                    {video.title || 'Untitled Video'}
+                                </h3>
+                                {editable && (
+                                    <button
+                                        type='button'
+                                        onClick={toggleManual}
+                                        className='text-sm text-blue-600 dark:text-blue-400 hover:underline ml-2 flex-shrink-0'
+                                        title='Switch to manual entry mode'
+                                    >
+                                        Edit manually
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Thumbnail + Content Row */}
                     <div className='flex flex-col sm:flex-row gap-4'>
                         {/* Thumbnail */}
                         <div className='w-full sm:w-[304px] aspect-video sm:aspect-auto sm:flex-shrink-0 sm:h-[171px] pt-4'>
-                            {video.thumbnailUrl ? (
+                            {manualMode ? (
+                                <div className='space-y-2'>
+                                    <label
+                                        htmlFor='thumbnailUrl'
+                                        className='text-sm font-medium text-gray-700 dark:text-gray-300'
+                                    >
+                                        Thumbnail URL
+                                    </label>
+                                    <input
+                                        value={video.thumbnailUrl ?? undefined}
+                                        id='thumbnailUrl'
+                                        type='url'
+                                        placeholder='https://example.com/thumbnail.jpg'
+                                        className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono text-sm'
+                                        onChange={(e) => {
+                                            if (onThumbnailUrlChange) {
+                                                onThumbnailUrlChange(
+                                                    e.target.value,
+                                                )
+                                            }
+                                        }}
+                                    />
+                                    {video.thumbnailUrl && (
+                                        <ThumbnailDisplay video={video} />
+                                    )}
+                                </div>
+                            ) : video.thumbnailUrl ? (
                                 <ThumbnailDisplay video={video} />
                             ) : (
                                 <div className='w-full h-full bg-gray-200 rounded flex items-center justify-center'>
@@ -77,19 +182,18 @@ export function VideoCardView({
                                 <div className='text-sm'>
                                     {'{'}
                                     <div className='ml-4 space-y-1'>
-                                        {video.id != null &&
-                                            video.id !== undefined && (
-                                                <div>
-                                                    <span className='text-cyan-600 dark:text-cyan-400'>
-                                                        &quot;ID&quot;
-                                                    </span>
-                                                    :{' '}
-                                                    <span className='text-cyan-600 dark:text-cyan-400'>
-                                                        {video.id}
-                                                    </span>
-                                                    ,
-                                                </div>
-                                            )}
+                                        {video.id && (
+                                            <div>
+                                                <span className='text-cyan-600 dark:text-cyan-400'>
+                                                    &quot;ID&quot;
+                                                </span>
+                                                :{' '}
+                                                <span className='text-cyan-600 dark:text-cyan-400'>
+                                                    {video.id}
+                                                </span>
+                                                ,
+                                            </div>
+                                        )}
                                         <div>
                                             <span className='text-purple-600 dark:text-purple-400'>
                                                 &quot;PLATFORM&quot;
@@ -97,9 +201,7 @@ export function VideoCardView({
                                             :{' '}
                                             <span className='text-green-600 dark:text-green-400'>
                                                 &quot;
-                                                {PLATFORM_NAMES[
-                                                    video.platform as keyof typeof PLATFORM_NAMES
-                                                ] || video.platform}
+                                                {video.platform}
                                                 &quot;
                                             </span>
                                             ,
@@ -115,7 +217,7 @@ export function VideoCardView({
                                                         [
                                                         {video.tags
                                                             .map(
-                                                                (tag: Tag) =>
+                                                                (tag) =>
                                                                     `"${tag.name}"`,
                                                             )
                                                             .join(', ')}
@@ -169,8 +271,15 @@ export function VideoCardView({
                                 <button
                                     type='button'
                                     onClick={async () => {
-                                        // onMarkWatched(video.id)
+                                        if (!video.id) return
+                                        setLoadingMarkWatched(true)
+                                        try {
+                                            await onMarkWatched(video.id)
+                                        } finally {
+                                            setLoadingMarkWatched(false)
+                                        }
                                     }}
+                                    disabled={loadingMarkWatched}
                                     className='w-full h-8 min-h-[44px] text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
                                     title={
                                         video.isWatched
@@ -183,9 +292,13 @@ export function VideoCardView({
                                             : 'Mark as watched'
                                     }
                                 >
-                                    {video.isWatched
-                                        ? 'unWatch()'
-                                        : 'markWatched()'}
+                                    {loadingMarkWatched ? (
+                                        <Loader2 className='w-4 h-4 animate-spin' />
+                                    ) : video.isWatched ? (
+                                        'unWatch()'
+                                    ) : (
+                                        'markWatched()'
+                                    )}
                                 </button>
                             )}
                         </div>
@@ -196,13 +309,24 @@ export function VideoCardView({
                                 <button
                                     type='button'
                                     onClick={async () => {
-                                        // onDelete(video.id)
+                                        if (!video.id) return
+                                        setLoadingDelete(true)
+                                        try {
+                                            await onDelete(video.id)
+                                        } finally {
+                                            setLoadingDelete(false)
+                                        }
                                     }}
+                                    disabled={loadingDelete}
                                     className='w-full h-8 min-h-[44px] text-xs px-2 bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
                                     title='delete()'
                                     aria-label='Delete video'
                                 >
-                                    delete()
+                                    {loadingDelete ? (
+                                        <Loader2 className='w-4 h-4 animate-spin' />
+                                    ) : (
+                                        'delete()'
+                                    )}
                                 </button>
                             </div>
                         )}

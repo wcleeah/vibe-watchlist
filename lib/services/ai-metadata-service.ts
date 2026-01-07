@@ -754,33 +754,6 @@ export class AIMetadataService {
         }
 
         console.log(
-            '🔍 PLATFORM INFERENCE: URL platform is unknown, checking title-based detection',
-        )
-
-        // Fallback platform detection based on title and content
-        const titleLower = title.toLowerCase()
-        console.log(
-            '🔍 PLATFORM INFERENCE: Checking title for platform keywords',
-        )
-
-        if (titleLower.includes('netflix')) {
-            console.log('🔍 PLATFORM INFERENCE: Detected Netflix from title')
-            return 'netflix'
-        }
-        if (titleLower.includes('nebula')) {
-            console.log('🔍 PLATFORM INFERENCE: Detected Nebula from title')
-            return 'nebula'
-        }
-        if (titleLower.includes('twitch')) {
-            console.log('🔍 PLATFORM INFERENCE: Detected Twitch from title')
-            return 'twitch'
-        }
-        if (titleLower.includes('youtube')) {
-            console.log('🔍 PLATFORM INFERENCE: Detected YouTube from title')
-            return 'youtube'
-        }
-
-        console.log(
             '🔍 PLATFORM INFERENCE: No platform detected, returning unknown',
         )
         return 'unknown'

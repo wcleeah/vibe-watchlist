@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 interface SubmitButtonProps {
-    onClick: () => void
     isLoading: boolean
     disabled?: boolean
     loadingText?: string
@@ -23,11 +22,9 @@ interface SubmitButtonProps {
 }
 
 export function SubmitButton({
-    onClick,
     isLoading,
     disabled = false,
     loadingText = 'Adding...',
-    successText = 'Add to Watchlist',
     defaultText = 'Add to Watchlist',
     className,
     size = 'default',
@@ -35,7 +32,7 @@ export function SubmitButton({
 }: SubmitButtonProps) {
     return (
         <Button
-            onClick={onClick}
+            type='submit'
             disabled={disabled || isLoading}
             className={cn(
                 'w-full h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]',

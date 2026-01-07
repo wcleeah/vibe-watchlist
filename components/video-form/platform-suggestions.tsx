@@ -12,8 +12,7 @@ interface PlatformSuggestionsProps {
     suggestions: PlatformSuggestion[]
     onAccept: (suggestion: PlatformSuggestion) => void
     onReject: () => void
-    onPlatformCreated?: (platform: any) => void
-    isLoading?: boolean
+    onPlatformCreated?: (platform: string) => void
     className?: string
 }
 
@@ -22,7 +21,6 @@ export function PlatformSuggestions({
     onAccept,
     onReject,
     onPlatformCreated,
-    isLoading = false,
     className,
 }: PlatformSuggestionsProps) {
     if (suggestions.length === 0) return null
@@ -87,21 +85,15 @@ export function PlatformSuggestions({
                         <Button
                             size='sm'
                             onClick={() => onAccept(suggestion)}
-                            disabled={isLoading}
                             className='flex-1 h-8 text-xs'
                         >
-                            {isLoading ? (
-                                <Loader2 className='w-3 h-3 animate-spin mr-1' />
-                            ) : (
-                                <Check className='w-3 h-3 mr-1' />
-                            )}
+                            <Check className='w-3 h-3 mr-1' />
                             Add Platform
                         </Button>
                         <Button
                             size='sm'
                             variant='outline'
                             onClick={onReject}
-                            disabled={isLoading}
                             className='h-8 text-xs'
                         >
                             <X className='w-3 h-3 mr-1' />

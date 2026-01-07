@@ -2,11 +2,11 @@ import type { Tag } from '@/types/tag'
 import type { VideoMetadata } from '@/types/video'
 
 export interface VideoData {
-    id: number
+    id?: number
     url: string
     title: string | null
     platform: string
-    thumbnailUrl: string | null
+    thumbnailUrl: string | null | undefined
     isWatched: boolean | null
     createdAt?: Date | null
     updatedAt?: Date | null
@@ -19,19 +19,14 @@ export interface VideoData {
 
 export interface PreviewCardProps {
     video: VideoData
-    variant?: 'default' | 'compact'
     showActions?: boolean
-    onMarkWatched?: (id: number) => void
-    onDelete?: (id: number) => void
+    onMarkWatched?: (id: number) => Promise<void>
+    onDelete?: (id: number) => Promise<void>
+    onTitleChange?: (title: string) => void
+    onThumbnailUrlChange?: (url: string) => void
     className?: string
-    // Manual metadata props
-    onToggleManual?: () => void
-    manualMode?: boolean
-    manualTitle?: string
-    onManualTitleChange?: (title: string) => void
-    manualThumbnailUrl?: string
-    onManualThumbnailChange?: (url: string) => void
-    showBackground: boolean
+    showBackground?: boolean
+    editable?: boolean
 }
 
 export interface LoadingSkeletonProps {

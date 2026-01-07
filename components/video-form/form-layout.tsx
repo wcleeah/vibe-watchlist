@@ -1,67 +1,39 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
+import { useFormContext } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
-import type { MetadataSuggestion } from '@/lib/types/ai-metadata'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
+import type { VideoFormData, VideoSuggestions } from '@/types/form'
 import type { Tag } from '@/types/tag'
-import type { VideoSuggestions } from '@/types/form'
 import { MetadataSelector } from './metadata-selector'
+import { PlatformSuggestions } from './platform-suggestions'
 import { SubmitButton } from './submit-button'
 import { TagInput } from './tag-input'
-import { PlatformSuggestions } from './platform-suggestions'
 
 interface FormLayoutProps {
-    handleSubmit: () => Promise<void>
     isSubmitting: boolean
     submitError: string | null
-    // Unified suggestions
     suggestions?: VideoSuggestions
-    selectedSuggestion?: MetadataSuggestion
-    onSuggestionSelect?: (suggestion: MetadataSuggestion | undefined) => void
     aiMetadataError?: string | null
-    onManualEdit?: () => void
-    // Platform creation callback
-    onPlatformCreated?: (platform: any) => void
-    // Tag props to sync with preview
-    onSelectedTagsChange?: (tags: Tag[]) => void
-    onReset?: () => void
+    onReset: () => void
 }
 
 export function FormLayout({
-    handleSubmit,
     isSubmitting,
+    submitError,
     suggestions = { ai: [], platform: [] },
-    selectedSuggestion,
-    onSuggestionSelect,
     aiMetadataError,
-    onManualEdit,
-    onPlatformCreated,
-    // Tag props
-    onSelectedTagsChange,
     onReset,
 }: FormLayoutProps) {
-    const { setValue } = useFormContext()
-
-    // Platform suggestion state
-    const [platformSuggestions, setPlatformSuggestions] = useState<
-        PlatformSuggestion[]
-    >([])
-    const [isDetectingPlatform, setIsDetectingPlatform] = useState(false)
-
-    // Sync platform suggestions from props
-    useEffect(() => {
-        setPlatformSuggestions(suggestions.platform)
-    }, [suggestions.platform])
-
-    // Set form values when suggestion is selected
-    useEffect(() => {
-        if (selectedSuggestion) {
-            setValue('title', selectedSuggestion.title)
-            setValue('thumbnailUrl', selectedSuggestion.thumbnailUrl || '')
-        }
-    }, [selectedSuggestion, setValue])
+    const { setValue, getValues, watch } = useFormContext<VideoFormData>()
+    const [selectedSuggestion, setSelectedSuggestion] = useState<
+        number | undefined
+    >(0)
+    const [availableTags, setAvailableTags] = useState<Tag[]>([])
+    const [tagInput, setTagInput] = useState('')
+    const [isLoadingTags, setIsLoadingTags] = useState(false)
+    const [tagError, setTagError] = useState<string | null>(null)
 
     // Platform suggestion handlers
     const acceptPlatformSuggestion = async (suggestion: PlatformSuggestion) => {
@@ -90,9 +62,7 @@ export function FormLayout({
                     '✅ Platform created successfully:',
                     result.platform,
                 )
-                // TODO: Add toast success
-                setPlatformSuggestions([])
-                onPlatformCreated?.(result.platform)
+                setValue('platform', result.platform)
             } else {
                 const error = await response.json()
                 console.error('❌ Failed to create platform:', error)
@@ -104,20 +74,8 @@ export function FormLayout({
         }
     }
 
-    const rejectPlatformSuggestions = () => {
-        setPlatformSuggestions([])
-    }
-
-    // Tag state
-    const [availableTags, setAvailableTags] = useState<Tag[]>([])
-    const [tagInput, setTagInput] = useState('')
-    const [showTagSuggestions, setShowTagSuggestions] = useState(false)
-    const [isLoadingTags, setIsLoadingTags] = useState(false)
-    const [tagError, setTagError] = useState<string | null>(null)
-
     // Get current selected tags from form
-    const selectedTagIds =
-        useWatch({ control: useFormContext().control, name: 'tags' }) || []
+    const selectedTagIds = watch('tags') || []
     const selectedTags = useMemo(
         () => availableTags.filter((tag) => selectedTagIds.includes(tag.id)),
         [availableTags, selectedTagIds],
@@ -137,18 +95,6 @@ export function FormLayout({
             }
         }
         fetchTags()
-    }, [])
-
-    // Sync selectedTags to parent for preview
-    useEffect(() => {
-        onSelectedTagsChange?.(selectedTags)
-    }, [selectedTags, onSelectedTagsChange])
-
-    // Tag management functions
-    const handleTagInputChange = useCallback((value: string) => {
-        setTagInput(value)
-        setShowTagSuggestions(value.length > 0)
-        setTagError(null)
     }, [])
 
     const addTag = useCallback(
@@ -171,8 +117,11 @@ export function FormLayout({
             )
             if (existingTag) {
                 setValue('tags', [...selectedTagIds, existingTag.id])
+                setValue('tagStrs', [
+                    ...(selectedTags ? selectedTags.map((t) => t.name) : []),
+                    existingTag.name,
+                ])
                 setTagInput('')
-                setShowTagSuggestions(false)
                 return
             }
 
@@ -189,8 +138,13 @@ export function FormLayout({
                     const newTag = await response.json()
                     setAvailableTags((prev) => [...prev, newTag])
                     setValue('tags', [...selectedTagIds, newTag.id])
+                    setValue('tagStrs', [
+                        ...(selectedTags
+                            ? selectedTags.map((t) => t.name)
+                            : []),
+                        newTag.name,
+                    ])
                     setTagInput('')
-                    setShowTagSuggestions(false)
                 } else if (response.status === 409) {
                     // Tag already exists, fetch it
                     const existingTag = availableTags.find(
@@ -211,17 +165,19 @@ export function FormLayout({
                 setIsLoadingTags(false)
             }
         },
-        [selectedTagIds, setValue, availableTags],
+        [selectedTagIds, setValue, availableTags, selectedTags],
     )
 
     const removeTag = useCallback(
         (tagId: number) => {
+            const ids = selectedTagIds.filter((id: number) => id !== tagId)
+            setValue('tags', ids)
             setValue(
-                'tags',
-                selectedTagIds.filter((id) => id !== tagId),
+                'tagStrs',
+                ids.map((id) => availableTags[id].name),
             )
         },
-        [selectedTagIds, setValue],
+        [selectedTagIds, setValue, availableTags],
     )
 
     const selectSuggestedTag = useCallback(
@@ -230,13 +186,12 @@ export function FormLayout({
                 setValue('tags', [...selectedTagIds, tag.id])
             }
             setTagInput('')
-            setShowTagSuggestions(false)
         },
         [selectedTagIds, setValue],
     )
 
     // Filter suggestions based on input
-    const filteredSuggestions = availableTags
+    const filteredTags = availableTags
         .filter(
             (tag) =>
                 tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
@@ -251,40 +206,42 @@ export function FormLayout({
             </div>
 
             {/* Platform Suggestions */}
-            {platformSuggestions.length > 0 && (
+            {suggestions.platform.length > 0 && (
                 <PlatformSuggestions
-                    suggestions={platformSuggestions}
+                    suggestions={suggestions.platform}
                     onAccept={acceptPlatformSuggestion}
-                    onReject={rejectPlatformSuggestions}
-                    onPlatformCreated={onPlatformCreated}
-                    isLoading={isDetectingPlatform}
+                    onReject={() => setValue('platform', 'unknown')}
+                    onPlatformCreated={(platform) =>
+                        setValue('platform', platform)
+                    }
                 />
             )}
 
             <MetadataSelector
                 suggestions={suggestions.ai}
-                selectedIndex={
-                    selectedSuggestion
-                        ? suggestions.ai.indexOf(selectedSuggestion)
-                        : undefined
-                }
+                selectedIndex={selectedSuggestion}
                 onSelect={(index) => {
+                    setSelectedSuggestion(index)
                     const suggestion = suggestions.ai[index]
-                    onSuggestionSelect?.(suggestion)
+                    setValue('title', suggestion.title)
+                    setValue('thumbnailUrl', suggestion.thumbnailUrl || '')
+                    const platform: string = getValues('platform')
+                    if (platform === 'unknown') {
+                        setValue('platform', suggestion.platform || '')
+                    }
                 }}
-                onManualEdit={onManualEdit}
                 error={aiMetadataError || undefined}
                 disabled={isSubmitting}
             />
 
             <TagInput
                 value={tagInput}
-                onChange={handleTagInputChange}
+                onChange={(tag) => setTagInput(tag)}
                 onTagAdd={addTag}
                 onTagRemove={removeTag}
                 selectedTags={selectedTags}
-                suggestions={filteredSuggestions}
-                showSuggestions={showTagSuggestions}
+                suggestions={filteredTags}
+                showSuggestions={true}
                 onSelectSuggestion={selectSuggestedTag}
                 isLoading={isLoadingTags || isSubmitting}
                 error={tagError}
@@ -300,11 +257,11 @@ export function FormLayout({
                     Reset
                 </Button>
                 <SubmitButton
-                    onClick={handleSubmit}
                     isLoading={isSubmitting}
                     disabled={isSubmitting}
                     className='flex-1'
                 />
+                {submitError && <div>{submitError}</div>}
             </div>
         </div>
     )

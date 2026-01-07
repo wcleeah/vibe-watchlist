@@ -1,7 +1,6 @@
-import { useMemo } from 'react'
-import { PreviewCard } from '@/components/video-preview'
 import type { Video } from '@/lib/db/schema'
 import type { Tag } from '@/types/tag'
+import { VideoCard } from './video-card'
 
 interface VideoWithTags extends Video {
     tags?: Tag[]
@@ -11,31 +10,11 @@ interface VideoWithTags extends Video {
 
 interface VideoListProps {
     videos: VideoWithTags[]
-    onMarkWatched?: (id: number) => void
-    onDelete?: (id: number) => void
-    loading?: boolean
-    isSelectable?: boolean
-    selectedIds?: number[]
-    onSelectionChange?: (videoId: number, selected: boolean) => void
+    onMarkWatched?: (id: number) => Promise<void>
+    onDelete?: (id: number) => Promise<void>
 }
 
-export function VideoList({
-    videos,
-    onMarkWatched,
-    onDelete,
-    loading = false,
-    isSelectable = false,
-    selectedIds = [],
-    onSelectionChange,
-}: VideoListProps) {
-    // Memoize selected state for each video to prevent unnecessary re-renders
-    const _selectedStates = useMemo(() => {
-        const states: Record<number, boolean> = {}
-        videos.forEach((video) => {
-            states[video.id] = selectedIds.includes(video.id)
-        })
-        return states
-    }, [videos, selectedIds])
+export function VideoList({ videos, onMarkWatched, onDelete }: VideoListProps) {
     if (videos.length === 0) {
         return (
             <div className='text-center py-12'>
@@ -68,20 +47,8 @@ export function VideoList({
         <div className='overflow-hidden'>
             {videos.map((video) => (
                 <div key={video.id} className='py-3'>
-                    <PreviewCard
-                        video={{
-                            id: video.id,
-                            url: video.url,
-                            title: video.title,
-                            platform: video.platform,
-                            thumbnailUrl: video.thumbnailUrl,
-                            isWatched: video.isWatched,
-                            createdAt: video.createdAt,
-                            updatedAt: video.updatedAt,
-                            tags: video.tags || [],
-                            highlightedTitle: video.highlightedTitle,
-                            highlightedTags: video.highlightedTags,
-                        }}
+                    <VideoCard
+                        video={video}
                         showActions={true}
                         onMarkWatched={onMarkWatched}
                         onDelete={onDelete}
