@@ -334,9 +334,22 @@ export async function POST(request: NextRequest) {
             videoWithTags.tags = validTags
         }
 
+        // Log video addition event
+        logEvent('add_video', {
+            videoId: newVideo[0].id,
+            url,
+            platform: finalPlatform,
+        })
+
         return NextResponse.json(videoWithTags, { status: 201 })
     } catch (error) {
         console.error('Error creating video:', error)
+        // Log error event
+        logEvent('error_occurred', {
+            operation: 'video_creation',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: '/api/videos',
+        })
         return NextResponse.json(
             { error: 'Failed to create video' },
             { status: 500 },
