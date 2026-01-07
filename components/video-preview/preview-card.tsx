@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { FormField, FormMessage, FormControl } from '@/components/ui/form';
 import { FileText, Loader2 } from 'lucide-react';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
 import { ThumbnailDisplay } from './metadata-components';
@@ -50,11 +51,21 @@ export function PreviewCard({
             {manualMode ? (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
-                <input
-                  type="text"
-                  {...register("title")}
-                  placeholder="Enter video title"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono"
+                <FormField
+                  name="title"
+                  render={({ field }) => (
+                    <>
+                      <FormControl>
+                        <input
+                          type="text"
+                          placeholder="Enter video title"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </>
+                  )}
                 />
                 <button
                   onClick={() => onToggleManual?.()}
@@ -89,11 +100,21 @@ export function PreviewCard({
                 {manualMode ? (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Thumbnail URL</label>
-                    <input
-                      type="url"
-                      {...register("thumbnailUrl")}
-                      placeholder="https://example.com/thumbnail.jpg"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono text-sm"
+                    <FormField
+                      name="thumbnailUrl"
+                      render={({ field }) => (
+                        <>
+                          <FormControl>
+                            <input
+                              type="url"
+                              placeholder="https://example.com/thumbnail.jpg"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono text-sm"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </>
+                      )}
                     />
                     {video.thumbnailUrl && (
                       <img
