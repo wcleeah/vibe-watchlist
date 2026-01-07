@@ -1,52 +1,52 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import {
+import { useEffect, useState } from 'react'
+import type {
     MetadataExtractionResponse,
     MetadataSuggestion,
-} from "@/lib/types/ai-metadata";
-import { UrlValidationResult } from "./use-url-validation.js";
+} from '@/lib/types/ai-metadata'
+import type { UrlValidationResult } from './use-url-validation.js'
 
 export interface UseAIMetadataFetchingReturn {
-    suggestions: MetadataSuggestion[];
-    fallback: { title?: string; thumbnailUrl?: string } | null;
-    fetchDone: boolean;
-    error: string | null;
-    selectedSuggestion?: MetadataSuggestion;
-    setSelectedSuggestion: (suggestion: MetadataSuggestion | undefined) => void;
+    suggestions: MetadataSuggestion[]
+    fallback: { title?: string; thumbnailUrl?: string } | null
+    fetchDone: boolean
+    error: string | null
+    selectedSuggestion?: MetadataSuggestion
+    setSelectedSuggestion: (suggestion: MetadataSuggestion | undefined) => void
 }
 
 export function useAIMetadataFetching(
     urlValidationResult: UrlValidationResult | undefined,
 ): UseAIMetadataFetchingReturn {
-    const [suggestions, setSuggestions] = useState<MetadataSuggestion[]>([]);
+    const [suggestions, setSuggestions] = useState<MetadataSuggestion[]>([])
     const [fallback, setFallback] = useState<{
-        title?: string;
-        thumbnailUrl?: string;
-    } | null>(null);
-    const [fetchDone, setFetchDone] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+        title?: string
+        thumbnailUrl?: string
+    } | null>(null)
+    const [fetchDone, setFetchDone] = useState(false)
+    const [error, setError] = useState<string | null>(null)
     const [selectedSuggestion, setSelectedSuggestion] = useState<
         MetadataSuggestion | undefined
-    >();
+    >()
 
     useEffect(() => {
         if (!urlValidationResult || !urlValidationResult.isValid) {
-            setSuggestions([]);
-            setFallback(null);
-            setError(null);
-            setSelectedSuggestion(undefined);
-            setFetchDone(false);
-            return;
+            setSuggestions([])
+            setFallback(null)
+            setError(null)
+            setSelectedSuggestion(undefined)
+            setFetchDone(false)
+            return
         }
 
-            setFetchDone(false);
-        setError(null);
+        setFetchDone(false)
+        setError(null)
 
-        fetch("/api/metadata/extract", {
-            method: "POST",
+        fetch('/api/metadata/extract', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 url: urlValidationResult.url,
@@ -54,10 +54,10 @@ export function useAIMetadataFetching(
             }),
         })
             .then((response) => {
-                return response.json();
+                return response.json()
             })
             .then((result: MetadataExtractionResponse) => {
-                setSuggestions(result.suggestions);
+                setSuggestions(result.suggestions)
                 setFallback(
                     result.fallback
                         ? {
@@ -66,7 +66,7 @@ export function useAIMetadataFetching(
                                   result.fallback.thumbnailUrl || undefined,
                           }
                         : null,
-                );
+                )
 
                 if (result.suggestions.length > 0) {
                     const bestSuggestion = result.suggestions.reduce(
@@ -74,26 +74,25 @@ export function useAIMetadataFetching(
                             current.confidence > best.confidence
                                 ? current
                                 : best,
-                    );
-                    setSelectedSuggestion(bestSuggestion);
+                    )
+                    setSelectedSuggestion(bestSuggestion)
                 } else {
-                    setSelectedSuggestion(undefined);
+                    setSelectedSuggestion(undefined)
                 }
-        setFetchDone(true);
+                setFetchDone(true)
             })
             .catch((err) => {
                 const errorMessage =
                     err instanceof Error
                         ? err.message
-                        : "Failed to fetch AI metadata";
-                setError(errorMessage);
-                setSuggestions([]);
-                setFallback(null);
-                setSelectedSuggestion(undefined);
-                console.error("AI metadata fetch failed:", err);
-            });
-
-    }, [urlValidationResult]);
+                        : 'Failed to fetch AI metadata'
+                setError(errorMessage)
+                setSuggestions([])
+                setFallback(null)
+                setSelectedSuggestion(undefined)
+                console.error('AI metadata fetch failed:', err)
+            })
+    }, [urlValidationResult])
 
     return {
         suggestions,
@@ -102,5 +101,5 @@ export function useAIMetadataFetching(
         error,
         selectedSuggestion,
         setSelectedSuggestion,
-    };
+    }
 }

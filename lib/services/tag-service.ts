@@ -1,82 +1,87 @@
-import { TagCreateRequest, TagsApiResponse } from '@/types/api';
-import { Tag } from '@/types/tag';
+import { type TagCreateRequest, TagsApiResponse } from '@/types/api'
+import type { Tag } from '@/types/tag'
 
 export class TagService {
-  private static readonly API_BASE = '/api/tags';
+    private static readonly API_BASE = '/api/tags'
 
-  static async create(data: TagCreateRequest): Promise<Tag> {
-    const response = await fetch(this.API_BASE, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+    static async create(data: TagCreateRequest): Promise<Tag> {
+        const response = await fetch(TagService.API_BASE, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create tag');
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to create tag')
+        }
+
+        return response.json()
     }
 
-    return response.json();
-  }
+    static async update(
+        id: number,
+        data: Partial<TagCreateRequest>,
+    ): Promise<Tag> {
+        const response = await fetch(`${TagService.API_BASE}/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
 
-  static async update(id: number, data: Partial<TagCreateRequest>): Promise<Tag> {
-    const response = await fetch(`${this.API_BASE}/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to update tag')
+        }
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update tag');
+        return response.json()
     }
 
-    return response.json();
-  }
+    static async delete(id: number): Promise<void> {
+        const response = await fetch(`${TagService.API_BASE}/${id}`, {
+            method: 'DELETE',
+        })
 
-  static async delete(id: number): Promise<void> {
-    const response = await fetch(`${this.API_BASE}/${id}`, {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to delete tag');
-    }
-  }
-
-  static async getAll(): Promise<Tag[]> {
-    const response = await fetch(this.API_BASE);
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch tags');
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to delete tag')
+        }
     }
 
-    return response.json();
-  }
+    static async getAll(): Promise<Tag[]> {
+        const response = await fetch(TagService.API_BASE)
 
-  static async getById(id: number): Promise<Tag> {
-    const response = await fetch(`${this.API_BASE}/${id}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch tags')
+        }
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch tag');
+        return response.json()
     }
 
-    return response.json();
-  }
+    static async getById(id: number): Promise<Tag> {
+        const response = await fetch(`${TagService.API_BASE}/${id}`)
 
-  static async search(query: string): Promise<Tag[]> {
-    const response = await fetch(`${this.API_BASE}?search=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to fetch tag')
+        }
 
-    if (!response.ok) {
-      throw new Error('Failed to search tags');
+        return response.json()
     }
 
-    return response.json();
-  }
+    static async search(query: string): Promise<Tag[]> {
+        const response = await fetch(
+            `${TagService.API_BASE}?search=${encodeURIComponent(query)}`,
+        )
+
+        if (!response.ok) {
+            throw new Error('Failed to search tags')
+        }
+
+        return response.json()
+    }
 }

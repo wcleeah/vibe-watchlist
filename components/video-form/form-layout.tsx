@@ -1,196 +1,223 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { MetadataSelector } from './metadata-selector';
-import { TagInput } from './tag-input';
-import { SubmitButton } from './submit-button';
-import { Button } from '@/components/ui/button';
-import { Tag } from '@/types/tag';
-import { MetadataSuggestion } from '@/lib/types/ai-metadata';
+import { useCallback, useEffect, useState } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { Button } from '@/components/ui/button'
+import type { MetadataSuggestion } from '@/lib/types/ai-metadata'
+import type { Tag } from '@/types/tag'
+import { MetadataSelector } from './metadata-selector'
+import { SubmitButton } from './submit-button'
+import { TagInput } from './tag-input'
 
 interface FormLayoutProps {
-  handleSubmit: () => Promise<void>;
-  isSubmitting: boolean;
-  submitError: string | null;
-  // AI Metadata props
-  aiSuggestions?: MetadataSuggestion[];
-  selectedSuggestion?: MetadataSuggestion;
-  onSuggestionSelect?: (suggestion: MetadataSuggestion | undefined) => void;
-  aiMetadataError?: string | null;
-  onManualEdit?: () => void;
-  // Tag props to sync with preview
-  onSelectedTagsChange: (tags: Tag[]) => void;
-  onReset?: () => void;
+    handleSubmit: () => Promise<void>
+    isSubmitting: boolean
+    submitError: string | null
+    // AI Metadata props
+    aiSuggestions?: MetadataSuggestion[]
+    selectedSuggestion?: MetadataSuggestion
+    onSuggestionSelect?: (suggestion: MetadataSuggestion | undefined) => void
+    aiMetadataError?: string | null
+    onManualEdit?: () => void
+    // Tag props to sync with preview
+    onSelectedTagsChange: (tags: Tag[]) => void
+    onReset?: () => void
 }
 
 export function FormLayout({
-  handleSubmit,
-  isSubmitting,
-  aiSuggestions = [],
-  selectedSuggestion,
-  onSuggestionSelect,
-  aiMetadataError,
-  onManualEdit,
-  // Tag props
-  onSelectedTagsChange,
-  onReset,
+    handleSubmit,
+    isSubmitting,
+    aiSuggestions = [],
+    selectedSuggestion,
+    onSuggestionSelect,
+    aiMetadataError,
+    onManualEdit,
+    // Tag props
+    onSelectedTagsChange,
+    onReset,
 }: FormLayoutProps) {
-  const { setValue } = useFormContext();
+    const { setValue } = useFormContext()
 
-  // Tag state
-  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
-  const [tagInput, setTagInput] = useState('');
-  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
-  const [isLoadingTags, setIsLoadingTags] = useState(false);
-  const [tagError, setTagError] = useState<string | null>(null);
+    // Tag state
+    const [selectedTags, setSelectedTags] = useState<Tag[]>([])
+    const [availableTags, setAvailableTags] = useState<Tag[]>([])
+    const [tagInput, setTagInput] = useState('')
+    const [showTagSuggestions, setShowTagSuggestions] = useState(false)
+    const [isLoadingTags, setIsLoadingTags] = useState(false)
+    const [tagError, setTagError] = useState<string | null>(null)
 
-  // Load available tags on mount
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const response = await fetch('/api/tags');
-        if (response.ok) {
-          const tags = await response.json();
-          setAvailableTags(tags);
+    // Load available tags on mount
+    useEffect(() => {
+        const fetchTags = async () => {
+            try {
+                const response = await fetch('/api/tags')
+                if (response.ok) {
+                    const tags = await response.json()
+                    setAvailableTags(tags)
+                }
+            } catch (error) {
+                console.error('Failed to fetch tags:', error)
+            }
         }
-      } catch (error) {
-        console.error('Failed to fetch tags:', error);
-      }
-    };
-    fetchTags();
-  }, []);
+        fetchTags()
+    }, [])
 
-  // Notify parent and update form when selectedTags changes
-  useEffect(() => {
-    onSelectedTagsChange(selectedTags);
-    setValue("tags", selectedTags.map(tag => tag.id));
-  }, [selectedTags, onSelectedTagsChange, setValue]);
+    // Notify parent and update form when selectedTags changes
+    useEffect(() => {
+        onSelectedTagsChange(selectedTags)
+        setValue(
+            'tags',
+            selectedTags.map((tag) => tag.id),
+        )
+    }, [selectedTags, onSelectedTagsChange, setValue])
 
-  // Tag management functions
-  const handleTagInputChange = useCallback((value: string) => {
-    setTagInput(value);
-    setShowTagSuggestions(value.length > 0);
-    setTagError(null);
-  }, []);
+    // Tag management functions
+    const handleTagInputChange = useCallback((value: string) => {
+        setTagInput(value)
+        setShowTagSuggestions(value.length > 0)
+        setTagError(null)
+    }, [])
 
-  const addTag = useCallback(async (tagName: string) => {
-    if (!tagName) return;
+    const addTag = useCallback(
+        async (tagName: string) => {
+            if (!tagName) return
 
-    // Check if tag is already selected
-    if (selectedTags.some(tag => tag.name.toLowerCase() === tagName.toLowerCase())) {
-      setTagError('Tag already added');
-      return;
-    }
+            // Check if tag is already selected
+            if (
+                selectedTags.some(
+                    (tag) => tag.name.toLowerCase() === tagName.toLowerCase(),
+                )
+            ) {
+                setTagError('Tag already added')
+                return
+            }
 
-    // Check if tag exists in available tags
-    const existingTag = availableTags.find(tag => tag.name.toLowerCase() === tagName.toLowerCase());
-    if (existingTag) {
-      setSelectedTags(prev => [...prev, existingTag]);
-      setTagInput('');
-      setShowTagSuggestions(false);
-      return;
-    }
+            // Check if tag exists in available tags
+            const existingTag = availableTags.find(
+                (tag) => tag.name.toLowerCase() === tagName.toLowerCase(),
+            )
+            if (existingTag) {
+                setSelectedTags((prev) => [...prev, existingTag])
+                setTagInput('')
+                setShowTagSuggestions(false)
+                return
+            }
 
-    // Create new tag
-    setIsLoadingTags(true);
-    try {
-      const response = await fetch('/api/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: tagName }),
-      });
+            // Create new tag
+            setIsLoadingTags(true)
+            try {
+                const response = await fetch('/api/tags', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: tagName }),
+                })
 
-      if (response.ok) {
-        const newTag = await response.json();
-        setAvailableTags(prev => [...prev, newTag]);
-        setSelectedTags(prev => [...prev, newTag]);
-        setTagInput('');
-        setShowTagSuggestions(false);
-      } else if (response.status === 409) {
-        // Tag already exists, fetch it
-        const existingTag = availableTags.find(tag => tag.name.toLowerCase() === tagName.toLowerCase());
-        if (existingTag) {
-          setSelectedTags(prev => [...prev, existingTag]);
-        }
-        setTagError('Tag already exists');
-      } else {
-        setTagError('Failed to create tag');
-      }
-    } catch (error) {
-      console.error('Error creating tag:', error);
-      setTagError('Failed to create tag');
-    } finally {
-      setIsLoadingTags(false);
-    }
-  }, [selectedTags, availableTags]);
+                if (response.ok) {
+                    const newTag = await response.json()
+                    setAvailableTags((prev) => [...prev, newTag])
+                    setSelectedTags((prev) => [...prev, newTag])
+                    setTagInput('')
+                    setShowTagSuggestions(false)
+                } else if (response.status === 409) {
+                    // Tag already exists, fetch it
+                    const existingTag = availableTags.find(
+                        (tag) =>
+                            tag.name.toLowerCase() === tagName.toLowerCase(),
+                    )
+                    if (existingTag) {
+                        setSelectedTags((prev) => [...prev, existingTag])
+                    }
+                    setTagError('Tag already exists')
+                } else {
+                    setTagError('Failed to create tag')
+                }
+            } catch (error) {
+                console.error('Error creating tag:', error)
+                setTagError('Failed to create tag')
+            } finally {
+                setIsLoadingTags(false)
+            }
+        },
+        [selectedTags, availableTags],
+    )
 
-  const removeTag = useCallback((tagId: number) => {
-    setSelectedTags(prev => prev.filter(tag => tag.id !== tagId));
-  }, []);
+    const removeTag = useCallback((tagId: number) => {
+        setSelectedTags((prev) => prev.filter((tag) => tag.id !== tagId))
+    }, [])
 
-  const selectSuggestedTag = useCallback((tag: Tag) => {
-    if (!selectedTags.some(t => t.id === tag.id)) {
-      setSelectedTags(prev => [...prev, tag]);
-    }
-    setTagInput('');
-    setShowTagSuggestions(false);
-  }, [selectedTags]);
+    const selectSuggestedTag = useCallback(
+        (tag: Tag) => {
+            if (!selectedTags.some((t) => t.id === tag.id)) {
+                setSelectedTags((prev) => [...prev, tag])
+            }
+            setTagInput('')
+            setShowTagSuggestions(false)
+        },
+        [selectedTags],
+    )
 
-  // Filter suggestions based on input
-  const filteredSuggestions = availableTags.filter(tag =>
-    tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
-    !selectedTags.some(selected => selected.id === tag.id)
-  ).slice(0, 5);
+    // Filter suggestions based on input
+    const filteredSuggestions = availableTags
+        .filter(
+            (tag) =>
+                tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
+                !selectedTags.some((selected) => selected.id === tag.id),
+        )
+        .slice(0, 5)
 
-  return (
-    <div className={`space-y-6`}>
-        <div className="text-center mb-4">
-          <h2 className="text-xl font-semibold">Add Tags</h2>
-        </div>
+    return (
+        <div className={`space-y-6`}>
+            <div className='text-center mb-4'>
+                <h2 className='text-xl font-semibold'>Add Tags</h2>
+            </div>
 
-        <MetadataSelector
-          suggestions={aiSuggestions}
-          selectedIndex={selectedSuggestion ? aiSuggestions.findIndex(s => s === selectedSuggestion) : undefined}
-          onSelect={(index) => {
-            const suggestion = aiSuggestions[index];
-            onSuggestionSelect?.(suggestion);
-          }}
-          onManualEdit={onManualEdit}
-          error={aiMetadataError || undefined}
-          disabled={isSubmitting}
-        />
-
-        <TagInput
-          value={tagInput}
-          onChange={handleTagInputChange}
-          onTagAdd={addTag}
-          onTagRemove={removeTag}
-          selectedTags={selectedTags}
-          suggestions={filteredSuggestions}
-          showSuggestions={showTagSuggestions}
-          onSelectSuggestion={selectSuggestedTag}
-          isLoading={isLoadingTags || isSubmitting}
-          error={tagError}
-        />
-
-         <div className="flex gap-2">
-           <Button
-             variant="secondary"
-             className="flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-             onClick={onReset}
-             disabled={isSubmitting}
-           >
-             Reset
-           </Button>
-            <SubmitButton
-               onClick={handleSubmit}
-              isLoading={isSubmitting}
-              disabled={isSubmitting}
-              className="flex-1"
+            <MetadataSelector
+                suggestions={aiSuggestions}
+                selectedIndex={
+                    selectedSuggestion
+                        ? aiSuggestions.findIndex(
+                              (s) => s === selectedSuggestion,
+                          )
+                        : undefined
+                }
+                onSelect={(index) => {
+                    const suggestion = aiSuggestions[index]
+                    onSuggestionSelect?.(suggestion)
+                }}
+                onManualEdit={onManualEdit}
+                error={aiMetadataError || undefined}
+                disabled={isSubmitting}
             />
-         </div>
-    </div>
-  );
+
+            <TagInput
+                value={tagInput}
+                onChange={handleTagInputChange}
+                onTagAdd={addTag}
+                onTagRemove={removeTag}
+                selectedTags={selectedTags}
+                suggestions={filteredSuggestions}
+                showSuggestions={showTagSuggestions}
+                onSelectSuggestion={selectSuggestedTag}
+                isLoading={isLoadingTags || isSubmitting}
+                error={tagError}
+            />
+
+            <div className='flex gap-2'>
+                <Button
+                    variant='secondary'
+                    className='flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
+                    onClick={onReset}
+                    disabled={isSubmitting}
+                >
+                    Reset
+                </Button>
+                <SubmitButton
+                    onClick={handleSubmit}
+                    isLoading={isSubmitting}
+                    disabled={isSubmitting}
+                    className='flex-1'
+                />
+            </div>
+        </div>
+    )
 }

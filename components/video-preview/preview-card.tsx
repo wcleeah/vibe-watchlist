@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { FormField, FormMessage, FormControl } from '@/components/ui/form'
 import { FileText, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { FormControl, FormField, FormMessage } from '@/components/ui/form'
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils'
-import { ThumbnailDisplay } from './metadata-components'
 import { ErrorDisplay } from './error-display'
-import { PreviewCardProps } from './types'
+import { ThumbnailDisplay } from './metadata-components'
+import type { PreviewCardProps } from './types'
 
 export function PreviewCard({
     video,

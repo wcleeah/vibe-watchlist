@@ -1,102 +1,120 @@
-'use client';
+'use client'
 
-import { PlatformSuggestion } from '@/lib/services/ai-service';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Check, X, Loader2 } from 'lucide-react';
-import { PlatformIcon } from './platform-badge';
-import { PlatformCreator } from './platform-creator';
+import { Check, Loader2, X } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type { PlatformSuggestion } from '@/lib/services/ai-service'
+import { PlatformIcon } from './platform-badge'
+import { PlatformCreator } from './platform-creator'
 
 interface PlatformSuggestionsProps {
-  suggestions: PlatformSuggestion[];
-  onAccept: (suggestion: PlatformSuggestion) => void;
-  onReject: () => void;
-  onPlatformCreated?: (platform: any) => void;
-  isLoading?: boolean;
-  className?: string;
+    suggestions: PlatformSuggestion[]
+    onAccept: (suggestion: PlatformSuggestion) => void
+    onReject: () => void
+    onPlatformCreated?: (platform: any) => void
+    isLoading?: boolean
+    className?: string
 }
 
 export function PlatformSuggestions({
-  suggestions,
-  onAccept,
-  onReject,
-  onPlatformCreated,
-  isLoading = false,
-  className
+    suggestions,
+    onAccept,
+    onReject,
+    onPlatformCreated,
+    isLoading = false,
+    className,
 }: PlatformSuggestionsProps) {
-  if (suggestions.length === 0) return null;
+    if (suggestions.length === 0) return null
 
-  const suggestion = suggestions[0]; // For now, show only the first/best suggestion
+    const suggestion = suggestions[0] // For now, show only the first/best suggestion
 
-  return (
-    <Card className={`border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 ${className}`}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100 flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-          Platform Detected
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <PlatformIcon platform={suggestion.platform} size="sm" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium text-sm">{suggestion.platform}</span>
-              <Badge
-                variant={suggestion.confidence > 0.8 ? 'default' : suggestion.confidence > 0.6 ? 'secondary' : 'outline'}
-                className="text-xs"
-              >
-                {Math.round(suggestion.confidence * 100)}% confidence
-              </Badge>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-              This URL matches the pattern for {suggestion.platform}. Would you like to add this platform?
-            </p>
-            {suggestion.patterns.length > 0 && (
-              <div className="text-xs text-gray-500 dark:text-gray-500">
-                <span className="font-medium">Pattern: </span>
-                <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-xs">
-                  {suggestion.patterns[0]}
-                </code>
-              </div>
-            )}
-          </div>
-        </div>
+    return (
+        <Card
+            className={`border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 ${className}`}
+        >
+            <CardHeader className='pb-3'>
+                <CardTitle className='text-sm font-medium text-blue-900 dark:text-blue-100 flex items-center gap-2'>
+                    <div className='w-2 h-2 bg-blue-500 rounded-full animate-pulse' />
+                    Platform Detected
+                </CardTitle>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+                <div className='flex items-start gap-3'>
+                    <div className='flex-shrink-0'>
+                        <PlatformIcon
+                            platform={suggestion.platform}
+                            size='sm'
+                        />
+                    </div>
+                    <div className='flex-1 min-w-0'>
+                        <div className='flex items-center gap-2 mb-1'>
+                            <span className='font-medium text-sm'>
+                                {suggestion.platform}
+                            </span>
+                            <Badge
+                                variant={
+                                    suggestion.confidence > 0.8
+                                        ? 'default'
+                                        : suggestion.confidence > 0.6
+                                          ? 'secondary'
+                                          : 'outline'
+                                }
+                                className='text-xs'
+                            >
+                                {Math.round(suggestion.confidence * 100)}%
+                                confidence
+                            </Badge>
+                        </div>
+                        <p className='text-xs text-gray-600 dark:text-gray-400 mb-2'>
+                            This URL matches the pattern for{' '}
+                            {suggestion.platform}. Would you like to add this
+                            platform?
+                        </p>
+                        {suggestion.patterns.length > 0 && (
+                            <div className='text-xs text-gray-500 dark:text-gray-500'>
+                                <span className='font-medium'>Pattern: </span>
+                                <code className='bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-xs'>
+                                    {suggestion.patterns[0]}
+                                </code>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={() => onAccept(suggestion)}
-              disabled={isLoading}
-              className="flex-1 h-8 text-xs"
-            >
-              {isLoading ? (
-                <Loader2 className="w-3 h-3 animate-spin mr-1" />
-              ) : (
-                <Check className="w-3 h-3 mr-1" />
-              )}
-              Add Platform
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onReject}
-              disabled={isLoading}
-              className="h-8 text-xs"
-            >
-              <X className="w-3 h-3 mr-1" />
-              Dismiss
-            </Button>
-          </div>
-          <div className="flex justify-center">
-            <PlatformCreator onPlatformCreated={onPlatformCreated} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+                <div className='flex flex-col gap-2'>
+                    <div className='flex gap-2'>
+                        <Button
+                            size='sm'
+                            onClick={() => onAccept(suggestion)}
+                            disabled={isLoading}
+                            className='flex-1 h-8 text-xs'
+                        >
+                            {isLoading ? (
+                                <Loader2 className='w-3 h-3 animate-spin mr-1' />
+                            ) : (
+                                <Check className='w-3 h-3 mr-1' />
+                            )}
+                            Add Platform
+                        </Button>
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            onClick={onReject}
+                            disabled={isLoading}
+                            className='h-8 text-xs'
+                        >
+                            <X className='w-3 h-3 mr-1' />
+                            Dismiss
+                        </Button>
+                    </div>
+                    <div className='flex justify-center'>
+                        <PlatformCreator
+                            onPlatformCreated={onPlatformCreated}
+                        />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    )
 }

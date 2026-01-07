@@ -1,18 +1,18 @@
 'use client'
 
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useCallback, useEffect, useState } from 'react'
+import { FormProvider, useForm, useWatch } from 'react-hook-form'
+import { toast } from 'sonner'
+import { z } from 'zod'
 import { NavigationTabs } from '@/components/navigation-tabs'
+import { UrlInputSection } from '@/components/url-input-section'
 import { FormLayout } from '@/components/video-form'
 import { PreviewCard } from '@/components/video-preview'
-import { UrlInputSection } from '@/components/url-input-section'
-import { useState, useCallback, useEffect } from 'react'
-import { useForm, FormProvider, useWatch } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useUrlValidation } from '@/hooks/use-url-validation'
 import { useAIMetadataFetching } from '@/hooks/use-ai-metadata-fetching'
-import { Tag } from '@/types/tag'
-import { PlatformSuggestion } from '@/lib/services/ai-service'
-import { toast } from 'sonner'
+import { useUrlValidation } from '@/hooks/use-url-validation'
+import type { PlatformSuggestion } from '@/lib/services/ai-service'
+import type { Tag } from '@/types/tag'
 
 export default function Home() {
     // URL validation hook
@@ -230,7 +230,10 @@ export default function Home() {
         }
     })
 
-    if (urlValidation.validating || (!isReadyForForm && urlValidation.urlValidationResult?.isValid)) {
+    if (
+        urlValidation.validating ||
+        (!isReadyForForm && urlValidation.urlValidationResult?.isValid)
+    ) {
         return (
             <div className='bg-background text-foreground'>
                 <NavigationTabs />

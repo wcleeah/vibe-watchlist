@@ -3,13 +3,13 @@
     "files": {
         "includes": [
             "**",
-            "!**/node_modules/**",
-            "!**/.next/**",
-            "!**/.turbo/**",
-            "!**/dist/**",
-            "!**/build/**",
-            "!**/.cache/**",
-            "!**/public/**",
+            "!**/node_modules",
+            "!**/.next",
+            "!**/.turbo",
+            "!**/dist",
+            "!**/build",
+            "!**/.cache",
+            "!**/public",
             "!**/*.json",
             "!**/*.md"
         ],
@@ -47,6 +47,14 @@
             "bracketSpacing": true,
             "bracketSameLine": false,
             "quoteStyle": "single"
+        }
+    },
+    "css": {
+        "formatter": {
+            "enabled": true
+        },
+        "parser": {
+            "tailwindDirectives": true
         }
     },
     "overrides": [

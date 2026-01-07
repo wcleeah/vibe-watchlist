@@ -1,48 +1,48 @@
-"use client";
+'use client'
 
-import { useState, useCallback } from "react";
-import { ParsedUrl, parseVideoUrlClient } from "@/lib/utils/url-parser";
+import { useCallback, useState } from 'react'
+import { type ParsedUrl, parseVideoUrlClient } from '@/lib/utils/url-parser'
 
 export interface UseUrlValidationReturn {
-    setUrl: (url: string) => void;
-    unsetUrl: () => void;
-    urlValidationResult?: UrlValidationResult;
-    validating: boolean;
+    setUrl: (url: string) => void
+    unsetUrl: () => void
+    urlValidationResult?: UrlValidationResult
+    validating: boolean
 }
 
 export type UrlValidationResult = ParsedUrl & {
-    validated: boolean;
-};
+    validated: boolean
+}
 
 export function useUrlValidation(): UseUrlValidationReturn {
     const [urlValidationResult, setUrlValidationResult] = useState<
         UrlValidationResult | undefined
-    >(undefined);
-    const [validating, setValidating] = useState(false);
+    >(undefined)
+    const [validating, setValidating] = useState(false)
 
     const setUrl = useCallback(async (newUrl: string) => {
-        setValidating(true);
+        setValidating(true)
         if (!newUrl.trim()) {
-            setUrlValidationResult(undefined);
-            return;
+            setUrlValidationResult(undefined)
+            return
         }
 
-        const parsed = await parseVideoUrlClient(newUrl.trim());
+        const parsed = await parseVideoUrlClient(newUrl.trim())
         setUrlValidationResult({
             ...parsed,
             validated: true,
-        });
-        setValidating(false);
-    }, []);
+        })
+        setValidating(false)
+    }, [])
 
     const unsetUrl = useCallback(() => {
-        setUrlValidationResult(undefined);
-    }, []);
+        setUrlValidationResult(undefined)
+    }, [])
 
     return {
         setUrl,
         unsetUrl,
         urlValidationResult,
-        validating
-    };
+        validating,
+    }
 }
