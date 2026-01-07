@@ -55,6 +55,14 @@ export function FormLayout({
         setPlatformSuggestions(suggestions.platform)
     }, [suggestions.platform])
 
+    // Set form values when suggestion is selected
+    useEffect(() => {
+        if (selectedSuggestion) {
+            setValue('title', selectedSuggestion.title)
+            setValue('thumbnailUrl', selectedSuggestion.thumbnailUrl || '')
+        }
+    }, [selectedSuggestion, setValue])
+
     // Platform suggestion handlers
     const acceptPlatformSuggestion = async (suggestion: PlatformSuggestion) => {
         try {

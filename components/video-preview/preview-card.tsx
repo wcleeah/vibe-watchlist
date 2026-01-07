@@ -2,6 +2,7 @@
 
 import { FileText, Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import { useWatch } from 'react-hook-form'
 import { FormControl, FormField, FormMessage } from '@/components/ui/form'
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils'
 import { ErrorDisplay } from './error-display'

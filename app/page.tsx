@@ -117,16 +117,7 @@ export default function Home() {
         }
     }, [urlValidation.urlValidationResult, urlValidation])
 
-    // Update form when AI metadata changes (only if not in manual mode)
-    useEffect(() => {
-        if (!manualMode && aiMetadata.selectedSuggestion) {
-            form.setValue('title', aiMetadata.selectedSuggestion.title)
-            form.setValue(
-                'thumbnailUrl',
-                aiMetadata.selectedSuggestion.thumbnailUrl || '',
-            )
-        }
-    }, [aiMetadata.selectedSuggestion, manualMode, form])
+    // Form values are now set in FormLayout when suggestions are selected
 
     // Watch form values
     const watchedTitle = useWatch({ control: form.control, name: 'title' })
