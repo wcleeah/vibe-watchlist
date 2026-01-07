@@ -1,4 +1,5 @@
 import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
+import { PlatformDataService } from '@/lib/services/platform-data-service';
 
 // Update hardcoded validation arrays to be dynamic
 // This will be replaced with database queries in Phase 2
@@ -23,9 +24,13 @@ export class ValidationService {
       const result = await parseVideoUrl(url.trim());
 
       if (!result.isValid) {
+        // Get enabled platforms for dynamic error message
+        const enabledPlatforms = await PlatformDataService.getPlatforms();
+        const platformNames = enabledPlatforms.map(p => p.displayName).join(', ');
+
         return {
           isValid: false,
-          error: 'Please enter a valid YouTube, Netflix, Nebula, or Twitch URL',
+          error: `Please enter a valid video URL from supported platforms: ${platformNames}`,
         };
       }
 
@@ -108,9 +113,7 @@ export class ValidationService {
     };
   }
 
-  static validatePlatform(platform: string): ValidationResult {
-    const validPlatforms: VideoPlatform[] = ['youtube', 'netflix', 'nebula', 'twitch'];
-
+  static async validatePlatform(platform: string): Promise<ValidationResult> {
     if (!platform || typeof platform !== 'string') {
       return {
         isValid: false,
@@ -118,16 +121,29 @@ export class ValidationService {
       };
     }
 
-    if (!validPlatforms.includes(platform as VideoPlatform)) {
+    try {
+      // Get enabled platforms from database
+      const enabledPlatforms = await PlatformDataService.getPlatforms();
+      const validPlatformIds = enabledPlatforms.map(p => p.platformId);
+
+      if (!validPlatformIds.includes(platform)) {
+        const platformNames = enabledPlatforms.map(p => p.displayName).join(', ');
+        return {
+          isValid: false,
+          error: `Invalid platform selected. Valid platforms: ${platformNames}`,
+        };
+      }
+
+      return {
+        isValid: true,
+      };
+    } catch (error) {
+      console.error('Error validating platform:', error);
       return {
         isValid: false,
-        error: 'Invalid platform selected',
+        error: 'Unable to validate platform at this time',
       };
     }
-
-    return {
-      isValid: true,
-    };
   }
 
   static validateTagIds(tagIds: number[]): ValidationResult {

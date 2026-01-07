@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiMetadataService } from '@/lib/services/ai-metadata-service';
 import { parseVideoUrl } from '@/lib/utils/url-parser';
+import { PlatformDataService } from '@/lib/services/platform-data-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +25,14 @@ export async function POST(request: NextRequest) {
 
     // Use provided platform or detected platform
     const platform = providedPlatform || parsedUrl.platform;
-    if (!['youtube', 'twitch', 'netflix', 'nebula', 'unknown'].includes(platform)) {
+
+    // Get enabled platforms from database for dynamic validation
+    const enabledPlatforms = await PlatformDataService.getPlatforms();
+    const validPlatformIds = enabledPlatforms.map(p => p.platformId);
+    // Add 'unknown' for fallback platform
+    const validPlatforms = [...validPlatformIds, 'unknown'];
+
+    if (!validPlatforms.includes(platform)) {
       return NextResponse.json(
         { error: 'Invalid platform' },
         { status: 400 }

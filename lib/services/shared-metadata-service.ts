@@ -224,20 +224,46 @@ export class SharedMetadataService {
   }
 
   /**
-   * Determine the extraction strategy for a given platform
+    * Determine the extraction strategy for a given platform (legacy sync method)
+    * @deprecated Use getPlatformStrategyAsync for dynamic platform support
+    */
+   static getPlatformStrategy(platform: string): 'official' | 'ai' | 'fallback' {
+     // Fallback to basic logic for backward compatibility
+     if (['youtube', 'twitch'].includes(platform)) {
+       return 'official';
+     }
+     if (['unknown', 'netflix', 'nebula', 'vimeo'].includes(platform)) {
+       return 'ai';
+     }
+     return 'fallback';
+   }
+
+  /**
+   * Determine the extraction strategy for a given platform using database configs
    */
-  static getPlatformStrategy(platform: string): 'official' | 'ai' | 'fallback' {
-    const OFFICIAL_PLATFORMS = ['youtube', 'twitch'];
-    const AI_SUPPORTED_PLATFORMS = ['unknown', 'netflix', 'nebula', 'vimeo'];
+  static async getPlatformStrategyAsync(platform: string): Promise<'official' | 'ai' | 'fallback'> {
+    try {
+      // Dynamic import to avoid circular dependency
+      const { PlatformDataService } = await import('@/lib/services/platform-data-service');
 
-    if (OFFICIAL_PLATFORMS.includes(platform)) {
-      return 'official';
+      const platformConfig = await PlatformDataService.getPlatformById(platform);
+
+      if (!platformConfig) {
+        return 'fallback'; // Unknown platform
+      }
+
+      // Strategy based on extractor field from database
+      switch (platformConfig.extractor) {
+        case 'official':
+          return 'official';
+        case 'ai':
+          return 'ai';
+        default:
+          return 'fallback';
+      }
+    } catch (error) {
+      console.error('Error determining platform strategy:', error);
+      return 'fallback';
     }
-
-    if (AI_SUPPORTED_PLATFORMS.includes(platform)) {
-      return 'ai';
-    }
-
-    return 'fallback';
   }
 }

@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { videos, tags, videoTags } from '@/lib/db/schema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
+import { PlatformDataService } from '@/lib/services/platform-data-service';
 
 
 
@@ -26,8 +27,12 @@ export async function GET(request: NextRequest) {
 
     // Support multiple platforms (comma-separated)
     if (platforms) {
+      // Get enabled platforms from database for dynamic filtering
+      const enabledPlatforms = await PlatformDataService.getPlatforms();
+      const validPlatformIds = enabledPlatforms.map(p => p.platformId);
+
       const platformList = platforms.split(',').filter(p =>
-        ['youtube', 'netflix', 'nebula', 'twitch'].includes(p.trim())
+        validPlatformIds.includes(p.trim())
       ) as VideoPlatform[];
       if (platformList.length > 0) {
         whereConditions.push(inArray(videos.platform, platformList));
@@ -68,8 +73,12 @@ export async function GET(request: NextRequest) {
 
     // Add platforms parameter if filtering by multiple platforms
     if (platforms) {
+      // Get enabled platforms from database for dynamic filtering
+      const enabledPlatforms = await PlatformDataService.getPlatforms();
+      const validPlatformIds = enabledPlatforms.map(p => p.platformId);
+
       const platformList = platforms.split(',').filter(p =>
-        ['youtube', 'netflix', 'nebula', 'twitch'].includes(p.trim())
+        validPlatformIds.includes(p.trim())
       );
       if (platformList.length > 0) {
         queryParams.platforms = platformList;

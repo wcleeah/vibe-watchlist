@@ -70,8 +70,7 @@ export class AIMetadataService {
             const platform = parsed.platform;
             console.log("🔍 AI METADATA SERVICE: Parsed platform:", platform);
 
-            const strategy =
-                SharedMetadataService.getPlatformStrategy(platform);
+            const strategy = await SharedMetadataService.getPlatformStrategyAsync(platform);
             console.log(
                 "🔍 AI METADATA SERVICE: Selected strategy:",
                 strategy,

@@ -433,20 +433,61 @@ const validPlatforms = await PlatformService.getPlatforms()
 
 ---
 
-### Phase 9: Platform Integration - Core Logic (3-4 hours)
+### Phase 9: Platform Integration - Core Logic (3-4 hours) 🚧 IN PROGRESS
 **Goal:** Update all validation and service logic to use dynamic platform configs
 
-#### 9.1 Validation Services
+#### 9.1 Validation Services ✅ COMPLETED
 ```typescript
 // lib/services/validation-service.ts
-- Replace hardcoded validPlatforms array with dynamic database queries
-- Update error messages to be platform-agnostic
-- Make validation async to support database calls
+- ✅ Replaced hardcoded validPlatforms array with dynamic database queries
+- ✅ Updated error messages to be platform-agnostic and dynamic
+- ✅ Made validation async to support database calls
+- ✅ Updated validateUrl and validatePlatform methods
+```
 
-// Update validation logic:
-// - Remove hardcoded platform lists
-// - Query enabled platforms from database
-// - Dynamic error message generation
+#### 9.2 API Route Updates ✅ COMPLETED
+```typescript
+// app/api/videos/route.ts & app/api/metadata/extract/route.ts
+- ✅ Replaced hardcoded platform arrays with dynamic queries
+- ✅ Updated platform filtering to use enabled platforms from database
+- ✅ Removed static platform validations
+- ✅ Added proper error handling for unknown platforms
+
+// Example transformation:
+const validPlatforms = ['youtube', 'netflix', 'nebula', 'twitch'];
+// Becomes:
+const enabledPlatforms = await PlatformDataService.getPlatforms();
+const validPlatforms = enabledPlatforms.map(p => p.platformId);
+```
+
+#### 9.3 Platform Strategy Logic ✅ COMPLETED
+```typescript
+// lib/services/shared-metadata-service.ts
+- ✅ Moved platform-specific strategies into platformConfigs.extractor field
+- ✅ Removed hardcoded OFFICIAL_PLATFORMS and AI_SUPPORTED_PLATFORMS arrays
+- ✅ Added async getPlatformStrategyAsync method for dynamic strategy selection
+- ✅ Updated strategy mapping based on extractor type
+
+// Strategy mapping:
+// - 'official' → Use official APIs (YouTube, Twitch)
+// - 'ai' → Use AI metadata extraction
+- 'fallback' → Use basic HTML scraping
+```
+
+#### 9.4 AI Metadata Service Updates ✅ COMPLETED
+```typescript
+// lib/services/ai-metadata-service.ts
+- ✅ Updated platform routing logic to use dynamic configs
+- ✅ Removed hardcoded platform checks
+- ✅ Updated to use async strategy selection with getPlatformStrategyAsync
+- ✅ Maintained proper error handling and fallbacks
+
+// Dynamic routing based on platformConfigs.extractor:
+switch (strategy) {
+  case 'official': return this.handleOfficialPlatform(url, platform);
+  case 'ai': return this.handleAIPlatform(url, platform);
+  default: return this.handleFallbackPlatform(url, platform);
+}
 ```
 
 #### 9.2 API Route Updates
