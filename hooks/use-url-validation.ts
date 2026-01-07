@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
+import { parseVideoUrlClient, VideoPlatform } from '@/lib/utils/url-parser';
 import { PlatformSuggestion } from '@/lib/services/ai-service';
 
 interface ParsedUrl {
@@ -40,7 +40,7 @@ export function useUrlValidation(): UseUrlValidationReturn {
       return;
     }
 
-    const parsed = await parseVideoUrl(newUrl.trim());
+    const parsed = await parseVideoUrlClient(newUrl.trim());
     setParsedUrl(parsed);
 
     // Clear platform suggestions when URL changes

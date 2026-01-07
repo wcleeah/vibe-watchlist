@@ -11,7 +11,7 @@ import { MetadataSuggestion } from '@/lib/types/ai-metadata';
 import { PlatformSuggestion } from '@/lib/services/ai-service';
 import { PlatformSuggestions } from './platform-suggestions';
 import { Loader2 } from 'lucide-react';
-import { PlatformDataService } from '@/lib/services/platform-data-service';
+import { usePlatforms } from '@/hooks/use-platforms';
 
 interface FormLayoutProps {
   url: string;
@@ -92,23 +92,10 @@ export function FormLayout({
   onAddTag,
   onReset,
 }: FormLayoutProps) {
-  const [platformNames, setPlatformNames] = useState<string>('YouTube, Netflix, Nebula, or Twitch');
-
-  useEffect(() => {
-    const loadPlatformNames = async () => {
-      try {
-        const platforms = await PlatformDataService.getPlatforms();
-        if (platforms.length > 0) {
-          const names = platforms.map(p => p.displayName).join(', ');
-          setPlatformNames(names);
-        }
-      } catch (error) {
-        console.error('Failed to load platform names:', error);
-        // Keep default fallback
-      }
-    };
-    loadPlatformNames();
-  }, []);
+  const { platforms } = usePlatforms();
+  const platformNames = platforms.length > 0
+    ? platforms.map(p => p.displayName).join(', ')
+    : 'YouTube, Netflix, Nebula, or Twitch';
 
   const hasValidUrl = parsedUrl?.isValid ?? false;
   const urlError = parsedUrl && !parsedUrl.isValid && url.trim()

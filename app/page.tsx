@@ -6,27 +6,13 @@ import { FormLayout } from '@/components/video-form';
 import { PreviewCard } from '@/components/video-preview';
 import { useAddVideoForm } from '@/hooks/use-add-video-form';
 import { toast } from 'sonner';
-import { useState, useEffect } from 'react';
-import { PlatformDataService } from '@/lib/services/platform-data-service';
+import { usePlatforms } from '@/hooks/use-platforms';
 
 export default function Home() {
-  const [platformNames, setPlatformNames] = useState<string>('YouTube, Netflix, Nebula, or Twitch');
-
-  useEffect(() => {
-    const loadPlatformNames = async () => {
-      try {
-        const platforms = await PlatformDataService.getPlatforms();
-        if (platforms.length > 0) {
-          const names = platforms.map(p => p.displayName).join(', ');
-          setPlatformNames(names);
-        }
-      } catch (error) {
-        console.error('Failed to load platform names:', error);
-        // Keep default fallback
-      }
-    };
-    loadPlatformNames();
-  }, []);
+  const { platforms } = usePlatforms();
+  const platformNames = platforms.length > 0
+    ? platforms.map(p => p.displayName).join(', ')
+    : 'YouTube, Netflix, Nebula, or Twitch';
 
   const {
     url,
