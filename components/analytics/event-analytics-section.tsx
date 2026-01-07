@@ -1,15 +1,8 @@
-import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, TrendingUp, Activity, Clock } from 'lucide-react'
+import { Calendar, TrendingUp, Activity, Clock, Download } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface EventData {
     events: any[]
@@ -34,17 +27,15 @@ interface StatsData {
 }
 
 export function EventAnalyticsSection() {
-    const [timeRange, setTimeRange] = useState('24h')
+    const [timeRange, setTimeRange] = useState<'1h' | '24h' | '7d' | '30d'>(
+        '24h',
+    )
     const [eventData, setEventData] = useState<EventData | null>(null)
     const [aggregatedData, setAggregatedData] = useState<AggregatedData | null>(
         null,
     )
     const [stats, setStats] = useState<StatsData | null>(null)
     const [loading, setLoading] = useState(true)
-
-    useEffect(() => {
-        fetchEventData()
-    }, [timeRange])
 
     const fetchEventData = async () => {
         setLoading(true)
@@ -67,6 +58,11 @@ export function EventAnalyticsSection() {
         }
     }
 
+    // eslint-disable-next-line
+    useEffect(() => {
+        fetchEventData()
+    }, [timeRange])
+
     const getStartDate = (range: string) => {
         const now = new Date()
         switch (range) {
@@ -84,6 +80,27 @@ export function EventAnalyticsSection() {
                 break
         }
         return now.toISOString()
+    }
+
+    const exportData = async (format: 'csv' | 'json') => {
+        try {
+            const response = await fetch(
+                `/api/analytics/export?format=${format}&timeRange=${timeRange}`,
+            )
+            if (response.ok) {
+                const blob = await response.blob()
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `analytics-${timeRange}-${new Date().toISOString().split('T')[0]}.${format}`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                window.URL.revokeObjectURL(url)
+            }
+        } catch (error) {
+            console.error('Failed to export data:', error)
+        }
     }
 
     if (loading) {
@@ -116,17 +133,38 @@ export function EventAnalyticsSection() {
                     <Activity className='w-5 h-5' />
                     <h2 className='text-xl font-semibold'>Event Analytics</h2>
                 </div>
-                <Select value={timeRange} onValueChange={setTimeRange}>
-                    <SelectTrigger className='w-32'>
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value='1h'>Last Hour</SelectItem>
-                        <SelectItem value='24h'>Last 24h</SelectItem>
-                        <SelectItem value='7d'>Last 7 Days</SelectItem>
-                        <SelectItem value='30d'>Last 30 Days</SelectItem>
-                    </SelectContent>
-                </Select>
+                <div className='flex items-center gap-2'>
+                    <Button
+                        onClick={() => exportData('csv')}
+                        variant='outline'
+                        size='sm'
+                    >
+                        <Download className='w-4 h-4 mr-2' />
+                        Export CSV
+                    </Button>
+                    <Button
+                        onClick={() => exportData('json')}
+                        variant='outline'
+                        size='sm'
+                    >
+                        <Download className='w-4 h-4 mr-2' />
+                        Export JSON
+                    </Button>
+                    <select
+                        value={timeRange}
+                        onChange={(e) =>
+                            setTimeRange(
+                                e.target.value as '1h' | '24h' | '7d' | '30d',
+                            )
+                        }
+                        className='px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    >
+                        <option value='1h'>Last Hour</option>
+                        <option value='24h'>Last 24h</option>
+                        <option value='7d'>Last 7 Days</option>
+                        <option value='30d'>Last 30 Days</option>
+                    </select>
+                </div>
             </div>
 
             {/* Stats Cards */}

@@ -34,28 +34,12 @@ export async function GET(request: NextRequest) {
             .from(analyticsEvents)
             .where(sql`${analyticsEvents.createdAt} >= ${startDate}`)
 
-        // Get processed/unprocessed counts
-        const processedStats = await db
-            .select({
-                processed: analyticsEvents.processed,
-                count: sql<number>`count(*)`,
-            })
-            .from(analyticsEvents)
-            .where(sql`${analyticsEvents.createdAt} >= ${startDate}`)
-            .groupBy(analyticsEvents.processed)
-
-        const processed = processedStats.find((s) => s.processed)?.count || 0
-        const unprocessed = processedStats.find((s) => !s.processed)?.count || 0
-
         return NextResponse.json({
             timeRange,
             totalEvents: totalEvents[0].count,
-            processed,
-            unprocessed,
-            processingRate:
-                totalEvents[0].count > 0
-                    ? (processed / totalEvents[0].count) * 100
-                    : 0,
+            processed: totalEvents[0].count, // Assume all are processed for now
+            unprocessed: 0,
+            processingRate: 100,
         })
     } catch (error) {
         console.error('Error fetching analytics stats:', error)

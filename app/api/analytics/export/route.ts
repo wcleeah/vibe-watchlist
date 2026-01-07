@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
             'eventData',
             'userId',
             'sessionId',
-            'processed',
             'createdAt',
         ]
         const csvRows = events.map((event) => [
@@ -60,8 +59,7 @@ export async function GET(request: NextRequest) {
             JSON.stringify(event.eventData),
             event.userId || '',
             event.sessionId || '',
-            event.processed,
-            event.createdAt.toISOString(),
+            event.createdAt?.toISOString() || '',
         ])
 
         const csvContent = [
