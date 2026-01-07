@@ -4,51 +4,136 @@ import { NavigationTabs } from '@/components/navigation-tabs';
 import { LayoutManager } from '@/components/layout/layout-manager';
 import { FormLayout } from '@/components/video-form';
 import { PreviewCard } from '@/components/video-preview';
-import { useAddVideoForm } from '@/hooks/use-add-video-form';
+import { useState, useCallback, useEffect } from 'react';
+import { useForm, FormProvider, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useUrlValidation } from '@/hooks/use-url-validation';
+import { useAIMetadataFetching } from '@/hooks/use-ai-metadata-fetching';
+import { Tag } from '@/types/tag';
 import { toast } from 'sonner';
 
 export default function Home() {
+  // URL validation hook
+  const urlValidation = useUrlValidation();
 
-  const {
-    url,
-    setUrl,
-    parsedUrl,
-    selectedTags,
-    tagInput,
-    setTagInput,
-    showTagSuggestions,
-    filteredSuggestions,
-    isLoadingTags,
-    tagError,
-    handleTagInputChange,
-    handleTagKeyDown,
-    removeTag,
-    selectSuggestedTag,
-    addTag,
-    manualMode,
-    setManualMode,
-    manualTitle,
-    setManualTitle,
-    manualThumbnailUrl,
-    setManualThumbnailUrl,
-    isSubmitting,
-    handleSubmit,
-    submitError,
-    reset,
-    aiMetadata,
-    // Platform Discovery
-    platformSuggestions,
-    isDetectingPlatform,
-    detectPlatformForUrl,
-    acceptPlatformSuggestion,
-    rejectPlatformSuggestions,
-  } = useAddVideoForm({
-    onVideoAdded: () => {
-      toast.success('Video added successfully!');
+  // AI Metadata fetching hook
+  const aiMetadata = useAIMetadataFetching({
+    url: urlValidation.url,
+    platform: urlValidation.platform || "unknown",
+    enabled: urlValidation.isValid,
+  });
+
+  // Global reset function
+  const reset = () => {
+    urlValidation.setUrl("");
+  };
+
+  // Manual mode state
+  const [manualMode, setManualModeRaw] = useState(false);
+
+  // Selected tags state (managed via callback from FormLayout)
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+
+  // Submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Form schema
+  const videoSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    thumbnailUrl: z.string().optional(),
+    tags: z.array(z.number()),
+  });
+
+  type VideoFormData = z.infer<typeof videoSchema>;
+
+  // Initialize RHF form
+  const form = useForm<VideoFormData>({
+    resolver: zodResolver(videoSchema),
+    defaultValues: {
+      title: "",
+      thumbnailUrl: "",
+      tags: [],
+    },
+  });
+
+  // Update form when AI metadata changes (only if not in manual mode)
+  useEffect(() => {
+    if (!manualMode && aiMetadata.selectedSuggestion) {
+      form.setValue("title", aiMetadata.selectedSuggestion.title);
+      form.setValue("thumbnailUrl", aiMetadata.selectedSuggestion.thumbnailUrl || "");
+    }
+  }, [aiMetadata.selectedSuggestion, manualMode, form]);
+
+  // Watch form values
+  const watchedTitle = useWatch({ control: form.control, name: "title" });
+  const watchedThumbnailUrl = useWatch({ control: form.control, name: "thumbnailUrl" });
+
+  // Smart mode transitions for manual mode
+  const setManualMode = useCallback((mode: boolean) => {
+    setManualModeRaw(mode);
+
+    if (mode) {
+      // Switching to manual: preserve current inputs (AI values if not set)
+      const currentTitle = watchedTitle || aiMetadata.selectedSuggestion?.title || '';
+      const currentThumbnail = watchedThumbnailUrl || aiMetadata.selectedSuggestion?.thumbnailUrl || '';
+      form.setValue("title", currentTitle);
+      form.setValue("thumbnailUrl", currentThumbnail);
+    } else {
+      // Switching to auto: clear manual inputs if they match AI suggestion
+      if (watchedTitle === aiMetadata.selectedSuggestion?.title) form.setValue("title", '');
+      if (watchedThumbnailUrl === aiMetadata.selectedSuggestion?.thumbnailUrl) form.setValue("thumbnailUrl", '');
+    }
+
+    setSubmitError(null);
+  }, [aiMetadata.selectedSuggestion, watchedTitle, watchedThumbnailUrl, form]);
+
+  // Submission handler using RHF
+  const onSubmit = form.handleSubmit(async (data: VideoFormData) => {
+    if (!urlValidation.parsedUrl?.isValid) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const videoData = {
+        url: urlValidation.parsedUrl.url,
+        title: data.title,
+        platform: aiMetadata.selectedSuggestion?.platform || urlValidation.parsedUrl.platform,
+        thumbnailUrl: data.thumbnailUrl || null,
+        tagIds: data.tags,
+      };
+
+      const response = await fetch('/api/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(videoData),
+      });
+
+      console.log('📥 API Response:', response.status, response.statusText);
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          const errorData = await response.json();
+          setSubmitError(errorData.error || 'Video already exists');
+        } else {
+          setSubmitError('Failed to add video');
+        }
+      } else {
+        reset(); // Reset URL and global state
+        form.reset(); // Reset form
+        toast.success('Video added successfully!');
+      }
+    } catch (error) {
+      console.error('Error adding video:', error);
+      setSubmitError('Failed to add video');
+    } finally {
+      setIsSubmitting(false);
     }
   });
 
-  const hasContent = url.trim().length > 0 && parsedUrl?.isValid === true;
+  const hasContent = urlValidation.url.trim().length > 0 && urlValidation.parsedUrl?.isValid === true;
   // Only show full-page loading when actually fetching AI metadata (not just typing URLs)
   const shouldShowLoading = hasContent && aiMetadata.isLoading;
 
@@ -76,19 +161,20 @@ export default function Home() {
   );
 
   return (
-    <div className="bg-background text-foreground">
-      <NavigationTabs />
+    <FormProvider {...form}>
+      <div className="bg-background text-foreground">
+        <NavigationTabs />
 
-      <main className="min-h-screen pt-16 pb-20 container mx-auto px-4 max-w-6xl flex items-center justify-center">
+        <main className="min-h-screen pt-16 pb-20 container mx-auto px-4 max-w-6xl flex items-center justify-center">
         <LayoutManager
           hasContent={hasContent}
           header={header}
           form={
             <FormLayout
-              url={url}
-              setUrl={setUrl}
-              parsedUrl={parsedUrl}
-              handleSubmit={handleSubmit}
+              url={urlValidation.url}
+              setUrl={urlValidation.setUrl}
+              parsedUrl={urlValidation.parsedUrl}
+              handleSubmit={onSubmit}
               isSubmitting={isSubmitting}
               submitError={submitError}
               onVideoAdded={() => {}}
@@ -101,29 +187,13 @@ export default function Home() {
               aiMetadataError={aiMetadata.error}
               onManualEdit={() => setManualMode(!manualMode)}
               // Platform Discovery props
-              platformSuggestions={platformSuggestions}
-              isDetectingPlatform={isDetectingPlatform}
-              onAcceptPlatformSuggestion={acceptPlatformSuggestion}
-              onRejectPlatformSuggestions={rejectPlatformSuggestions}
               onPlatformCreated={(platform) => {
                 console.log('Platform created:', platform);
                 // Clear suggestions and refresh platform cache
                 // The PlatformService cache will be invalidated automatically
               }}
-              onDetectPlatform={detectPlatformForUrl}
               // Tag props
-              selectedTags={selectedTags}
-              tagInput={tagInput}
-              setTagInput={setTagInput}
-              handleTagInputChange={handleTagInputChange}
-              handleTagKeyDown={handleTagKeyDown}
-              removeTag={removeTag}
-              selectSuggestedTag={selectSuggestedTag}
-              filteredSuggestions={filteredSuggestions}
-              showTagSuggestions={showTagSuggestions}
-              isLoadingTags={isLoadingTags}
-              tagError={tagError}
-              onAddTag={addTag}
+              onSelectedTagsChange={setSelectedTags}
               onReset={reset}
             />
           }
@@ -131,10 +201,10 @@ export default function Home() {
             <PreviewCard
               video={{
                 id: 0,
-                url,
-                title: manualMode ? manualTitle : (aiMetadata.selectedSuggestion?.title || null),
-                platform: aiMetadata.selectedSuggestion?.platform || parsedUrl?.platform || 'unknown',
-                thumbnailUrl: manualMode ? manualThumbnailUrl : (aiMetadata.selectedSuggestion?.thumbnailUrl || null),
+                url: urlValidation.url,
+                title: manualMode ? (watchedTitle || null) : (aiMetadata.selectedSuggestion?.title || null),
+                platform: aiMetadata.selectedSuggestion?.platform || urlValidation.parsedUrl?.platform || 'unknown',
+                thumbnailUrl: manualMode ? (watchedThumbnailUrl || null) : (aiMetadata.selectedSuggestion?.thumbnailUrl || null),
                 isWatched: false,
                 tags: selectedTags,
                 metadata: aiMetadata.selectedSuggestion ? {
@@ -147,14 +217,11 @@ export default function Home() {
               showActions={false}
               onToggleManual={() => setManualMode(!manualMode)}
               manualMode={manualMode}
-              manualTitle={manualTitle}
-              onManualTitleChange={setManualTitle}
-              manualThumbnailUrl={manualThumbnailUrl}
-              onManualThumbnailChange={setManualThumbnailUrl}
             />
           ) : null}
         />
-      </main>
-    </div>
+        </main>
+      </div>
+    </FormProvider>
   );
 }

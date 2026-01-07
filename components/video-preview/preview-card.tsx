@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { FileText, Loader2 } from 'lucide-react';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
 import { ThumbnailDisplay } from './metadata-components';
@@ -15,11 +16,8 @@ export function PreviewCard({
   className,
   onToggleManual,
   manualMode,
-  manualTitle,
-  onManualTitleChange,
-  manualThumbnailUrl,
-  onManualThumbnailChange,
 }: PreviewCardProps) {
+  const { register } = useFormContext();
   const [loadingMarkWatched, setLoadingMarkWatched] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
 
@@ -54,8 +52,7 @@ export function PreviewCard({
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
                 <input
                   type="text"
-                  value={manualTitle || ''}
-                  onChange={(e) => onManualTitleChange?.(e.target.value)}
+                  {...register("title")}
                   placeholder="Enter video title"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono"
                 />
@@ -94,14 +91,13 @@ export function PreviewCard({
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Thumbnail URL</label>
                     <input
                       type="url"
-                      value={manualThumbnailUrl || ''}
-                      onChange={(e) => onManualThumbnailChange?.(e.target.value)}
+                      {...register("thumbnailUrl")}
                       placeholder="https://example.com/thumbnail.jpg"
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono text-sm"
                     />
-                    {manualThumbnailUrl && (
+                    {video.thumbnailUrl && (
                       <img
-                        src={manualThumbnailUrl}
+                        src={video.thumbnailUrl}
                         alt="Thumbnail preview"
                         className="w-full h-auto max-h-[171px] object-cover rounded"
                         onError={(e) => {
