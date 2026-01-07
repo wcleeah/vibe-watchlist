@@ -15,9 +15,9 @@
 - **[🚀AI-INTEGRATION.md](ARCHIVE/🚀AI-INTEGRATION.md)** - AI metadata integration (integrated in chronicles)
 - **[AI-INTEGRATION-PROGRESS.md](ARCHIVE/AI-INTEGRATION-PROGRESS.md)** - AI implementation progress
 - **[🔧ADD-VIDEO-REFACTOR.md](ARCHIVE/🔧ADD-VIDEO-REFACTOR.md)** - Add video flow refactor (integrated in chronicles)
+- **[⚙️SETTINGS-IMPLEMENTATION.md](../📜DEV-JOURNEY-CHRONICLES.md#phase-6-settings-implementation)** - Settings page implementation (integrated in chronicles)
 
 ### PROPOSALS (Active & Planned)
-- **[⚙️SETTINGS-IMPLEMENTATION.md](PROPOSALS/⚙️SETTINGS-IMPLEMENTATION.md)** - Settings page implementation (IN PROGRESS)
 - **[📊ANALYTICS-PLAN.md](PROPOSALS/📊ANALYTICS-PLAN.md)** - Analytics system plan (PLANNED)
 - **[🎯EXTENSION-PROPOSAL.md](PROPOSALS/🎯EXTENSION-PROPOSAL.md)** - Chrome extension proposal (PLANNED)
 - **[✂️CUT-FAT-PLAN.md](PROPOSALS/✂️CUT-FAT-PLAN.md)** - Code cleanup plan (PLANNED)

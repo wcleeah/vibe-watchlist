@@ -132,18 +132,6 @@ export function useVideoFormState({
         setTagError(null)
     }, [])
 
-    const handleTagKeyDown = useCallback(
-        async (e: React.KeyboardEvent) => {
-            if (e.key === 'Enter' || e.key === ',') {
-                e.preventDefault()
-                await addTag(tagInput.trim())
-            } else if (e.key === 'Escape') {
-                setShowTagSuggestions(false)
-            }
-        },
-        [tagInput, addTag],
-    )
-
     const addTag = useCallback(
         async (tagName: string) => {
             if (!tagName) return
@@ -207,6 +195,18 @@ export function useVideoFormState({
         [selectedTags, availableTags],
     )
 
+    const handleTagKeyDown = useCallback(
+        async (e: React.KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault()
+                await addTag(tagInput.trim())
+            } else if (e.key === 'Escape') {
+                setShowTagSuggestions(false)
+            }
+        },
+        [tagInput, addTag],
+    )
+
     const removeTag = useCallback((tagId: number) => {
         setSelectedTags((prev) => prev.filter((tag) => tag.id !== tagId))
     }, [])
@@ -252,7 +252,18 @@ export function useVideoFormState({
         return Object.keys(errors).length === 0
     }, [parsedUrl, manualMode, manualTitle, manualThumbnailUrl])
 
-    // Submission
+    const resetFormState = useCallback(() => {
+        setManualMode(false)
+        setManualTitle('')
+        setManualThumbnailUrl('')
+        setSelectedTags([])
+        setTagInput('')
+        setShowTagSuggestions(false)
+        setTagError(null)
+        setSubmitError(null)
+        setValidationErrors({})
+    }, [])
+
     const handleSubmit = useCallback(async () => {
         if (!parsedUrl?.isValid || !validateForm()) return
 
@@ -316,17 +327,6 @@ export function useVideoFormState({
     ])
 
     // Reset internal form state (manual mode, tags, etc.)
-    const resetFormState = useCallback(() => {
-        setManualMode(false)
-        setManualTitle('')
-        setManualThumbnailUrl('')
-        setSelectedTags([])
-        setTagInput('')
-        setShowTagSuggestions(false)
-        setTagError(null)
-        setSubmitError(null)
-        setValidationErrors({})
-    }, [])
 
     return {
         // Manual mode

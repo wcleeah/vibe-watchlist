@@ -293,10 +293,8 @@ export default function WatchedPage() {
                 {/* Video List */}
                 <VideoList
                     videos={filteredVideos}
-                    loading={loading}
                     onMarkWatched={handleMarkWatched}
                     onDelete={handleDelete}
-                    isSelectable={false}
                 />
             </main>
         </div>
