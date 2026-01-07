@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { FormField, FormMessage, FormControl } from '@/components/ui/form';
 import { FileText, Loader2 } from 'lucide-react';
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils';
@@ -18,7 +17,6 @@ export function PreviewCard({
   onToggleManual,
   manualMode,
 }: PreviewCardProps) {
-  const { register } = useFormContext();
   const [loadingMarkWatched, setLoadingMarkWatched] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
 

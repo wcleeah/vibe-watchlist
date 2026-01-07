@@ -1,0 +1,11 @@
+- [ ] unify suggestions passing, one big object, with two kind of suggestions
+- [ ] add back platform suggestions form
+- [ ] suggestion related should be handle in form, preview catd will use form context to get the values, including:
+  - [ ] init form values
+  - [ ] dropdown selections
+- [ ] PreviewCard is used in listing, which breks since they don't have form
+- [ ] move manual mode to preview card input
+- [ ] remove tags state at page.tsx, can use form context directly
+- [ ] move VideoFormData and the schema to a separate type file
+- [ ] make sure onSubmit is using data in the form
+- [ ] add back loading page

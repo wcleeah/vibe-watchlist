@@ -1,7 +1,6 @@
 'use client';
 
 import { UrlInput } from './video-form/url-input';
-import { ParsedUrl } from '@/lib/utils/url-parser.js';
 
 interface UrlInputSectionProps {
   value: string | undefined;
@@ -30,7 +29,7 @@ export function UrlInputSection({
 
       {/* URL Input */}
       <UrlInput
-        value={value}
+        value={undefined}
         onChange={onChange}
         placeholder="https://youtube.com/watch?v=..."
         isValid={isValid}

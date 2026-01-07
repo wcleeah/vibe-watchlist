@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { MetadataSelector } from './metadata-selector';
 import { TagInput } from './tag-input';
@@ -8,16 +8,11 @@ import { SubmitButton } from './submit-button';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/types/tag';
 import { MetadataSuggestion } from '@/lib/types/ai-metadata';
-import { toast } from 'sonner';
 
 interface FormLayoutProps {
-  onVideoAdded?: () => void;
   handleSubmit: () => Promise<void>;
   isSubmitting: boolean;
   submitError: string | null;
-  className?: string;
-  showTags?: boolean;
-  isUrlValid?: boolean;
   // AI Metadata props
   aiSuggestions?: MetadataSuggestion[];
   selectedSuggestion?: MetadataSuggestion;
@@ -33,10 +28,6 @@ interface FormLayoutProps {
 export function FormLayout({
   handleSubmit,
   isSubmitting,
-  className,
-  showTags = true,
-  isUrlValid = false,
-  // AI Metadata props
   aiSuggestions = [],
   selectedSuggestion,
   onSuggestionSelect,
@@ -56,8 +47,6 @@ export function FormLayout({
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
   const [tagError, setTagError] = useState<string | null>(null);
-
-
 
   // Load available tags on mount
   useEffect(() => {
@@ -157,21 +146,12 @@ export function FormLayout({
     !selectedTags.some(selected => selected.id === tag.id)
   ).slice(0, 5);
 
-
-
-
-
   return (
-    <div className={`space-y-6 ${className}`}>
-      {/* Heading */}
-      {showTags && (
+    <div className={`space-y-6`}>
         <div className="text-center mb-4">
           <h2 className="text-xl font-semibold">Add Tags</h2>
         </div>
-      )}
 
-      {/* AI Metadata Selector - show when URL is valid */}
-      {isUrlValid && (
         <MetadataSelector
           suggestions={aiSuggestions}
           selectedIndex={selectedSuggestion ? aiSuggestions.findIndex(s => s === selectedSuggestion) : undefined}
@@ -184,10 +164,7 @@ export function FormLayout({
           error={aiMetadataError || undefined}
           disabled={isSubmitting}
         />
-      )}
 
-      {/* Tag Input - show only if showTags */}
-      {showTags && (
         <TagInput
           value={tagInput}
           onChange={handleTagInputChange}
@@ -200,10 +177,7 @@ export function FormLayout({
           isLoading={isLoadingTags || isSubmitting}
           error={tagError}
         />
-      )}
 
-       {/* Buttons - show only if showTags */}
-       {showTags && (
          <div className="flex gap-2">
            <Button
              variant="secondary"
@@ -216,11 +190,10 @@ export function FormLayout({
             <SubmitButton
                onClick={handleSubmit}
               isLoading={isSubmitting}
-              disabled={!isUrlValid || isSubmitting}
+              disabled={isSubmitting}
               className="flex-1"
             />
          </div>
-       )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { NavigationTabs } from '@/components/navigation-tabs';
 import { FormLayout } from '@/components/video-form';
 import { PreviewCard } from '@/components/video-preview';
 import { UrlInputSection } from '@/components/url-input-section';
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,11 +19,7 @@ export default function Home() {
   const urlValidation = useUrlValidation();
 
   // AI Metadata fetching hook
-  const aiMetadata = useAIMetadataFetching({
-    url: urlValidation.url,
-    platform: urlValidation.parsedUrl?.platform,
-    enabled: urlValidation.parsedUrl?.isValid,
-  });
+  const aiMetadata = useAIMetadataFetching(urlValidation.urlValidationResult);
 
   // Global reset function
   const reset = () => {
@@ -39,6 +35,18 @@ export default function Home() {
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Platform detection state (moved from FormLayout)
+  const [platformSuggestions, setPlatformSuggestions] = useState<PlatformSuggestion[]>([]);
+  const [platformDiscoveryProcessed, setPlatformDiscoveryProcessed] = useState(false);
+
+  const [mode, setMode] = useState<'input' | 'form'>('input');
+
+  // Full loading condition for mode transition
+  const isReadyForForm = urlValidation.urlValidationResult?.validated &&
+  urlValidation.urlValidationResult.isValid &&
+    !aiMetadata.isLoading &&
+    (urlValidation.urlValidationResult.platform !== 'unknown' || platformDiscoveryProcessed);
 
   // Form schema
   const videoSchema = z.object({
@@ -59,19 +67,10 @@ export default function Home() {
     },
   });
 
-  // Mode state for two-mode architecture
-  const [mode, setMode] = useState<'input' | 'form'>('input');
-
-  // Platform detection state (moved from FormLayout)
-  const [platformSuggestions, setPlatformSuggestions] = useState<PlatformSuggestion[]>([]);
-  const [isDetectingPlatform, setIsDetectingPlatform] = useState(false);
-
   // Platform detection (moved from FormLayout)
   useEffect(() => {
-    const parsed = urlValidation.parsedUrl;
-    if (!parsed?.isValid || parsed.platform !== 'unknown' || isDetectingPlatform) return;
-
-    setIsDetectingPlatform(true);
+    const parsed = urlValidation.urlValidationResult;
+    if (!parsed || !parsed.validated || !parsed.isValid || parsed.platform !== "unknown") return;
 
     fetch('/api/platforms/discover', {
       method: 'POST',
@@ -92,14 +91,10 @@ export default function Home() {
         console.error('Platform detection error:', error);
       })
       .finally(() => {
-        setIsDetectingPlatform(false);
-      });
-  }, [urlValidation.parsedUrl, isDetectingPlatform]);
+          setPlatformDiscoveryProcessed(true);
+      })
+  }, [urlValidation.urlValidationResult, platformDiscoveryProcessed]);
 
-  // Full loading condition for mode transition
-  const isReadyForForm = urlValidation.parsedUrl?.isValid &&
-    !aiMetadata.isLoading &&
-    (urlValidation.parsedUrl.platform !== 'unknown' || platformSuggestions.length > 0);
 
   // Mode transition: Input → Form when all async operations complete
   useEffect(() => {
@@ -110,10 +105,10 @@ export default function Home() {
 
   // Reset mode to input when URL becomes invalid
   useEffect(() => {
-    if (!urlValidation.parsedUrl?.isValid && mode === 'form') {
+    if (!urlValidation || (urlValidation.urlValidationResult?.isValid && urlValidation.urlValidationResult.validated)) {
       setMode('input');
     }
-  }, [urlValidation.parsedUrl?.isValid, mode]);
+  }, [urlValidation.urlValidationResult, mode]);
 
   // Update form when AI metadata changes (only if not in manual mode)
   useEffect(() => {
@@ -148,16 +143,16 @@ export default function Home() {
 
   // Submission handler using RHF
   const onSubmit = form.handleSubmit(async (data: VideoFormData) => {
-    if (!urlValidation.parsedUrl?.isValid) return;
+    if (!urlValidation.urlValidationResult?.isValid) return;
 
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
       const videoData = {
-        url: urlValidation.parsedUrl.url,
+        url: urlValidation.urlValidationResult.url,
         title: data.title,
-        platform: aiMetadata.selectedSuggestion?.platform || urlValidation.parsedUrl.platform,
+        platform: aiMetadata.selectedSuggestion?.platform || urlValidation.urlValidationResult.platform,
         thumbnailUrl: data.thumbnailUrl || null,
         tagIds: data.tags,
       };
@@ -192,6 +187,7 @@ export default function Home() {
 
 
 
+  // add back loading screen
   return (
     <FormProvider {...form}>
       <div className="bg-background text-foreground">
@@ -200,10 +196,10 @@ export default function Home() {
         <main className="min-h-screen pt-16 pb-20 container mx-auto px-4 max-w-6xl flex items-center justify-center">
           {mode === 'input' ? (
             <UrlInputSection
-              value={urlValidation.url}
+              value={urlValidation.urlValidationResult?.url}
               onChange={urlValidation.setUrl}
-              isValid={urlValidation.parsedUrl?.isValid}
-              error={urlValidation.parsedUrl?.error}
+              isValid={urlValidation.urlValidationResult?.isValid}
+              error={urlValidation.urlValidationResult?.error}
               disabled={isSubmitting}
             />
           ) : (
@@ -214,9 +210,6 @@ export default function Home() {
                     handleSubmit={onSubmit}
                     isSubmitting={isSubmitting}
                     submitError={submitError}
-                    onVideoAdded={() => {}}
-                    showTags={true}
-                    isUrlValid={urlValidation.parsedUrl?.isValid}
                     // AI Metadata props
                     aiSuggestions={aiMetadata.suggestions}
                     selectedSuggestion={aiMetadata.selectedSuggestion}
@@ -233,9 +226,9 @@ export default function Home() {
                   <PreviewCard
                     video={{
                       id: 0,
-                      url: urlValidation.url,
+                      url: urlValidation.urlValidationResult?.url ?? "Invalid",
                       title: manualMode ? (watchedTitle || null) : (aiMetadata.selectedSuggestion?.title || null),
-                      platform: aiMetadata.selectedSuggestion?.platform || urlValidation.parsedUrl?.platform || 'unknown',
+                      platform: aiMetadata.selectedSuggestion?.platform || urlValidation.urlValidationResult?.platform || 'unknown',
                       thumbnailUrl: manualMode ? (watchedThumbnailUrl || null) : (aiMetadata.selectedSuggestion?.thumbnailUrl || null),
                       isWatched: false,
                       tags: selectedTags,
