@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse and validate URL
-    const parsedUrl = parseVideoUrl(url);
+    const parsedUrl = await parseVideoUrl(url);
     if (!parsedUrl.isValid) {
       return NextResponse.json(
         { error: 'Invalid or unsupported video URL' },

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate URL format
-    const parsedUrl = parseVideoUrl(url);
+    const parsedUrl = await parseVideoUrl(url);
     if (!parsedUrl.isValid) {
       return NextResponse.json(
         { error: 'Invalid URL format' },

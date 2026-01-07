@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { VideoList } from '@/components/videos/video-list';
 import { NavigationTabs } from '@/components/navigation-tabs';
 import { VideoWithTags as Video } from '@/types/video';
-import { PlatformService } from '@/lib/services/platform-service';
+
 import { Youtube, Tv, Gamepad2, Globe } from 'lucide-react';
 
 // Helper function to get icon component from string
@@ -149,14 +149,17 @@ export default function WatchedPage() {
   useEffect(() => {
     const loadPlatforms = async () => {
       try {
-        const platformFilters = await PlatformService.getPlatformFilters();
-        const platformData = platformFilters.map(p => ({
-          key: p.key,
-          label: p.label,
-          icon: getIconComponent(p.icon),
-          color: p.color,
-        }));
-        setPlatforms(platformData);
+        const response = await fetch('/api/platforms');
+        if (response.ok) {
+          const data = await response.json();
+          const platformData = data.data.map((p: any) => ({
+            key: p.platformId,
+            label: p.displayName,
+            icon: getIconComponent(p.icon || 'Video'),
+            color: p.color || '#6b7280',
+          }));
+          setPlatforms(platformData);
+        }
       } catch (error) {
         console.error('Failed to load platforms:', error);
         // Fallback to empty array

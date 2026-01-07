@@ -113,7 +113,7 @@ export class SharedMetadataService {
    */
   static async extractTwitchMetadata(url: string): Promise<VideoMetadata> {
     const { parseVideoUrl } = await import('@/lib/utils/url-parser');
-    const parsed = parseVideoUrl(url);
+    const parsed = await parseVideoUrl(url);
 
     if (!parsed.videoId) {
       throw new Error('Invalid Twitch video URL');

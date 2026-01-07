@@ -1,4 +1,4 @@
-export type VideoPlatform = 'youtube' | 'netflix' | 'nebula' | 'twitch' | 'unknown';
+export type VideoPlatform = string; // Dynamic platform ID from platformConfigs
 
 export interface ParsedUrl {
   url: string;
@@ -8,7 +8,14 @@ export interface ParsedUrl {
   isValid: boolean;
 }
 
-export function parseVideoUrl(url: string): ParsedUrl {
+/**
+ * Pure function that parses URLs using provided platform configurations
+ * No dependencies on databases or APIs - can be used anywhere
+ */
+export function parseVideoUrlWithPlatforms(
+  url: string,
+  platforms: Array<{ platformId: string; patterns: string[]; enabled: boolean | null }>
+): ParsedUrl {
   if (!url || typeof url !== 'string') {
     return { url, platform: 'unknown', isValid: false };
   }
@@ -17,59 +24,40 @@ export function parseVideoUrl(url: string): ParsedUrl {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase();
 
-    // YouTube detection
-    if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
-      const videoId = extractYouTubeId(urlObj);
-      const playlistId = extractYouTubePlaylistId(urlObj);
+    // Check against each platform's patterns
+    for (const platform of platforms) {
+      if (!platform.enabled || !platform.patterns) continue;
 
-      if (videoId) {
+      // Check if hostname matches any of the platform's patterns
+      const matchesPattern = platform.patterns.some((pattern: string) =>
+        hostname.includes(pattern.toLowerCase())
+      );
+
+      if (matchesPattern) {
+        // Extract video ID based on platform
+        const videoId = extractVideoId(urlObj, platform.platformId);
+
         return {
           url,
-          platform: 'youtube',
+          platform: platform.platformId,
           videoId,
           isValid: true,
         };
       }
-      if (playlistId) {
-        return {
-          url,
-          platform: 'youtube',
-          playlistId,
-          isValid: true,
-        };
-      }
     }
 
-    // Netflix detection
-    if (hostname.includes('netflix.com')) {
+    // If no platform matches, check for YouTube playlist (special case)
+    const playlistId = extractYouTubePlaylistId(urlObj);
+    if (playlistId) {
       return {
         url,
-        platform: 'netflix',
+        platform: 'youtube', // Fallback for existing YouTube playlists
+        playlistId,
         isValid: true,
       };
     }
 
-    // Nebula detection
-    if (hostname.includes('nebula.tv') || hostname.includes('nebula.app') || hostname.includes('watchnebula.com')) {
-      return {
-        url,
-        platform: 'nebula',
-        isValid: true,
-      };
-    }
-
-    // Twitch detection
-    if (hostname.includes('twitch.tv')) {
-      const videoId = extractTwitchId(urlObj);
-      return {
-        url,
-        platform: 'twitch',
-        videoId,
-        isValid: true,
-      };
-    }
-
-    // Accept any valid HTTPS URL
+    // Accept any valid HTTPS URL as unknown platform
     return {
       url,
       platform: 'unknown',
@@ -78,6 +66,35 @@ export function parseVideoUrl(url: string): ParsedUrl {
   } catch {
     return { url, platform: 'unknown', isValid: false };
   }
+}
+
+/**
+ * Server-side URL parser that gets platforms from PlatformService
+ */
+export async function parseVideoUrl(url: string): Promise<ParsedUrl> {
+  // Import PlatformDataService for server-side database access
+  const { PlatformDataService } = await import('@/lib/services/platform-data-service');
+
+  // Get all enabled platforms from database
+  const platforms = await PlatformDataService.getPlatforms();
+
+  return parseVideoUrlWithPlatforms(url, platforms);
+}
+
+/**
+ * Client-side URL parser that fetches platforms via API
+ */
+export async function parseVideoUrlClient(url: string): Promise<ParsedUrl> {
+  // Fetch platforms from API
+  const response = await fetch('/api/platforms');
+  if (!response.ok) {
+    throw new Error('Failed to fetch platforms');
+  }
+
+  const data = await response.json();
+  const platforms = data.data || [];
+
+  return parseVideoUrlWithPlatforms(url, platforms);
 }
 
 function extractYouTubeId(urlObj: URL): string | null {
@@ -122,7 +139,30 @@ function extractTwitchId(urlObj: URL): string | undefined {
   return undefined;
 }
 
-export function detectPlatform(url: string): VideoPlatform | null {
-  const parsed = parseVideoUrl(url);
+function extractVideoId(urlObj: URL, platformId: string): string | undefined {
+  const hostname = urlObj.hostname.toLowerCase();
+
+  switch (platformId) {
+    case 'youtube':
+      return extractYouTubeId(urlObj) || undefined;
+    case 'twitch':
+      return extractTwitchId(urlObj);
+    // Add more platform-specific extractors as needed
+    default:
+      // For unknown platforms, try common patterns
+      const videoId = urlObj.searchParams.get('v') ||
+                     urlObj.searchParams.get('video_id') ||
+                     urlObj.searchParams.get('id');
+      return videoId || undefined;
+  }
+}
+
+export async function detectPlatform(url: string): Promise<VideoPlatform | null> {
+  const parsed = await parseVideoUrl(url);
+  return parsed.isValid ? parsed.platform : null;
+}
+
+export async function detectPlatformClient(url: string): Promise<VideoPlatform | null> {
+  const parsed = await parseVideoUrlClient(url);
   return parsed.isValid ? parsed.platform : null;
 }

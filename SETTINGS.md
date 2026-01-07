@@ -18,8 +18,10 @@ I need a central page to manage all application settings, configurations, cache,
 - [x] Phase 4: Tags Integration (1-2 hours) - ✅ COMPLETED
 - [x] Phase 5: Polish & Mobile (2-3 hours) - ✅ COMPLETED
 - [x] Phase 6: Dynamic Platform Loading (3-4 hours) - ✅ COMPLETED
-- [ ] Phase 7: Platform Discovery (3-5 hours) - 🔄 UPCOMING
-- [ ] Phase 8: Testing Suite (15-20 hours) - 📋 FUTURE
+- [x] Phase 7: Platform Discovery (AI-powered) (3-5 hours) - ✅ COMPLETED
+- [x] Phase 8: Platform Integration - Foundation (4-6 hours) - ✅ COMPLETED
+- [ ] Phase 9: Platform Integration - Core Logic (3-4 hours)
+- [ ] Phase 10: Platform Integration - UI/UX Polish (2-3 hours)
 
 ---
 
@@ -410,6 +412,122 @@ const validPlatforms = await PlatformService.getPlatforms()
 
 ---
 
+### Phase 9: Platform Integration - Core Logic (3-4 hours)
+**Goal:** Update all validation and service logic to use dynamic platform configs
+
+#### 9.1 Validation Services
+```typescript
+// lib/services/validation-service.ts
+- Replace hardcoded validPlatforms array with dynamic database queries
+- Update error messages to be platform-agnostic
+- Make validation async to support database calls
+
+// Update validation logic:
+// - Remove hardcoded platform lists
+// - Query enabled platforms from database
+// - Dynamic error message generation
+```
+
+#### 9.2 API Route Updates
+```typescript
+// app/api/videos/route.ts & app/api/metadata/extract/route.ts
+- Replace hardcoded platform arrays with dynamic queries
+- Update platform filtering to use enabled platforms from database
+- Remove static platform validations
+
+// Example transformation:
+const validPlatforms = ['youtube', 'netflix', 'nebula', 'twitch'];
+// Becomes:
+const enabledPlatforms = await PlatformDataService.getPlatforms();
+const validPlatforms = enabledPlatforms.map(p => p.platformId);
+```
+
+#### 9.3 Platform Strategy Logic
+```typescript
+// lib/services/shared-metadata-service.ts
+- Move platform-specific strategies into platformConfigs.extractor field
+- Remove hardcoded OFFICIAL_PLATFORMS and AI_SUPPORTED_PLATFORMS arrays
+- Make strategy selection dynamic based on extractor type
+
+// Strategy mapping:
+- 'official' → Use official APIs (YouTube, Twitch)
+- 'ai' → Use AI metadata extraction
+- 'fallback' → Use basic HTML scraping
+```
+
+#### 9.4 AI Metadata Service Updates
+```typescript
+// lib/services/ai-metadata-service.ts
+- Update platform routing logic to use dynamic configs
+- Remove hardcoded platform checks
+- Use extractor field for strategy selection
+
+// Dynamic routing based on platformConfigs.extractor:
+switch (platformConfig.extractor) {
+  case 'official': return this.handleOfficialPlatform(url, platform);
+  case 'ai': return this.handleAIPlatform(url, platform);
+  default: return this.handleFallbackPlatform(url, platform);
+}
+```
+
+---
+
+### Phase 10: Platform Integration - UI/UX Polish (2-3 hours)
+**Goal:** Ensure seamless user experience with dynamic platform support
+
+#### 10.1 User-Facing Text Updates
+```typescript
+// Update all hardcoded platform references:
+// app/page.tsx: "Paste a video URL from YouTube, Netflix, Nebula, or Twitch"
+// components/video-form/form-layout.tsx: Error messages
+// components/video-form/url-input.tsx: Placeholder text
+// app/layout.tsx: Platform descriptions
+
+// Make all text dynamic:
+// - Query enabled platforms for user messages
+// - Generate contextual help text
+// - Update placeholder examples
+```
+
+#### 10.2 Platform Display Names
+```typescript
+// Ensure consistent platform naming across UI:
+// - Use platformConfigs.displayName for all UI elements
+// - Fallback to capitalized platformId for unknown platforms
+// - Remove hardcoded name mappings in components
+
+// Example:
+// const displayName = platformConfig?.displayName || platformId.charAt(0).toUpperCase() + platformId.slice(1);
+```
+
+#### 10.3 Error Handling & Loading States
+```typescript
+// Add proper loading states:
+// - Platform data fetching indicators
+// - URL validation progress feedback
+// - Platform discovery status updates
+
+// Graceful fallbacks:
+// - Default platform configs when data fails to load
+// - Generic error messages for unknown platforms
+// - Cached platform data for offline scenarios
+```
+
+#### 10.4 Accessibility & Performance
+```typescript
+// Performance optimizations:
+// - Platform data caching in localStorage
+// - Lazy loading of platform-specific components
+// - Debounced platform data updates
+
+// Accessibility improvements:
+// - Screen reader support for dynamic platform names
+// - Keyboard navigation for platform selection
+// - Loading state announcements
+```
+
+---
+
 ## Technical Architecture
 
 ### Database Schema
@@ -495,92 +613,43 @@ const validPlatforms = await PlatformService.getPlatforms()
 - [x] **Extensibility**: Easy to add new settings categories
 
 ### Phase 7 (Platform Discovery)
-- [ ] **AI Platform Detection**: Unknown URLs trigger platform discovery automatically
-- [ ] **Platform Suggestions**: Users see AI-generated platform suggestions with confidence scores
-- [ ] **One-Click Addition**: Users can save detected platforms with minimal friction
-- [ ] **Dynamic URL Parser**: No hardcoded platform references remain
-- [ ] **Fallback Handling**: Graceful degradation when AI services unavailable
+- [x] **AI Platform Detection**: Unknown URLs trigger platform discovery automatically
+- [x] **Platform Suggestions**: Users see AI-generated platform suggestions with confidence scores
+- [x] **One-Click Addition**: Users can save detected platforms with minimal friction
+- [x] **Dynamic URL Parser**: No hardcoded platform references remain
+- [x] **Fallback Handling**: Graceful degradation when AI services unavailable
 
-### Phase 8 (Testing Suite)
-- [ ] **Test Infrastructure**: Vitest + Playwright configured and running
-- [ ] **Unit Test Coverage**: 80%+ coverage for core services and utilities
-- [ ] **Integration Tests**: All API routes and service interactions tested
-- [ ] **E2E Test Coverage**: Critical user workflows automated
-- [ ] **CI/CD Integration**: Tests run automatically on commits
-- [ ] **Performance Benchmarks**: Metadata extraction times monitored
+### Phase 8 (Platform Integration - Foundation)
+- [x] **Dynamic URL Parsing**: URL parser uses platformConfigs for pattern matching
+- [x] **Platform Data Service**: Server-side database access for platforms
+- [x] **Client Data Hook**: usePlatforms hook for frontend platform data
+- [x] **Component Updates**: PlatformBadge/Icon use dynamic configurations
+- [x] **Database Schema**: Removed enum constraints for dynamic platform IDs
 
----
+### Phase 9 (Platform Integration - Core Logic)
+- [ ] **Validation Services**: Dynamic platform validation without hardcoded lists
+- [ ] **API Route Updates**: All endpoints use dynamic platform queries
+- [ ] **Strategy Logic**: Platform strategies based on extractor field
+- [ ] **AI Service Updates**: Dynamic platform routing in metadata service
 
-### Phase 8: Testing Suite (15-20 hours)
-**Goal:** Set up comprehensive testing infrastructure for reliability and maintainability.
-
-#### 8.1 Testing Framework Setup
-```typescript
-// Install and configure testing stack
-- Vitest for unit testing framework
-- @testing-library/react for component testing
-- @testing-library/jest-dom for DOM assertions
-- Playwright for E2E testing
-- Test scripts in package.json: yarn test, yarn test:e2e
-```
-
-#### 8.2 Unit Tests
-```typescript
-// Core service testing
-- lib/utils/url-parser.ts - Platform detection accuracy
-- lib/services/ai-service.ts - AI API integration
-- lib/services/platform-service.ts - Dynamic platform loading
-- lib/services/metascraper-service.ts - HTML parsing
-
-// Component testing
-- components/video-form/ - Form validation and submission
-- components/settings/ - Settings management workflows
-- components/platform/ - Dynamic platform rendering
-```
-
-#### 8.3 Integration Tests
-```typescript
-// API endpoint testing
-- /api/videos - CRUD operations and filtering
-- /api/platforms - Platform management
-- /api/cache - Cache operations
-- Database integration and error handling
-
-// Service integration
-- PlatformService with database operations
-- AIMetadataService full pipeline
-- VideoService business logic
-```
-
-#### 8.4 End-to-End Tests
-```typescript
-// Critical user workflows
-- Adding videos with URL validation
-- Platform discovery and addition
-- Settings management (cache, platforms, tags)
-- Filtering and searching videos
-- Mobile responsiveness testing
-```
-
-#### 8.5 CI/CD Integration
-```typescript
-// GitHub Actions workflow
-- Run tests on every push/PR
-- Test coverage reporting
-- E2E tests in headless browser
-- Performance regression detection
-```
+### Phase 10 (Platform Integration - UI/UX Polish)
+- [ ] **User-Facing Text**: All platform references use dynamic names
+- [ ] **Display Names**: Consistent platform naming across UI
+- [ ] **Error Handling**: Proper loading states and fallbacks
+- [ ] **Performance**: Cached platform data and lazy loading
 
 ---
 
-## Timeline Estimate: 32-43 hours total
+## Timeline Estimate: 42-57 hours total
 - **Phase 1**: 1-2 hours (Foundation) ✅
 - **Phase 2**: 2-3 hours (Cache Management) ✅
 - **Phase 3**: 3-4 hours (Platform Management) ✅
 - **Phase 4**: 1-2 hours (Tags Integration) ✅
 - **Phase 5**: 2-3 hours (Polish & Mobile) ✅
 - **Phase 6**: 3-4 hours (Dynamic Platform Loading) ✅
-- **Phase 7**: 3-5 hours (Platform Discovery)
-- **Phase 8**: 15-20 hours (Testing Suite)
+- **Phase 7**: 3-5 hours (Platform Discovery) ✅
+- **Phase 8**: 4-6 hours (Platform Integration - Foundation) ✅
+- **Phase 9**: 3-4 hours (Platform Integration - Core Logic)
+- **Phase 10**: 2-3 hours (Platform Integration - UI/UX Polish)
 
 *Note: Timeline includes testing, debugging, and refinements. Actual time may vary based on complexity discovered during implementation.*

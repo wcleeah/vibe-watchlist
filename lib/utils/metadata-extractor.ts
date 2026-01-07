@@ -1,5 +1,4 @@
 import { VideoPlatform } from './url-parser';
-import { PLATFORM_NAMES } from './platform-utils';
 
 export interface VideoMetadata {
   title: string;
@@ -38,7 +37,7 @@ export async function extractVideoMetadata(url: string, platform: VideoPlatform)
     console.error('Error extracting metadata:', error);
     // Fallback to basic platform name if API fails
     return {
-      title: `Video from ${PLATFORM_NAMES[platform] || 'Unknown Platform'}`,
+      title: `Video from ${platform.charAt(0).toUpperCase() + platform.slice(1)}`,
       thumbnailUrl: null,
     };
   }

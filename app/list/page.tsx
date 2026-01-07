@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { PlatformService } from '@/lib/services/platform-service';
 import { Youtube, Tv, Gamepad2, Globe } from 'lucide-react';
 
 // Helper function to get icon component from string
@@ -111,14 +110,17 @@ export default function ListPage() {
   useEffect(() => {
     const loadPlatforms = async () => {
       try {
-        const platformFilters = await PlatformService.getPlatformFilters();
-        const platformData = platformFilters.map(p => ({
-          key: p.key,
-          label: p.label,
-          icon: getIconComponent(p.icon),
-          color: p.color,
-        }));
-        setPlatforms(platformData);
+        const response = await fetch('/api/platforms');
+        if (response.ok) {
+          const data = await response.json();
+          const platformData = data.data.map((p: any) => ({
+            key: p.platformId,
+            label: p.displayName,
+            icon: getIconComponent(p.icon || 'Video'),
+            color: p.color || '#6b7280',
+          }));
+          setPlatforms(platformData);
+        }
       } catch (error) {
         console.error('Failed to load platforms:', error);
         setPlatforms([]);

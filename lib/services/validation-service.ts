@@ -1,5 +1,8 @@
 import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
 
+// Update hardcoded validation arrays to be dynamic
+// This will be replaced with database queries in Phase 2
+
 export interface ValidationResult {
   isValid: boolean;
   error?: string;
@@ -8,7 +11,7 @@ export interface ValidationResult {
 }
 
 export class ValidationService {
-  static validateUrl(url: string): ValidationResult {
+  static async validateUrl(url: string): Promise<ValidationResult> {
     if (!url || typeof url !== 'string') {
       return {
         isValid: false,
@@ -17,7 +20,7 @@ export class ValidationService {
     }
 
     try {
-      const result = parseVideoUrl(url.trim());
+      const result = await parseVideoUrl(url.trim());
 
       if (!result.isValid) {
         return {

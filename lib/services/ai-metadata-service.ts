@@ -66,7 +66,7 @@ export class AIMetadataService {
                 "🔍 AI METADATA SERVICE: No cache hit, parsing URL for platform detection",
             );
             // Detect platform and route accordingly
-            const parsed = parseVideoUrl(url);
+            const parsed = await parseVideoUrl(url);
             const platform = parsed.platform;
             console.log("🔍 AI METADATA SERVICE: Parsed platform:", platform);
 
@@ -478,8 +478,8 @@ export class AIMetadataService {
                 "🧠 AI ANALYSIS: Converting suggestions to MetadataSuggestion format",
             );
             const suggestions: MetadataSuggestion[] =
-                titleSuggestions.suggestions.map((suggestion) => {
-                    const platform = this.inferPlatform(
+                await Promise.all(titleSuggestions.suggestions.map(async (suggestion) => {
+                    const platform = await this.inferPlatform(
                         url,
                         suggestion.title,
                         context,
@@ -505,7 +505,7 @@ export class AIMetadataService {
                         reasoning: suggestion.source,
                         thumbnailUrl: thumbnailUrl,
                     };
-                });
+                }));
 
             console.log(
                 "🧠 AI ANALYSIS: Total suggestions before limiting:",
@@ -715,11 +715,11 @@ export class AIMetadataService {
     /**
      * Infer platform from URL and context
      */
-    private inferPlatform(url: string, title: string, context: any): string {
+    private async inferPlatform(url: string, title: string, context: any): Promise<string> {
         console.log("🔍 PLATFORM INFERENCE: Inferring platform for URL:", url);
         console.log("🔍 PLATFORM INFERENCE: Title:", title.substring(0, 50));
 
-        const parsed = parseVideoUrl(url);
+        const parsed = await parseVideoUrl(url);
         console.log(
             "🔍 PLATFORM INFERENCE: URL parser detected platform:",
             parsed.platform,

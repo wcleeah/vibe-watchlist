@@ -1,13 +1,13 @@
 import { pgTable, serial, text, boolean, timestamp, pgEnum, integer, jsonb, decimal } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
-export const videoPlatformEnum = pgEnum('video_platform', ['youtube', 'netflix', 'nebula', 'twitch', 'unknown']);
+// Removed videoPlatformEnum - now using dynamic platform IDs from platformConfigs table
 
 export const videos = pgTable('videos', {
   id: serial('id').primaryKey(),
   url: text('url').notNull().unique(),
   title: text('title'),
-  platform: videoPlatformEnum('platform').notNull(),
+  platform: text('platform').notNull(), // Dynamic platform ID
   thumbnailUrl: text('thumbnail_url'),
   isWatched: boolean('is_watched').default(false),
   createdAt: timestamp('created_at').defaultNow(),

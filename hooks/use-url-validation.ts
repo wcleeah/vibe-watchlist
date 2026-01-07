@@ -31,7 +31,7 @@ export function useUrlValidation(): UseUrlValidationReturn {
   const [platformSuggestions, setPlatformSuggestions] = useState<PlatformSuggestion[]>([]);
   const [isDetectingPlatform, setIsDetectingPlatform] = useState(false);
 
-  const handleUrlChange = useCallback((newUrl: string) => {
+  const handleUrlChange = useCallback(async (newUrl: string) => {
     setUrl(newUrl);
 
     if (!newUrl.trim()) {
@@ -40,7 +40,7 @@ export function useUrlValidation(): UseUrlValidationReturn {
       return;
     }
 
-    const parsed = parseVideoUrl(newUrl.trim());
+    const parsed = await parseVideoUrl(newUrl.trim());
     setParsedUrl(parsed);
 
     // Clear platform suggestions when URL changes

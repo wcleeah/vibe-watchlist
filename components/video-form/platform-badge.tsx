@@ -2,6 +2,7 @@
 
 import { Youtube, Play, Tv, Gamepad2, Globe, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePlatforms } from '@/hooks/use-platforms';
 
 interface PlatformBadgeProps {
   platform: string;
@@ -10,48 +11,44 @@ interface PlatformBadgeProps {
   className?: string;
 }
 
-const PLATFORM_CONFIGS: Record<string, { icon: any; color: string; bgColor: string }> = {
-  youtube: {
-    icon: Youtube,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50 border-red-200'
-  },
-  twitch: {
-    icon: Gamepad2,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50 border-purple-200'
-  },
-  netflix: {
-    icon: Play,
-    color: 'text-red-700',
-    bgColor: 'bg-red-50 border-red-200'
-  },
-  nebula: {
-    icon: Tv,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50 border-blue-200'
-  },
-  vimeo: {
-    icon: Video,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-50 border-blue-200'
-  },
-  dailymotion: {
-    icon: Play,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50 border-blue-200'
-  },
-  bilibili: {
-    icon: Video,
-    color: 'text-pink-600',
-    bgColor: 'bg-pink-50 border-pink-200'
-  },
-  unknown: {
-    icon: Globe,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-50 border-gray-200'
-  }
-};
+// Helper function to get icon component from string
+function getIconComponent(iconName: string) {
+  const iconMap: Record<string, any> = {
+    Youtube: Youtube,
+    Play: Play,
+    Tv: Tv,
+    Gamepad2: Gamepad2,
+    Globe: Globe,
+    Video: Video,
+    // Add more icon mappings as needed
+  };
+  return iconMap[iconName] || Globe;
+}
+
+// Helper function to convert hex color to Tailwind color class
+function getColorClass(hexColor: string): string {
+  // Simple mapping for common colors
+  const colorMap: Record<string, string> = {
+    '#ff0000': 'red',
+    '#9146ff': 'purple',
+    '#e50914': 'red',
+    '#ffffff': 'gray',
+    '#6b7280': 'gray',
+  };
+  return colorMap[hexColor] || 'gray';
+}
+
+// Fallback configs for when platform data isn't loaded
+function getFallbackConfig(platform: string) {
+  const fallbackMap: Record<string, { icon: any; color: string; bgColor: string }> = {
+    youtube: { icon: Youtube, color: 'text-red-600', bgColor: 'bg-red-50 border-red-200' },
+    twitch: { icon: Gamepad2, color: 'text-purple-600', bgColor: 'bg-purple-50 border-purple-200' },
+    netflix: { icon: Play, color: 'text-red-700', bgColor: 'bg-red-50 border-red-200' },
+    nebula: { icon: Tv, color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200' },
+    unknown: { icon: Globe, color: 'text-gray-600', bgColor: 'bg-gray-50 border-gray-200' },
+  };
+  return fallbackMap[platform.toLowerCase()] || fallbackMap.unknown;
+}
 
 export function PlatformBadge({
   platform,
@@ -59,7 +56,15 @@ export function PlatformBadge({
   variant = 'outline',
   className
 }: PlatformBadgeProps) {
-  const config = PLATFORM_CONFIGS[platform.toLowerCase()] || PLATFORM_CONFIGS.unknown;
+  const { platforms } = usePlatforms();
+
+  // Get platform config from loaded data, or use fallback
+  const platformConfig = platforms.find(p => p.platformId === platform);
+  const config = platformConfig ? {
+    icon: getIconComponent(platformConfig.icon || 'Globe'),
+    color: `text-${getColorClass(platformConfig.color || '#6b7280')}`,
+    bgColor: `bg-${getColorClass(platformConfig.color || '#6b7280')}-50 border-${getColorClass(platformConfig.color || '#6b7280')}-200`
+  } : getFallbackConfig(platform);
   const Icon = config.icon;
 
   const sizeClasses = {
@@ -75,16 +80,14 @@ export function PlatformBadge({
   };
 
   const getDisplayName = (platform: string) => {
-    const names: Record<string, string> = {
-      youtube: 'YouTube',
-      twitch: 'Twitch',
-      netflix: 'Netflix',
-      nebula: 'Nebula',
-      vimeo: 'Vimeo',
-      dailymotion: 'Dailymotion',
-      bilibili: 'Bilibili'
-    };
-    return names[platform.toLowerCase()] || platform.charAt(0).toUpperCase() + platform.slice(1);
+    // Use display name from platform config if available
+    const platformConfig = platforms.find(p => p.platformId === platform);
+    if (platformConfig?.displayName) {
+      return platformConfig.displayName;
+    }
+
+    // Fallback to capitalized platform name
+    return platform.charAt(0).toUpperCase() + platform.slice(1);
   };
 
   if (variant === 'ghost') {
@@ -121,7 +124,14 @@ export function PlatformIcon({
   size = 'sm',
   className
 }: Omit<PlatformBadgeProps, 'variant'>) {
-  const config = PLATFORM_CONFIGS[platform.toLowerCase()] || PLATFORM_CONFIGS.unknown;
+  const { platforms } = usePlatforms();
+
+  // Get platform config from loaded data, or use fallback
+  const platformConfig = platforms.find(p => p.platformId === platform);
+  const config = platformConfig ? {
+    icon: getIconComponent(platformConfig.icon || 'Globe'),
+    color: `text-${getColorClass(platformConfig.color || '#6b7280')}`
+  } : getFallbackConfig(platform);
   const Icon = config.icon;
 
   const iconSizes = {
