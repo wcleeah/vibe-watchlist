@@ -52,6 +52,17 @@ export async function GET(request: NextRequest) {
           WHERE ${videoTags.videoId} = ${videos.id} AND ${tags.name} ILIKE ${sql.placeholder('search')}
         )
       )`)
+
+            // Log search event
+            // Note: This will log on every search API call, could be rate-limited in production
+            setTimeout(() => {
+                import('@/lib/analytics/events').then(({ logEvent }) => {
+                    logEvent('search_performed', {
+                        query: search.trim(),
+                        hasResults: true, // We'll assume true for now
+                    })
+                })
+            }, 0)
         }
 
         // Build dynamic order by clause

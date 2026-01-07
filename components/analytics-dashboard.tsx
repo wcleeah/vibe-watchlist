@@ -9,17 +9,31 @@ export function AnalyticsDashboard() {
     const { stats, refreshStats, isLoading } = useAnalytics()
 
     if (!stats) {
-        return (
-            <div className='space-y-6'>
-                <div className='flex items-center justify-between'>
-                    <h2 className='text-2xl font-bold'>Analytics</h2>
-                    <Button onClick={refreshStats} disabled={isLoading}>
-                        <RefreshCw
-                            className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`}
-                        />
-                        Refresh
-                    </Button>
-                </div>
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-5 h-5" />
+          <h2 className="text-xl font-semibold">Analytics</h2>
+        </div>
+        <Button
+          onClick={refreshStats}
+          disabled={loading}
+          variant="outline"
+          size="sm"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      <Tabs defaultValue="live" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="live">Live Stats</TabsTrigger>
+          <TabsTrigger value="events">Event Analytics</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="live" className="space-y-6">
                 <div className='text-center py-8 text-gray-500'>
                     Loading analytics...
                 </div>
