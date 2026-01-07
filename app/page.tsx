@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { useUrlValidation } from '@/hooks/use-url-validation';
 import { useAIMetadataFetching } from '@/hooks/use-ai-metadata-fetching';
 import { Tag } from '@/types/tag';
+import { PlatformSuggestion } from '@/lib/services/ai-service';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -59,6 +60,62 @@ export default function Home() {
       tags: [],
     },
   });
+
+  // Mode state for two-mode architecture
+  const [mode, setMode] = useState<'input' | 'form'>('input');
+
+  // Platform detection state (moved from FormLayout)
+  const [platformSuggestions, setPlatformSuggestions] = useState<PlatformSuggestion[]>([]);
+  const [isDetectingPlatform, setIsDetectingPlatform] = useState(false);
+
+  // Platform detection (moved from FormLayout)
+  useEffect(() => {
+    const parsed = urlValidation.parsedUrl;
+    if (!parsed?.isValid || parsed.platform !== 'unknown' || isDetectingPlatform) return;
+
+    setIsDetectingPlatform(true);
+
+    fetch('/api/platforms/discover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: parsed.url }),
+    })
+      .then(response => {
+        if (!response.ok) throw new Error(`API request failed: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        const suggestion: PlatformSuggestion = data.suggestion;
+        if (suggestion.confidence > 0.3) {
+          setPlatformSuggestions([suggestion]);
+        }
+      })
+      .catch(error => {
+        console.error('Platform detection error:', error);
+      })
+      .finally(() => {
+        setIsDetectingPlatform(false);
+      });
+  }, [urlValidation.parsedUrl, isDetectingPlatform]);
+
+  // Full loading condition for mode transition
+  const isReadyForForm = urlValidation.parsedUrl?.isValid &&
+    !aiMetadata.isLoading &&
+    (urlValidation.parsedUrl.platform !== 'unknown' || platformSuggestions.length > 0);
+
+  // Mode transition: Input → Form when all async operations complete
+  useEffect(() => {
+    if (isReadyForForm && mode === 'input') {
+      setMode('form');
+    }
+  }, [isReadyForForm, mode]);
+
+  // Reset mode to input when URL becomes invalid
+  useEffect(() => {
+    if (!urlValidation.parsedUrl?.isValid && mode === 'form') {
+      setMode('input');
+    }
+  }, [urlValidation.parsedUrl?.isValid, mode]);
 
   // Update form when AI metadata changes (only if not in manual mode)
   useEffect(() => {
@@ -172,34 +229,26 @@ export default function Home() {
         <LayoutManager
           hasContent={hasContent}
           header={header}
-           form={
-             <FormLayout
-               setUrl={urlValidation.setUrl}
-               parsedUrl={urlValidation.parsedUrl}
-               handleSubmit={onSubmit}
-               isSubmitting={isSubmitting}
-               submitError={submitError}
-               onVideoAdded={() => {}}
-               showTags={hasContent}
-               // AI Metadata props
-               aiSuggestions={aiMetadata.suggestions}
-               selectedSuggestion={aiMetadata.selectedSuggestion}
-               onSuggestionSelect={aiMetadata.setSelectedSuggestion}
-               isLoadingAIMetadata={aiMetadata.isLoading}
-               aiMetadataError={aiMetadata.error}
-               onManualEdit={() => setManualMode(!manualMode)}
-               // Platform Discovery props
-               onPlatformCreated={(platform) => {
-                 console.log('Platform created:', platform);
-                 // Clear suggestions and refresh platform cache
-                 // The PlatformService cache will be invalidated automatically
-               }}
-               // Tag props
-               onSelectedTagsChange={setSelectedTags}
+            form={
+              <FormLayout
+                handleSubmit={onSubmit}
+                isSubmitting={isSubmitting}
+                submitError={submitError}
+                onVideoAdded={() => {}}
+                showTags={hasContent}
+                isUrlValid={urlValidation.parsedUrl?.isValid}
+                // AI Metadata props
+                aiSuggestions={aiMetadata.suggestions}
+                selectedSuggestion={aiMetadata.selectedSuggestion}
+                onSuggestionSelect={aiMetadata.setSelectedSuggestion}
+                isLoadingAIMetadata={aiMetadata.isLoading}
+                aiMetadataError={aiMetadata.error}
+                onManualEdit={() => setManualMode(!manualMode)}
+                // Tag props
+                onSelectedTagsChange={setSelectedTags}
                 onReset={reset}
               />
-            })()
-          }
+            }
           preview={hasContent ? (
             <PreviewCard
               video={{
