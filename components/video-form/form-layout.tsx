@@ -4,21 +4,26 @@ import { useCallback, useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import type { MetadataSuggestion } from '@/lib/types/ai-metadata'
+import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import type { Tag } from '@/types/tag'
+import type { VideoSuggestions } from '@/types/form'
 import { MetadataSelector } from './metadata-selector'
 import { SubmitButton } from './submit-button'
 import { TagInput } from './tag-input'
+import { PlatformSuggestions } from './platform-suggestions'
 
 interface FormLayoutProps {
     handleSubmit: () => Promise<void>
     isSubmitting: boolean
     submitError: string | null
-    // AI Metadata props
-    aiSuggestions?: MetadataSuggestion[]
+    // Unified suggestions
+    suggestions?: VideoSuggestions
     selectedSuggestion?: MetadataSuggestion
     onSuggestionSelect?: (suggestion: MetadataSuggestion | undefined) => void
     aiMetadataError?: string | null
     onManualEdit?: () => void
+    // Platform creation callback
+    onPlatformCreated?: (platform: any) => void
     // Tag props to sync with preview
     onSelectedTagsChange: (tags: Tag[]) => void
     onReset?: () => void
@@ -27,16 +32,73 @@ interface FormLayoutProps {
 export function FormLayout({
     handleSubmit,
     isSubmitting,
-    aiSuggestions = [],
+    suggestions = { ai: [], platform: [] },
     selectedSuggestion,
     onSuggestionSelect,
     aiMetadataError,
     onManualEdit,
+    onPlatformCreated,
     // Tag props
     onSelectedTagsChange,
     onReset,
 }: FormLayoutProps) {
     const { setValue } = useFormContext()
+
+    // Platform suggestion state
+    const [platformSuggestions, setPlatformSuggestions] = useState<
+        PlatformSuggestion[]
+    >([])
+    const [isDetectingPlatform, setIsDetectingPlatform] = useState(false)
+
+    // Sync platform suggestions from props
+    useEffect(() => {
+        setPlatformSuggestions(suggestions.platform)
+    }, [suggestions.platform])
+
+    // Platform suggestion handlers
+    const acceptPlatformSuggestion = async (suggestion: PlatformSuggestion) => {
+        try {
+            const response = await fetch('/api/platforms/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    platformId: suggestion.platform,
+                    name: suggestion.platform,
+                    displayName:
+                        suggestion.platform.charAt(0).toUpperCase() +
+                        suggestion.platform.slice(1),
+                    patterns: suggestion.patterns,
+                    color: suggestion.color,
+                    icon: suggestion.icon,
+                    confidenceScore: suggestion.confidence,
+                }),
+            })
+
+            if (response.ok) {
+                const result = await response.json()
+                console.log(
+                    '✅ Platform created successfully:',
+                    result.platform,
+                )
+                // TODO: Add toast success
+                setPlatformSuggestions([])
+                onPlatformCreated?.(result.platform)
+            } else {
+                const error = await response.json()
+                console.error('❌ Failed to create platform:', error)
+                // TODO: Add toast error
+            }
+        } catch (error) {
+            console.error('❌ Platform creation error:', error)
+            // TODO: Add toast error
+        }
+    }
+
+    const rejectPlatformSuggestions = () => {
+        setPlatformSuggestions([])
+    }
 
     // Tag state
     const [selectedTags, setSelectedTags] = useState<Tag[]>([])
@@ -171,15 +233,26 @@ export function FormLayout({
                 <h2 className='text-xl font-semibold'>Add Tags</h2>
             </div>
 
+            {/* Platform Suggestions */}
+            {platformSuggestions.length > 0 && (
+                <PlatformSuggestions
+                    suggestions={platformSuggestions}
+                    onAccept={acceptPlatformSuggestion}
+                    onReject={rejectPlatformSuggestions}
+                    onPlatformCreated={onPlatformCreated}
+                    isLoading={isDetectingPlatform}
+                />
+            )}
+
             <MetadataSelector
-                suggestions={aiSuggestions}
+                suggestions={suggestions.ai}
                 selectedIndex={
                     selectedSuggestion
-                        ? aiSuggestions.indexOf(selectedSuggestion)
+                        ? suggestions.ai.indexOf(selectedSuggestion)
                         : undefined
                 }
                 onSelect={(index) => {
-                    const suggestion = aiSuggestions[index]
+                    const suggestion = suggestions.ai[index]
                     onSuggestionSelect?.(suggestion)
                 }}
                 onManualEdit={onManualEdit}

@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import type { Tag } from './tag'
 import type { ParsedUrl, VideoMetadata } from './video'
+import type { MetadataSuggestion } from '@/lib/types/ai-metadata'
+import type { PlatformSuggestion } from '@/lib/services/ai-service'
 
 export interface VideoFormState {
     url: string
@@ -41,3 +43,9 @@ export const videoSchema = z.object({
 })
 
 export type VideoFormData = z.infer<typeof videoSchema>
+
+// Unified suggestions for video addition
+export interface VideoSuggestions {
+    ai: MetadataSuggestion[]
+    platform: PlatformSuggestion[]
+}

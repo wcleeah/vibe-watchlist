@@ -261,8 +261,11 @@ export default function Home() {
                                         handleSubmit={onSubmit}
                                         isSubmitting={isSubmitting}
                                         submitError={submitError}
-                                        // AI Metadata props
-                                        aiSuggestions={aiMetadata.suggestions}
+                                        // Unified suggestions
+                                        suggestions={{
+                                            ai: aiMetadata.suggestions,
+                                            platform: _platformSuggestions,
+                                        }}
                                         selectedSuggestion={
                                             aiMetadata.selectedSuggestion
                                         }
@@ -273,6 +276,13 @@ export default function Home() {
                                         onManualEdit={() =>
                                             setManualMode(!manualMode)
                                         }
+                                        onPlatformCreated={(platform) => {
+                                            // Handle platform creation
+                                            console.log(
+                                                'Platform created:',
+                                                platform,
+                                            )
+                                        }}
                                         // Tag props
                                         onSelectedTagsChange={setSelectedTags}
                                         onReset={reset}
