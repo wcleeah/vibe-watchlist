@@ -269,11 +269,21 @@ export default function Home() {
                                             setManualMode(!manualMode)
                                         }
                                         onPlatformCreated={(platform) => {
-                                            // Handle platform creation
+                                            // Handle platform creation - re-validate URL to recognize new platform
                                             console.log(
                                                 'Platform created:',
                                                 platform,
                                             )
+                                            if (
+                                                urlValidation
+                                                    .urlValidationResult?.url
+                                            ) {
+                                                urlValidation.setUrl(
+                                                    urlValidation
+                                                        .urlValidationResult
+                                                        .url,
+                                                )
+                                            }
                                         }}
                                         // Tag props
                                         onSelectedTagsChange={setSelectedTags}
