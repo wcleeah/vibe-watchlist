@@ -1,7 +1,13 @@
 'use client'
 
 import type React from 'react'
-import { createContext, useContext, useEffect, useState } from 'react'
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+    useCallback,
+} from 'react'
 
 export interface WatchStats {
     totalVideos: number
@@ -57,7 +63,7 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [countdown, setCountdown] = useState(15)
 
-    const refreshStats = async () => {
+    const refreshStats = useCallback(async () => {
         setIsLoading(true)
         try {
             // Fetch all videos with tags
@@ -186,14 +192,13 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [])
 
+    // Initial load and polling every 15 seconds with countdown
     useEffect(() => {
+        // Initial load
         refreshStats()
-    }, [refreshStats])
 
-    // Polling every 15 seconds with countdown
-    useEffect(() => {
         // Start countdown
         const countdownInterval = setInterval(() => {
             setCountdown((prev) => (prev > 1 ? prev - 1 : 15))
