@@ -47,9 +47,9 @@ Refactor the video submission form to separate URL input from form editing, impl
 
 ### Phase 1: Extract Components
 - [x] Create UrlInputSection component with URL input and validation
-- [ ] Refactor FormLayout to remove URL/platform logic
-- [ ] Update FormLayout to accept platform/metadata as props
-- [ ] Update all import statements in affected files
+- [x] Refactor FormLayout to remove URL/platform logic
+- [x] Update FormLayout to accept platform/metadata as props
+- [x] Update all import statements in affected files
 
 ### Phase 2: State Management
 - [ ] Add mode state ('input' | 'form') to page.tsx
