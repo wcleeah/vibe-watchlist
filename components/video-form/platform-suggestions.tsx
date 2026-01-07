@@ -1,6 +1,7 @@
 'use client'
 
-import { Check, Loader2, X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +11,7 @@ import { PlatformCreator } from './platform-creator'
 
 interface PlatformSuggestionsProps {
     suggestions: PlatformSuggestion[]
-    onAccept: (suggestion: PlatformSuggestion) => void
+    onAccept: (suggestion: PlatformSuggestion) => Promise<void>
     onReject: () => void
     onPlatformCreated?: (platform: string) => void
     className?: string
@@ -23,9 +24,13 @@ export function PlatformSuggestions({
     onPlatformCreated,
     className,
 }: PlatformSuggestionsProps) {
+    const [actionExecuted, setActionExecuted] = useState(false)
     if (suggestions.length === 0) return null
 
     const suggestion = suggestions[0] // For now, show only the first/best suggestion
+    if (actionExecuted) {
+        return
+    }
 
     return (
         <Card
@@ -84,9 +89,12 @@ export function PlatformSuggestions({
                     <div className='flex gap-2'>
                         <Button
                             size='sm'
-                            onClick={() => onAccept(suggestion)}
+                            onClick={async () => {
+                                await onAccept(suggestion)
+                                setActionExecuted(true)
+                            }}
                             className='flex-1 h-8 text-xs'
-                            type="button"
+                            type='button'
                         >
                             <Check className='w-3 h-3 mr-1' />
                             Add Platform
@@ -94,9 +102,12 @@ export function PlatformSuggestions({
                         <Button
                             size='sm'
                             variant='outline'
-                            onClick={onReject}
+                            onClick={() => {
+                                onReject()
+                                setActionExecuted(true)
+                            }}
                             className='h-8 text-xs'
-                            type="button"
+                            type='button'
                         >
                             <X className='w-3 h-3 mr-1' />
                             Dismiss
@@ -104,7 +115,12 @@ export function PlatformSuggestions({
                     </div>
                     <div className='flex justify-center'>
                         <PlatformCreator
-                            onPlatformCreated={onPlatformCreated}
+                            onPlatformCreated={(str) => {
+                                setActionExecuted(true)
+                                if (onPlatformCreated) {
+                                    onPlatformCreated(str)
+                                }
+                            }}
                         />
                     </div>
                 </div>

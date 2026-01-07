@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { logger } from '@/lib/utils/logger'
 import { db } from '@/lib/db'
 import { aiMetadataCache } from '@/lib/db/schema'
 import { AIService } from '@/lib/services/ai-service'
@@ -29,16 +30,16 @@ export class AIMetadataService {
     }
 
     async extractMetadata(url: string): Promise<MetadataExtractionResponse> {
-        console.log(
+        logger.log(
             '🔍 AI METADATA SERVICE: Starting extractMetadata for URL:',
             url,
         )
 
         try {
-            console.log('🔍 AI METADATA SERVICE: Checking cache for URL:', url)
+            logger.log('🔍 AI METADATA SERVICE: Checking cache for URL:', url)
             // Check cache first
             const cached = await this.getCachedResult(url)
-            console.log(
+            logger.log(
                 '🔍 AI METADATA SERVICE: Cache result:',
                 cached
                     ? 'HIT - returning cached data'
@@ -46,7 +47,7 @@ export class AIMetadataService {
             )
 
             if (cached) {
-                console.log(
+                logger.log(
                     '🔍 AI METADATA SERVICE: Returning cached suggestions:',
                     cached.aiAnalysis?.length || 0,
                     'items',
@@ -63,18 +64,18 @@ export class AIMetadataService {
                 }
             }
 
-            console.log(
+            logger.log(
                 '🔍 AI METADATA SERVICE: No cache hit, parsing URL for platform detection',
             )
             // Detect platform and route accordingly
             const platforms = await PlatformDataService.getPlatforms()
             const parsed = parseVideoUrlWithPlatforms(url, platforms)
             const platform = parsed.platform
-            console.log('🔍 AI METADATA SERVICE: Parsed platform:', platform)
+            logger.log('🔍 AI METADATA SERVICE: Parsed platform:', platform)
 
             const strategy =
                 await SharedMetadataService.getPlatformStrategyAsync(platform)
-            console.log(
+            logger.log(
                 '🔍 AI METADATA SERVICE: Selected strategy:',
                 strategy,
                 'for platform:',
@@ -83,17 +84,17 @@ export class AIMetadataService {
 
             switch (strategy) {
                 case 'official':
-                    console.log(
+                    logger.log(
                         '🔍 AI METADATA SERVICE: Routing to handleOfficialPlatform',
                     )
                     return this.handleOfficialPlatform(url, platform)
                 case 'ai':
-                    console.log(
+                    logger.log(
                         '🔍 AI METADATA SERVICE: Routing to handleAIPlatform',
                     )
                     return this.handleAIPlatform(url, platform)
                 default:
-                    console.log(
+                    logger.log(
                         '🔍 AI METADATA SERVICE: Routing to handleFallbackPlatform (strategy:',
                         strategy,
                         ')',
@@ -101,11 +102,11 @@ export class AIMetadataService {
                     return this.handleFallbackPlatform(url, platform)
             }
         } catch (error) {
-            console.error(
+            logger.error(
                 '❌ AI METADATA SERVICE: extractMetadata failed:',
                 error,
             )
-            console.error(
+            logger.error(
                 '❌ AI METADATA SERVICE: Error details:',
                 error instanceof Error ? error.stack : 'Unknown error type',
             )
@@ -124,7 +125,7 @@ export class AIMetadataService {
         url: string,
         platform: string,
     ): Promise<MetadataExtractionResponse> {
-        console.log(
+        logger.log(
             '🎯 OFFICIAL PLATFORM HANDLER: Starting for platform:',
             platform,
             'URL:',
@@ -133,56 +134,56 @@ export class AIMetadataService {
 
         try {
             let metadata
-            console.log(
+            logger.log(
                 '🎯 OFFICIAL PLATFORM HANDLER: Determining API call based on platform',
             )
 
             if (platform === 'youtube') {
-                console.log(
+                logger.log(
                     '🎯 OFFICIAL PLATFORM HANDLER: Calling YouTube oEmbed API',
                 )
                 metadata =
                     await SharedMetadataService.extractYouTubeMetadata(url)
-                console.log(
+                logger.log(
                     '🎯 OFFICIAL PLATFORM HANDLER: YouTube API response:',
                     metadata ? 'SUCCESS' : 'NULL',
                 )
             } else if (platform === 'twitch') {
-                console.log(
+                logger.log(
                     '🎯 OFFICIAL PLATFORM HANDLER: Calling Twitch Helix API',
                 )
                 metadata =
                     await SharedMetadataService.extractTwitchMetadata(url)
-                console.log(
+                logger.log(
                     '🎯 OFFICIAL PLATFORM HANDLER: Twitch API response:',
                     metadata ? 'SUCCESS' : 'NULL',
                 )
             } else {
-                console.log(
+                logger.log(
                     '🎯 OFFICIAL PLATFORM HANDLER: Unsupported official platform:',
                     platform,
                 )
                 throw new Error(`Unsupported official platform: ${platform}`)
             }
 
-            console.log(
+            logger.log(
                 '🎯 OFFICIAL PLATFORM HANDLER: Fetching HTML content for thumbnail prioritization',
             )
             // Fetch HTML content to prioritize meta tag thumbnails
             const htmlContent = await this.fetchHtmlContent(url)
-            console.log(
+            logger.log(
                 '🎯 OFFICIAL PLATFORM HANDLER: HTML content fetched, length:',
                 htmlContent.length,
             )
 
-            console.log(
+            logger.log(
                 '🎯 OFFICIAL PLATFORM HANDLER: Extracting metadata from HTML',
             )
             const extractedMetadata = await MetascraperService.extractMetadata(
                 htmlContent,
                 url,
             )
-            console.log(
+            logger.log(
                 '🎯 OFFICIAL PLATFORM HANDLER: HTML metadata extracted - ogImage:',
                 !!extractedMetadata.ogImage,
                 'twitterImage:',
@@ -195,12 +196,12 @@ export class AIMetadataService {
                 extractedMetadata.twitterImage ||
                 metadata.thumbnailUrl
 
-            console.log(
+            logger.log(
                 '🎯 OFFICIAL PLATFORM HANDLER: Prioritized thumbnail selected:',
                 prioritizedThumbnail ? 'HTML meta tag' : 'API thumbnail',
             )
 
-            console.log(
+            logger.log(
                 '🎯 OFFICIAL PLATFORM HANDLER: Creating response with confidence 1.0',
             )
             const response = {
@@ -220,7 +221,7 @@ export class AIMetadataService {
                 },
             }
 
-            console.log(
+            logger.log(
                 '🎯 OFFICIAL PLATFORM HANDLER: Returning official platform response with',
                 response.suggestions.length,
                 'suggestions',
@@ -228,15 +229,15 @@ export class AIMetadataService {
             return response
         } catch (error) {
             // Official API failed - fallback to AI
-            console.warn(
+            logger.warn(
                 '! OFFICIAL PLATFORM HANDLER: Official API failed, falling back to AI analysis:',
                 error,
             )
-            console.warn(
+            logger.warn(
                 '! OFFICIAL PLATFORM HANDLER: Error details:',
                 error instanceof Error ? error.message : 'Unknown error',
             )
-            console.log(
+            logger.log(
                 '🎯 OFFICIAL PLATFORM HANDLER: Initiating fallback to AI platform handler',
             )
             return this.handleAIPlatform(url, platform)
@@ -250,7 +251,7 @@ export class AIMetadataService {
         url: string,
         platform: string,
     ): Promise<MetadataExtractionResponse> {
-        console.log(
+        logger.log(
             '🤖 AI PLATFORM HANDLER: Starting full AI analysis for platform:',
             platform,
             'URL:',
@@ -258,7 +259,7 @@ export class AIMetadataService {
         )
 
         // Google Search + HTML + Metascraper + AI Analysis
-        console.log(
+        logger.log(
             '🤖 AI PLATFORM HANDLER: Starting parallel operations - Google Search and HTML fetch',
         )
         const [searchResults, htmlContent] = await Promise.allSettled([
@@ -270,52 +271,52 @@ export class AIMetadataService {
             searchResults.status === 'fulfilled' ? searchResults.value : []
         const html = htmlContent.status === 'fulfilled' ? htmlContent.value : ''
 
-        console.log('🤖 AI PLATFORM HANDLER: Parallel operations complete')
-        console.log(
+        logger.log('🤖 AI PLATFORM HANDLER: Parallel operations complete')
+        logger.log(
             '🤖 AI PLATFORM HANDLER: Google search results:',
             googleResults.length,
             'items',
         )
-        console.log(
+        logger.log(
             '🤖 AI PLATFORM HANDLER: HTML content length:',
             html.length,
             'characters',
         )
 
         if (searchResults.status === 'rejected') {
-            console.warn(
+            logger.warn(
                 '! AI PLATFORM HANDLER: Google search failed:',
                 searchResults.reason,
             )
         }
         if (htmlContent.status === 'rejected') {
-            console.warn(
+            logger.warn(
                 '! AI PLATFORM HANDLER: HTML fetch failed:',
                 htmlContent.reason,
             )
         }
 
         // Use Metascraper instead of manual regex
-        console.log(
+        logger.log(
             '🤖 AI PLATFORM HANDLER: Starting Metascraper metadata extraction',
         )
         const extractedMetadata = await MetascraperService.extractMetadata(
             html,
             url,
         )
-        console.log('🤖 AI PLATFORM HANDLER: Metascraper extracted metadata:', {
+        logger.log('🤖 AI PLATFORM HANDLER: Metascraper extracted metadata:', {
             hasTitle: !!extractedMetadata.title,
             hasDescription: !!extractedMetadata.description,
             hasOgImage: !!extractedMetadata.ogImage,
             hasTwitterImage: !!extractedMetadata.twitterImage,
         })
-        console.log(
+        logger.log(
             '🤖 AI PLATFORM HANDLER: Full extracted metadata:',
             JSON.stringify(extractedMetadata, null, 2),
         )
 
         // AI analysis with Google context
-        console.log('🤖 AI PLATFORM HANDLER: Starting AI analysis with context')
+        logger.log('🤖 AI PLATFORM HANDLER: Starting AI analysis with context')
         const suggestions = await this.performAIAnalysis(
             url,
             googleResults,
@@ -323,14 +324,14 @@ export class AIMetadataService {
             extractedMetadata,
             platform,
         )
-        console.log(
+        logger.log(
             '🤖 AI PLATFORM HANDLER: AI analysis complete, generated',
             suggestions.length,
             'suggestions',
         )
 
         // Cache the results
-        console.log('🤖 AI PLATFORM HANDLER: Caching results')
+        logger.log('🤖 AI PLATFORM HANDLER: Caching results')
         await this.cacheResults(url, googleResults, html, suggestions)
 
         const response = {
@@ -343,7 +344,7 @@ export class AIMetadataService {
             },
         }
 
-        console.log(
+        logger.log(
             '🤖 AI PLATFORM HANDLER: Returning AI platform response with',
             suggestions.length,
             'suggestions',
@@ -397,10 +398,10 @@ export class AIMetadataService {
         extractedMetadata: HtmlMetadata,
         platform: string,
     ): Promise<MetadataSuggestion[]> {
-        console.log('🧠 AI ANALYSIS: Starting AI analysis for URL:', url)
+        logger.log('🧠 AI ANALYSIS: Starting AI analysis for URL:', url)
 
         try {
-            console.log('🧠 AI ANALYSIS: Preparing context for AI analysis')
+            logger.log('🧠 AI ANALYSIS: Preparing context for AI analysis')
             // Prepare context for AI analysis
             const context = {
                 url,
@@ -420,17 +421,17 @@ export class AIMetadataService {
                 },
             }
 
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: Context prepared with',
                 context.searchResults.length,
                 'search results',
             )
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: HTML snippet length:',
                 context.htmlSnippet.length,
                 'characters',
             )
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: Extracted metadata - title:',
                 !!context.extractedMetadata.title,
                 'description:',
@@ -440,13 +441,13 @@ export class AIMetadataService {
             )
 
             // Log the full context object for debugging
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: Full context object:',
                 JSON.stringify(context, null, 2),
             )
 
             // Use existing AIService for title suggestions
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: Calling AIService.generateTitleSuggestions',
             )
 
@@ -458,7 +459,7 @@ export class AIMetadataService {
                 },
                 searchResults: searchResults,
             }
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: Request parameters to AIService:',
                 JSON.stringify(aiServiceRequestParams, null, 2),
             )
@@ -472,20 +473,20 @@ export class AIMetadataService {
                     searchResults,
                 )
 
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: AIService returned',
                 titleSuggestions.suggestions?.length || 0,
                 'raw suggestions',
             )
 
             // Log the full response from AI service
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: Full AIService response:',
                 JSON.stringify(titleSuggestions, null, 2),
             )
 
             // Convert to our format
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: Converting suggestions to MetadataSuggestion format',
             )
             const suggestions: MetadataSuggestion[] = await Promise.all(
@@ -502,7 +503,7 @@ export class AIMetadataService {
                         extractedMetadata,
                     )
 
-                    console.log('🧠 AI ANALYSIS: Converting suggestion:', {
+                    logger.log('🧠 AI ANALYSIS: Converting suggestion:', {
                         title: `${suggestion.title.substring(0, 50)}...`,
                         confidence: suggestion.confidence,
                         inferredPlatform: platform,
@@ -519,25 +520,25 @@ export class AIMetadataService {
                 }),
             )
 
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: Total suggestions before limiting:',
                 suggestions.length,
             )
             const limitedSuggestions = suggestions.slice(0, 3) // Limit to 3 suggestions
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: Returning',
                 limitedSuggestions.length,
                 'suggestions after limiting',
             )
-            console.log(
+            logger.log(
                 '🧠 AI ANALYSIS: Final suggestions array:',
                 JSON.stringify(limitedSuggestions, null, 2),
             )
 
             return limitedSuggestions
         } catch (error) {
-            console.error('❌ AI ANALYSIS: AI analysis failed:', error)
-            console.error(
+            logger.error('❌ AI ANALYSIS: AI analysis failed:', error)
+            logger.error(
                 '❌ AI ANALYSIS: Error details:',
                 error instanceof Error ? error.stack : 'Unknown error type',
             )
@@ -551,14 +552,14 @@ export class AIMetadataService {
     private async performGoogleSearch(
         url: string,
     ): Promise<GoogleSearchResult[]> {
-        console.log('🔍 GOOGLE SEARCH: Starting Google search for URL:', url)
+        logger.log('🔍 GOOGLE SEARCH: Starting Google search for URL:', url)
 
         try {
             const urlObj = new URL(url)
             const domain = urlObj.hostname
             const path = urlObj.pathname.slice(1, 50) // first 50 chars of path
 
-            console.log(
+            logger.log(
                 '🔍 GOOGLE SEARCH: Parsed URL - domain:',
                 domain,
                 'path:',
@@ -567,10 +568,10 @@ export class AIMetadataService {
 
             // Create smart search query
             const query = `site:${domain} ${path}`.trim()
-            console.log('🔍 GOOGLE SEARCH: Generated search query:', query)
+            logger.log('🔍 GOOGLE SEARCH: Generated search query:', query)
 
             const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?key=${this.config.googleSearchApiKey}&cx=${this.config.googleSearchEngineId}&q=${encodeURIComponent(query)}&num=3`
-            console.log(
+            logger.log(
                 '🔍 GOOGLE SEARCH: Making API request to Google Custom Search',
             )
 
@@ -578,13 +579,13 @@ export class AIMetadataService {
                 signal: AbortSignal.timeout(this.config.timeout),
             })
 
-            console.log(
+            logger.log(
                 '🔍 GOOGLE SEARCH: API response status:',
                 response.status,
             )
 
             if (!response.ok) {
-                console.log(
+                logger.log(
                     '🔍 GOOGLE SEARCH: API request failed with status:',
                     response.status,
                 )
@@ -592,12 +593,12 @@ export class AIMetadataService {
                 // Log response body for debugging
                 try {
                     const errorBody = await response.text()
-                    console.log(
+                    logger.log(
                         '🔍 GOOGLE SEARCH: Error response body:',
                         errorBody.substring(0, 500),
                     )
                 } catch (bodyError) {
-                    console.log(
+                    logger.log(
                         '🔍 GOOGLE SEARCH: Could not read error response body:',
                         bodyError,
                     )
@@ -607,20 +608,20 @@ export class AIMetadataService {
             }
 
             const data = await response.json()
-            console.log(
+            logger.log(
                 '🔍 GOOGLE SEARCH: Full API response body:',
                 JSON.stringify(data, null, 2),
             )
 
             const results = data.items || []
-            console.log(
+            logger.log(
                 '🔍 GOOGLE SEARCH: Successfully retrieved',
                 results.length,
                 'search results',
             )
 
             if (results.length > 0) {
-                console.log(
+                logger.log(
                     '🔍 GOOGLE SEARCH: First result title:',
                     results[0].title?.substring(0, 50),
                 )
@@ -628,12 +629,12 @@ export class AIMetadataService {
 
             return results
         } catch (error) {
-            console.error('❌ GOOGLE SEARCH: Google search failed:', error)
-            console.error(
+            logger.error('❌ GOOGLE SEARCH: Google search failed:', error)
+            logger.error(
                 '❌ GOOGLE SEARCH: Error details:',
                 error instanceof Error ? error.message : 'Unknown error',
             )
-            console.log(
+            logger.log(
                 '🔍 GOOGLE SEARCH: Returning empty results, continuing without search context',
             )
             return [] // Continue without search results
@@ -644,16 +645,16 @@ export class AIMetadataService {
      * Fetch HTML content from the URL
      */
     private async fetchHtmlContent(url: string): Promise<string> {
-        console.log('🌐 HTML FETCH: Starting HTML content fetch for URL:', url)
+        logger.log('🌐 HTML FETCH: Starting HTML content fetch for URL:', url)
 
         try {
-            console.log(
+            logger.log(
                 '🌐 HTML FETCH: Making HTTP request with timeout:',
                 this.config.timeout,
                 'ms',
             )
 
-            console.log('🌐 HTML FETCH: Request headers:', {
+            logger.log('🌐 HTML FETCH: Request headers:', {
                 'User-Agent':
                     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
             })
@@ -666,7 +667,7 @@ export class AIMetadataService {
                 signal: AbortSignal.timeout(this.config.timeout),
             })
 
-            console.log(
+            logger.log(
                 '🌐 HTML FETCH: HTTP response status:',
                 response.status,
                 'content-type:',
@@ -674,7 +675,7 @@ export class AIMetadataService {
             )
 
             if (!response.ok) {
-                console.log(
+                logger.log(
                     '🌐 HTML FETCH: HTTP request failed with status:',
                     response.status,
                 )
@@ -682,12 +683,12 @@ export class AIMetadataService {
                 // Log response body for debugging
                 try {
                     const errorBody = await response.text()
-                    console.log(
+                    logger.log(
                         '🌐 HTML FETCH: Error response body:',
                         errorBody.substring(0, 500),
                     )
                 } catch (bodyError) {
-                    console.log(
+                    logger.log(
                         '🌐 HTML FETCH: Could not read error response body:',
                         bodyError,
                     )
@@ -697,37 +698,37 @@ export class AIMetadataService {
             }
 
             const html = await response.text()
-            console.log(
+            logger.log(
                 '🌐 HTML FETCH: Full response body (first 1000 chars):',
                 html.substring(0, 1000),
             )
 
             const limitedHtml = html.slice(0, 50000) // Limit to first 50KB
 
-            console.log('🌐 HTML FETCH: Successfully fetched HTML content')
-            console.log(
+            logger.log('🌐 HTML FETCH: Successfully fetched HTML content')
+            logger.log(
                 '🌐 HTML FETCH: Original HTML length:',
                 html.length,
                 'characters',
             )
-            console.log(
+            logger.log(
                 '🌐 HTML FETCH: Limited to:',
                 limitedHtml.length,
                 'characters',
             )
-            console.log(
+            logger.log(
                 '🌐 HTML FETCH: HTML preview (first 200 chars):',
                 limitedHtml.substring(0, 200),
             )
 
             return limitedHtml
         } catch (error) {
-            console.error('❌ HTML FETCH: HTML fetch failed:', error)
-            console.error(
+            logger.error('❌ HTML FETCH: HTML fetch failed:', error)
+            logger.error(
                 '❌ HTML FETCH: Error details:',
                 error instanceof Error ? error.message : 'Unknown error',
             )
-            console.log(
+            logger.log(
                 '🌐 HTML FETCH: Returning empty string, continuing without HTML context',
             )
             return ''
@@ -742,18 +743,18 @@ export class AIMetadataService {
         title: string,
         platform: string,
     ): Promise<string> {
-        console.log('🔍 PLATFORM INFERENCE: Inferring platform for URL:', url)
-        console.log('🔍 PLATFORM INFERENCE: Title:', title.substring(0, 50))
+        logger.log('🔍 PLATFORM INFERENCE: Inferring platform for URL:', url)
+        logger.log('🔍 PLATFORM INFERENCE: Title:', title.substring(0, 50))
 
         if (platform !== 'unknown') {
-            console.log(
+            logger.log(
                 '🔍 PLATFORM INFERENCE: Using URL-detected platform:',
                 platform,
             )
             return platform
         }
 
-        console.log(
+        logger.log(
             '🔍 PLATFORM INFERENCE: No platform detected, returning unknown',
         )
         return 'unknown'
@@ -768,20 +769,20 @@ export class AIMetadataService {
         searchResults: GoogleSearchResult[],
         extractedMetadata: HtmlMetadata,
     ): string | undefined {
-        console.log('🖼 THUMBNAIL INFERENCE: Inferring thumbnail for URL:', url)
+        logger.log('🖼 THUMBNAIL INFERENCE: Inferring thumbnail for URL:', url)
 
         // PRIORITY 1: Meta tag thumbnails (og:image, twitter:image)
         const metaThumbnail =
             extractedMetadata.ogImage || extractedMetadata.twitterImage
         if (metaThumbnail) {
-            console.log(
+            logger.log(
                 '🖼 THUMBNAIL INFERENCE: Using meta tag thumbnail:',
                 metaThumbnail,
             )
             return metaThumbnail
         }
 
-        console.log(
+        logger.log(
             '🖼 THUMBNAIL INFERENCE: No meta tag thumbnails found, checking',
             searchResults.length,
             'search results for images',
@@ -791,7 +792,7 @@ export class AIMetadataService {
         for (const result of searchResults) {
             if (result.pagemap?.cse_image?.[0]?.src) {
                 const thumbnailUrl = result.pagemap.cse_image[0].src
-                console.log(
+                logger.log(
                     '🖼 THUMBNAIL INFERENCE: Found thumbnail in search result:',
                     thumbnailUrl,
                 )
@@ -799,7 +800,7 @@ export class AIMetadataService {
             }
         }
 
-        console.log('🖼 THUMBNAIL INFERENCE: No thumbnail found')
+        logger.log('🖼 THUMBNAIL INFERENCE: No thumbnail found')
         return undefined
     }
 
@@ -809,24 +810,24 @@ export class AIMetadataService {
     private async getCachedResult(
         url: string,
     ): Promise<MetadataCacheEntry | null> {
-        console.log('💾 CACHE LOOKUP: Checking cache for URL:', url)
+        logger.log('💾 CACHE LOOKUP: Checking cache for URL:', url)
 
         try {
-            console.log('💾 CACHE LOOKUP: Querying database for cached entry')
+            logger.log('💾 CACHE LOOKUP: Querying database for cached entry')
             const result = await db
                 .select()
                 .from(aiMetadataCache)
                 .where(eq(aiMetadataCache.url, url))
                 .limit(1)
 
-            console.log(
+            logger.log(
                 '💾 CACHE LOOKUP: Database query returned',
                 result.length,
                 'results',
             )
 
             if (result.length === 0) {
-                console.log('💾 CACHE LOOKUP: No cached entry found')
+                logger.log('💾 CACHE LOOKUP: No cached entry found')
                 return null
             }
 
@@ -834,25 +835,25 @@ export class AIMetadataService {
             const expiresAt = new Date(cache.expiresAt)
             const now = new Date()
 
-            console.log('💾 CACHE LOOKUP: Cache entry found')
-            console.log(
+            logger.log('💾 CACHE LOOKUP: Cache entry found')
+            logger.log(
                 '💾 CACHE LOOKUP: Cache expires at:',
                 expiresAt.toISOString(),
             )
-            console.log('💾 CACHE LOOKUP: Current time:', now.toISOString())
-            console.log('💾 CACHE LOOKUP: Cache expired?', expiresAt < now)
+            logger.log('💾 CACHE LOOKUP: Current time:', now.toISOString())
+            logger.log('💾 CACHE LOOKUP: Cache expired?', expiresAt < now)
 
             if (expiresAt < now) {
                 // Expired, clean up
-                console.log('💾 CACHE LOOKUP: Cache expired, deleting entry')
+                logger.log('💾 CACHE LOOKUP: Cache expired, deleting entry')
                 await db
                     .delete(aiMetadataCache)
                     .where(eq(aiMetadataCache.url, url))
-                console.log('💾 CACHE LOOKUP: Expired cache entry deleted')
+                logger.log('💾 CACHE LOOKUP: Expired cache entry deleted')
                 return null
             }
 
-            console.log('💾 CACHE LOOKUP: Cache valid, parsing cached data')
+            logger.log('💾 CACHE LOOKUP: Cache valid, parsing cached data')
             const cachedEntry = {
                 id: cache.id,
                 url: cache.url,
@@ -868,19 +869,19 @@ export class AIMetadataService {
                     : new Date(),
             }
 
-            console.log(
+            logger.log(
                 '💾 CACHE LOOKUP: Successfully parsed cached entry with',
                 cachedEntry.aiAnalysis?.length || 0,
                 'suggestions',
             )
             return cachedEntry
         } catch (error) {
-            console.error('❌ CACHE LOOKUP: Cache lookup failed:', error)
-            console.error(
+            logger.error('❌ CACHE LOOKUP: Cache lookup failed:', error)
+            logger.error(
                 '❌ CACHE LOOKUP: Error details:',
                 error instanceof Error ? error.stack : 'Unknown error',
             )
-            console.log('💾 CACHE LOOKUP: Returning null due to cache error')
+            logger.log('💾 CACHE LOOKUP: Returning null due to cache error')
             return null
         }
     }
@@ -894,10 +895,10 @@ export class AIMetadataService {
         htmlContent: string,
         suggestions: MetadataSuggestion[],
     ): Promise<void> {
-        console.log('💾 CACHE STORAGE: Starting cache storage for URL:', url)
+        logger.log('💾 CACHE STORAGE: Starting cache storage for URL:', url)
 
         try {
-            console.log(
+            logger.log(
                 '💾 CACHE STORAGE: Calculating average confidence from',
                 suggestions.length,
                 'suggestions',
@@ -905,20 +906,20 @@ export class AIMetadataService {
             const avgConfidence =
                 suggestions.reduce((sum, s) => sum + s.confidence, 0) /
                 suggestions.length
-            console.log('💾 CACHE STORAGE: Average confidence:', avgConfidence)
+            logger.log('💾 CACHE STORAGE: Average confidence:', avgConfidence)
 
-            console.log('💾 CACHE STORAGE: Extracting metadata for caching')
+            logger.log('💾 CACHE STORAGE: Extracting metadata for caching')
             const extractedMetadata = await MetascraperService.extractMetadata(
                 htmlContent,
                 url,
             )
-            console.log('💾 CACHE STORAGE: Metadata extracted for cache:', {
+            logger.log('💾 CACHE STORAGE: Metadata extracted for cache:', {
                 hasTitle: !!extractedMetadata.title,
                 hasDescription: !!extractedMetadata.description,
             })
 
             const expiresAt = new Date(Date.now() + this.config.cacheTtl)
-            console.log(
+            logger.log(
                 '💾 CACHE STORAGE: Cache will expire at:',
                 expiresAt.toISOString(),
             )
@@ -931,22 +932,22 @@ export class AIMetadataService {
                 confidenceScore: avgConfidence.toString(),
                 expiresAt: expiresAt,
             }
-            console.log(
+            logger.log(
                 '💾 CACHE STORAGE: Data being cached:',
                 JSON.stringify(cacheData, null, 2),
             )
 
-            console.log('💾 CACHE STORAGE: Inserting into database')
+            logger.log('💾 CACHE STORAGE: Inserting into database')
             await db.insert(aiMetadataCache).values(cacheData)
 
-            console.log('💾 CACHE STORAGE: Successfully cached results')
+            logger.log('💾 CACHE STORAGE: Successfully cached results')
         } catch (error) {
-            console.error('❌ CACHE STORAGE: Cache storage failed:', error)
-            console.error(
+            logger.error('❌ CACHE STORAGE: Cache storage failed:', error)
+            logger.error(
                 '❌ CACHE STORAGE: Error details:',
                 error instanceof Error ? error.stack : 'Unknown error',
             )
-            console.log(
+            logger.log(
                 '💾 CACHE STORAGE: Continuing without caching (non-blocking error)',
             )
             // Don't fail the whole operation for cache issues

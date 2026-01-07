@@ -62,7 +62,7 @@ export function FormLayout({
                     '✅ Platform created successfully:',
                     result.platform,
                 )
-                setValue('platform', result.platform)
+                setValue('platform', result.platform.platformId)
             } else {
                 const error = await response.json()
                 console.error('❌ Failed to create platform:', error)

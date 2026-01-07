@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { aiMetadataService } from '@/lib/services/ai-metadata-service'
 import { PlatformDataService } from '@/lib/services/platform-data-service'
 import { parseVideoUrlWithPlatforms } from '@/lib/utils/url-parser'
+import { logger } from '@/lib/utils/logger'
 
 export async function POST(request: NextRequest) {
     try {
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
             )
         }
     } catch (error) {
-        console.error('AI metadata extraction API error:', error)
+        logger.error('AI metadata extraction API error:', error)
         return NextResponse.json(
             {
                 error: 'Internal server error',
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
             })
         }
     } catch (error) {
-        console.error('AI metadata cache check error:', error)
+        logger.error('AI metadata cache check error:', error)
         return NextResponse.json(
             { error: 'Failed to check cache' },
             { status: 500 },

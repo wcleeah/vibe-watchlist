@@ -113,10 +113,10 @@ export default function Home() {
 
     const reset = () => {
         urlValidation.unsetUrl()
+        form.reset();
     }
 
     const onSubmit = async (data: VideoFormData) => {
-        console.log(':???????')
         if (!urlValidation.urlValidationResult?.isValid) return
 
         setIsSubmitting(true)

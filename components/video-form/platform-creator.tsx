@@ -83,7 +83,7 @@ export function PlatformCreator({ onPlatformCreated }: PlatformCreatorProps) {
                 toast.success(
                     `Platform "${formData.displayName}" created successfully!`,
                 )
-                onPlatformCreated?.(result.platform)
+                onPlatformCreated?.(result.platform.platformId)
                 setIsExpanded(false)
                 // Reset form
                 setFormData({
