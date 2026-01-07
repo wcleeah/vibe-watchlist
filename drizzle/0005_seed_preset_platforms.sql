@@ -1,0 +1,7 @@
+-- Add preset platforms to platform_configs table
+INSERT INTO "platform_configs" ("platform_id", "name", "display_name", "patterns", "extractor", "color", "icon", "enabled", "is_preset", "added_by", "confidence_score", "metadata") VALUES
+('youtube', 'youtube', 'YouTube', ARRAY['youtube.com', 'youtu.be'], 'official', '#ff0000', 'Youtube', true, true, 'system', 1.0, '{"description": "Official YouTube API integration with oEmbed", "supportedFormats": ["video", "playlist", "channel"]}'),
+('twitch', 'twitch', 'Twitch', ARRAY['twitch.tv'], 'official', '#9146ff', 'Twitch', true, true, 'system', 1.0, '{"description": "Official Twitch Helix API integration", "supportedFormats": ["video", "clip", "stream"]}'),
+('netflix', 'netflix', 'Netflix', ARRAY['netflix.com'], 'fallback', '#e50914', 'Film', true, true, 'system', 0.8, '{"description": "Meta tag extraction with Google search fallback", "supportedFormats": ["movie", "series"]}'),
+('nebula', 'nebula', 'Nebula', ARRAY['nebula.tv', 'watchnebula.com'], 'fallback', '#ffffff', 'Star', true, true, 'system', 0.8, '{"description": "Meta tag extraction with Google search fallback", "supportedFormats": ["video", "channel"]}')
+ON CONFLICT ("platform_id") DO NOTHING;

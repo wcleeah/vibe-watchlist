@@ -2,8 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { parseVideoUrl, VideoPlatform } from '@/lib/utils/url-parser';
-import { aiService, PlatformSuggestion } from '@/lib/services/ai-service';
-import { PlatformService } from '@/lib/services/platform-service';
+import { PlatformSuggestion } from '@/lib/services/ai-service';
 
 interface ParsedUrl {
   url: string;
@@ -54,17 +53,28 @@ export function useUrlValidation(): UseUrlValidationReturn {
     setIsDetectingPlatform(true);
     try {
       console.log('🔍 Detecting platform for URL:', url);
-      const suggestion = await aiService.detectPlatform(url);
 
-      // Get existing platforms to check for duplicates
-      const existingPlatforms = await PlatformService.getPlatforms();
-      const platformExists = existingPlatforms.some(p => p.platformId === suggestion.platform);
+      // Call the API instead of using aiService directly
+      const response = await fetch('/api/platforms/discover', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
 
-      if (!platformExists && suggestion.confidence > 0.3) { // Only show suggestions with decent confidence
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const suggestion: PlatformSuggestion = data.suggestion;
+
+      // Show suggestions with decent confidence
+      // Server-side API handles duplicate checking
+      if (suggestion.confidence > 0.3) {
         setPlatformSuggestions([suggestion]);
         console.log('✅ Platform suggestion found:', suggestion);
-      } else if (platformExists) {
-        console.log('ℹ️ Platform already exists:', suggestion.platform);
       } else {
         console.log('⚠️ Low confidence platform suggestion:', suggestion);
       }
@@ -82,16 +92,7 @@ export function useUrlValidation(): UseUrlValidationReturn {
   const isValid = parsedUrl?.isValid ?? false;
   const platform = parsedUrl?.platform ?? null;
 
-  // Get dynamic platform names for error message
-  const getDynamicErrorMessage = useCallback(async () => {
-    try {
-      const platforms = await PlatformService.getPlatforms();
-      const platformNames = platforms.map(p => p.displayName).join(', ');
-      return `Please enter a valid ${platformNames} URL`;
-    } catch {
-      return "Please enter a valid video URL";
-    }
-  }, []);
+
 
   const error = parsedUrl && !parsedUrl.isValid && url.trim()
     ? "Please enter a valid video URL"
