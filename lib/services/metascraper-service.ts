@@ -15,7 +15,7 @@ export interface HtmlMetadata {
 export class MetascraperService {
     static async extractMetadata(
         html: string,
-        url: string,
+        _url: string,
     ): Promise<HtmlMetadata> {
         try {
             if (!html || html.length === 0) {

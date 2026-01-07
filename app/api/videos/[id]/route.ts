@@ -5,12 +5,12 @@ import { tags, videos, videoTags } from '@/lib/db/schema'
 
 // GET /api/videos/[id] - Get a specific video with tags
 export async function GET(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
-        const id = parseInt((await params).id)
-        if (isNaN(id)) {
+        const id = parseInt((await params).id, 10)
+        if (Number.isNaN(id)) {
             return NextResponse.json(
                 { error: 'Invalid video ID' },
                 { status: 400 },
@@ -85,8 +85,8 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
-        const id = parseInt((await params).id)
-        if (isNaN(id)) {
+        const id = parseInt((await params).id, 10)
+        if (Number.isNaN(id)) {
             return NextResponse.json(
                 { error: 'Invalid video ID' },
                 { status: 400 },
@@ -206,12 +206,12 @@ export async function PUT(
 
 // DELETE /api/videos/[id] - Delete a video
 export async function DELETE(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
-        const id = parseInt((await params).id)
-        if (isNaN(id)) {
+        const id = parseInt((await params).id, 10)
+        if (Number.isNaN(id)) {
             return NextResponse.json(
                 { error: 'Invalid video ID' },
                 { status: 400 },

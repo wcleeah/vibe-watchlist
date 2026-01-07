@@ -36,6 +36,7 @@ export function NavigationTabs() {
                     <div className='flex items-center justify-between h-16'>
                         {/* Mobile hamburger button */}
                         <button
+                            type='button'
                             onClick={() => setIsOpen(true)}
                             className='sm:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                             aria-label='Open navigation menu'
@@ -72,9 +73,11 @@ export function NavigationTabs() {
             {isOpen && (
                 <>
                     {/* Backdrop */}
-                    <div
+                    <button
+                        type='button'
                         className='fixed inset-0 z-40 bg-black bg-opacity-50 sm:hidden'
                         onClick={closeMenu}
+                        aria-label='Close navigation menu'
                     />
                     {/* Drawer */}
                     <div className='fixed top-0 left-0 z-50 h-full w-64 bg-background border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out sm:hidden'>
@@ -83,6 +86,7 @@ export function NavigationTabs() {
                                 Navigation
                             </h2>
                             <button
+                                type='button'
                                 onClick={closeMenu}
                                 className='p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                                 aria-label='Close navigation menu'

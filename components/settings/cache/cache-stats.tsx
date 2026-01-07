@@ -1,7 +1,7 @@
 'use client'
 
 import { Clock, Database, RefreshCw, TrendingUp } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 
 interface CacheStats {
@@ -20,7 +20,7 @@ export function CacheStats() {
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
             setRefreshing(true)
             const response = await fetch('/api/cache/stats')
@@ -34,11 +34,11 @@ export function CacheStats() {
             setLoading(false)
             setRefreshing(false)
         }
-    }
+    }, [])
 
     useEffect(() => {
         fetchStats()
-    }, [])
+    }, [fetchStats])
 
     if (loading || !stats) {
         return (

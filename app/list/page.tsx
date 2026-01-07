@@ -1,6 +1,15 @@
 'use client'
 
-import { Filter, Gamepad2, Globe, Search, Tv, X, Youtube } from 'lucide-react'
+import {
+    Filter,
+    Gamepad2,
+    Globe,
+    type LucideIcon,
+    Search,
+    Tv,
+    X,
+    Youtube,
+} from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { NavigationTabs } from '@/components/navigation-tabs'
@@ -12,7 +21,7 @@ import type { Video } from '@/lib/db/schema'
 
 // Helper function to get icon component from string
 const getIconComponent = (iconName: string) => {
-    const iconMap: Record<string, any> = {
+    const iconMap: Record<string, LucideIcon> = {
         youtube: Youtube,
         tv: Tv,
         gamepad2: Gamepad2,
@@ -56,7 +65,7 @@ export default function ListPage() {
         Array<{
             key: string
             label: string
-            icon: any
+            icon: LucideIcon
             color: string
         }>
     >([])
@@ -92,7 +101,7 @@ export default function ListPage() {
         }
     }, [searchQuery, selectedPlatforms, sortBy, sortOrder])
 
-    const fetchTags = async () => {
+    const fetchTags = useCallback(async () => {
         try {
             const response = await fetch('/api/tags')
             if (response.ok) {
@@ -102,12 +111,12 @@ export default function ListPage() {
         } catch (error) {
             console.error('Failed to fetch tags:', error)
         }
-    }
+    }, [])
 
     useEffect(() => {
         fetchVideos()
         fetchTags()
-    }, [fetchVideos, selectedTagIds])
+    }, [fetchVideos, fetchTags])
 
     // Load platforms dynamically
     useEffect(() => {
@@ -465,6 +474,7 @@ export default function ListPage() {
                                 >
                                     Search: &quot;{searchQuery}&quot;
                                     <button
+                                        type='button'
                                         onClick={() => setSearchQuery('')}
                                         className='ml-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full p-0.5'
                                     >
@@ -479,6 +489,7 @@ export default function ListPage() {
                                 >
                                     Platforms: {selectedPlatforms.join(', ')}
                                     <button
+                                        type='button'
                                         onClick={() => setSelectedPlatforms([])}
                                         className='ml-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full p-0.5'
                                     >
@@ -513,6 +524,7 @@ export default function ListPage() {
                             {allTags.map((tag) => (
                                 <button
                                     key={tag.id}
+                                    type='button'
                                     onClick={() => handleTagFilter(tag.id)}
                                     className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
                                         selectedTagIds.includes(tag.id)

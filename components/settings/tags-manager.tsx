@@ -1,7 +1,7 @@
 'use client'
 
 import { Check, Edit, Plus, Trash2, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,7 +23,7 @@ export function TagsManager() {
     const [editColor, setEditColor] = useState('')
 
     // Fetch tags
-    const fetchTags = async () => {
+    const fetchTags = useCallback(async () => {
         try {
             const response = await fetch('/api/tags')
             if (response.ok) {
@@ -35,11 +35,11 @@ export function TagsManager() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
 
     useEffect(() => {
         fetchTags()
-    }, [])
+    }, [fetchTags])
 
     // Add new tag
     const handleAddTag = async () => {

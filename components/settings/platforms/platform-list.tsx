@@ -9,7 +9,7 @@ import {
     ToggleRight,
     Trash2,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -40,7 +40,7 @@ export function PlatformList({ onEdit, onAdd, onRefresh }: PlatformListProps) {
     const [loading, setLoading] = useState(true)
     const [toggling, setToggling] = useState<string | null>(null)
 
-    const fetchPlatforms = async () => {
+    const fetchPlatforms = useCallback(async () => {
         try {
             setLoading(true)
             const response = await fetch('/api/platforms')
@@ -54,11 +54,11 @@ export function PlatformList({ onEdit, onAdd, onRefresh }: PlatformListProps) {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
 
     useEffect(() => {
         fetchPlatforms()
-    }, [])
+    }, [fetchPlatforms])
 
     const handleToggleEnabled = async (
         platformId: string,

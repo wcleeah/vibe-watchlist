@@ -9,7 +9,7 @@ import {
     Trash2,
     XCircle,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 
@@ -38,7 +38,7 @@ export function CacheEntries({ onRefresh }: CacheEntriesProps) {
     const [loading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
 
-    const fetchEntries = async (page = 1) => {
+    const fetchEntries = useCallback(async (page = 1) => {
         try {
             setLoading(true)
             const response = await fetch(`/api/cache?page=${page}&limit=20`)
@@ -53,11 +53,11 @@ export function CacheEntries({ onRefresh }: CacheEntriesProps) {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
 
     useEffect(() => {
         fetchEntries()
-    }, [])
+    }, [fetchEntries])
 
     const handlePageChange = (page: number) => {
         fetchEntries(page)

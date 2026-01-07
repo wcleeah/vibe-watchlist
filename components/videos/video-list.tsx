@@ -29,7 +29,7 @@ export function VideoList({
     onSelectionChange,
 }: VideoListProps) {
     // Memoize selected state for each video to prevent unnecessary re-renders
-    const selectedStates = useMemo(() => {
+    const _selectedStates = useMemo(() => {
         const states: Record<number, boolean> = {}
         videos.forEach((video) => {
             states[video.id] = selectedIds.includes(video.id)

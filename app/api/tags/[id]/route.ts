@@ -10,8 +10,8 @@ export async function PUT(
 ) {
     try {
         const { id } = await params
-        const tagId = parseInt(id)
-        if (isNaN(tagId)) {
+        const tagId = parseInt(id, 10)
+        if (Number.isNaN(tagId)) {
             return NextResponse.json(
                 { error: 'Invalid tag ID' },
                 { status: 400 },
@@ -79,13 +79,13 @@ export async function PUT(
 
 // DELETE /api/tags/[id] - Delete a tag
 export async function DELETE(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
         const { id } = await params
-        const tagId = parseInt(id)
-        if (isNaN(tagId)) {
+        const tagId = parseInt(id, 10)
+        if (Number.isNaN(tagId)) {
             return NextResponse.json(
                 { error: 'Invalid tag ID' },
                 { status: 400 },

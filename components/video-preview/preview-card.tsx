@@ -153,7 +153,7 @@ export function PreviewCard({
                                     {'{'}
                                     <div className='ml-4 space-y-1'>
                                         {video.id != null &&
-                                            video.id != undefined && (
+                                            video.id !== undefined && (
                                                 <div>
                                                     <span className='text-cyan-600 dark:text-cyan-400'>
                                                         &quot;ID&quot;

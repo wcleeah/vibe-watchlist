@@ -1,4 +1,4 @@
-import { type TagCreateRequest, TagsApiResponse } from '@/types/api'
+import type { TagCreateRequest } from '@/types/api'
 import type { Tag } from '@/types/tag'
 
 export class TagService {

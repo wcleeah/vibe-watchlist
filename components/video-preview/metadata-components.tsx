@@ -1,7 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import { PLATFORM_NAMES } from '@/lib/utils/platform-utils'
 import type { Tag } from '@/types/tag'
 import type { VideoData } from './types'
 

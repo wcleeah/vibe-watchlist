@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
         // Validate that all videoIds are numbers
         const validVideoIds = videoIds.filter(
-            (id) => typeof id === 'number' && !isNaN(id),
+            (id) => typeof id === 'number' && !Number.isNaN(id),
         )
         if (validVideoIds.length !== videoIds.length) {
             return NextResponse.json(

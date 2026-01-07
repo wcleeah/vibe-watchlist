@@ -2,7 +2,6 @@
 
 import { Loader2, Plus, Tag as TagIcon } from 'lucide-react'
 import { forwardRef, useState } from 'react'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { TagList } from '@/components/ui/tag'

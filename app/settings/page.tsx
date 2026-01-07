@@ -7,13 +7,14 @@ import {
     Settings,
     Tag,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { CacheActions } from '@/components/settings/cache/cache-actions'
 import { CacheEntries } from '@/components/settings/cache/cache-entries'
 import { CacheStats } from '@/components/settings/cache/cache-stats'
 import { PlatformForm } from '@/components/settings/platforms/platform-form'
 import { PlatformList } from '@/components/settings/platforms/platform-list'
+
 import { PlatformTester } from '@/components/settings/platforms/platform-tester'
 import { TagsManager } from '@/components/settings/tags-manager'
 import { Button } from '@/components/ui/button'
@@ -81,36 +82,6 @@ export default function SettingsPage() {
                 )
             case 'tags':
                 return <TagsManager />
-            case 'platforms':
-                return (
-                    <div className='space-y-6'>
-                        <div className='text-center py-12'>
-                            <MonitorSpeaker className='w-12 h-12 text-gray-400 mx-auto mb-4' />
-                            <h3 className='text-lg font-medium text-gray-900 dark:text-gray-100 mb-2'>
-                                Platform Management
-                            </h3>
-                            <p className='text-gray-600 dark:text-gray-400 max-w-md mx-auto'>
-                                Add, edit, and manage video platforms. Configure
-                                patterns, icons, and display settings.
-                            </p>
-                        </div>
-                    </div>
-                )
-            case 'tags':
-                return (
-                    <div className='space-y-6'>
-                        <div className='text-center py-12'>
-                            <Tag className='w-12 h-12 text-gray-400 mx-auto mb-4' />
-                            <h3 className='text-lg font-medium text-gray-900 dark:text-gray-100 mb-2'>
-                                Tag Management
-                            </h3>
-                            <p className='text-gray-600 dark:text-gray-400 max-w-md mx-auto'>
-                                Create, edit, and organize tags for categorizing
-                                your videos.
-                            </p>
-                        </div>
-                    </div>
-                )
             default:
                 return null
         }
@@ -154,6 +125,7 @@ export default function SettingsPage() {
                         {tabs.map(({ id, label, icon: Icon }) => (
                             <button
                                 key={id}
+                                type='button'
                                 onClick={() => setActiveTab(id)}
                                 className={`flex items-center gap-2 px-1 py-4 border-b-2 sm:border-b-2 font-medium text-sm transition-colors text-left ${
                                     activeTab === id

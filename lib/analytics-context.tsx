@@ -190,7 +190,7 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
 
     useEffect(() => {
         refreshStats()
-    }, [])
+    }, [refreshStats])
 
     // Polling every 15 seconds with countdown
     useEffect(() => {
@@ -208,7 +208,7 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
             clearInterval(countdownInterval)
             clearInterval(pollInterval)
         }
-    }, [])
+    }, [refreshStats])
 
     return (
         <AnalyticsContext.Provider

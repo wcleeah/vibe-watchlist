@@ -37,7 +37,7 @@ export default function Home() {
     const [submitError, setSubmitError] = useState<string | null>(null)
 
     // Platform detection state (moved from FormLayout)
-    const [platformSuggestions, setPlatformSuggestions] = useState<
+    const [_platformSuggestions, setPlatformSuggestions] = useState<
         PlatformSuggestion[]
     >([])
     const [platformDiscoveryProcessed, setPlatformDiscoveryProcessed] =
@@ -105,7 +105,7 @@ export default function Home() {
             .finally(() => {
                 setPlatformDiscoveryProcessed(true)
             })
-    }, [urlValidation.urlValidationResult, platformDiscoveryProcessed])
+    }, [urlValidation.urlValidationResult])
 
     // Mode transition: Input → Form when all async operations complete
     useEffect(() => {
@@ -124,7 +124,7 @@ export default function Home() {
         ) {
             setMode('input')
         }
-    }, [urlValidation.urlValidationResult, mode])
+    }, [urlValidation.urlValidationResult, urlValidation])
 
     // Update form when AI metadata changes (only if not in manual mode)
     useEffect(() => {

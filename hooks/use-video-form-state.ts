@@ -122,7 +122,7 @@ export function useVideoFormState({
             setValidationErrors({})
             setSubmitError(null)
         },
-        [selectedSuggestion],
+        [selectedSuggestion, manualThumbnailUrl, manualTitle],
     )
 
     // Tag management functions
@@ -141,7 +141,7 @@ export function useVideoFormState({
                 setShowTagSuggestions(false)
             }
         },
-        [tagInput],
+        [tagInput, addTag],
     )
 
     const addTag = useCallback(
@@ -311,6 +311,8 @@ export function useVideoFormState({
         manualThumbnailUrl,
         validateForm,
         onVideoAdded,
+        onReset,
+        resetFormState,
     ])
 
     // Reset internal form state (manual mode, tags, etc.)

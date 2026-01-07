@@ -71,7 +71,7 @@ export function PlatformForm({
             })
         }
         setErrors({})
-    }, [platform, isOpen])
+    }, [platform])
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {}

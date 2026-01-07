@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { aiMetadataCache } from '@/lib/db/schema'
 
 export async function DELETE(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
@@ -22,7 +22,7 @@ export async function DELETE(
         const existing = await db
             .select()
             .from(aiMetadataCache)
-            .where(eq(aiMetadataCache.id, parseInt(cacheId)))
+            .where(eq(aiMetadataCache.id, parseInt(cacheId, 10)))
             .limit(1)
 
         if (existing.length === 0) {
@@ -35,7 +35,7 @@ export async function DELETE(
         // Delete the cache entry
         const result = await db
             .delete(aiMetadataCache)
-            .where(eq(aiMetadataCache.id, parseInt(cacheId)))
+            .where(eq(aiMetadataCache.id, parseInt(cacheId, 10)))
 
         if (result.rowCount && result.rowCount > 0) {
             return NextResponse.json({

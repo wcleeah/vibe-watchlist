@@ -175,9 +175,7 @@ export function FormLayout({
                 suggestions={aiSuggestions}
                 selectedIndex={
                     selectedSuggestion
-                        ? aiSuggestions.findIndex(
-                              (s) => s === selectedSuggestion,
-                          )
+                        ? aiSuggestions.indexOf(selectedSuggestion)
                         : undefined
                 }
                 onSelect={(index) => {

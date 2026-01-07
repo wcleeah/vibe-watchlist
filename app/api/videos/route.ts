@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
         const search = searchParams.get('search') // title search
         const sortBy = searchParams.get('sortBy') || 'createdAt' // createdAt, updatedAt, title
         const sortOrder = searchParams.get('sortOrder') || 'desc' // asc, desc
-        const limit = parseInt(searchParams.get('limit') || '50')
-        const offset = parseInt(searchParams.get('offset') || '0')
+        const limit = parseInt(searchParams.get('limit') || '50', 10)
+        const offset = parseInt(searchParams.get('offset') || '0', 10)
 
         const whereConditions = []
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Enhanced search: titles and tags with case-insensitive matching
-        if (search && search.trim()) {
+        if (search?.trim()) {
             whereConditions.push(sql`(
         ${videos.title} ILIKE ${sql.placeholder('search')} OR
         EXISTS (
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Build dynamic order by clause
-        let orderByColumn
+        let orderByColumn: any
         switch (sortBy) {
             case 'updatedAt':
                 orderByColumn = videos.updatedAt
@@ -63,7 +63,6 @@ export async function GET(request: NextRequest) {
             case 'title':
                 orderByColumn = videos.title
                 break
-            case 'createdAt':
             default:
                 orderByColumn = videos.createdAt
                 break
@@ -89,7 +88,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Add search parameter if searching (used in both title and tag searches)
-        if (search && search.trim()) {
+        if (search?.trim()) {
             queryParams.search = `%${search.trim()}%`
         }
 
@@ -146,7 +145,7 @@ export async function GET(request: NextRequest) {
                 let highlightedTitle = video.title
                 let highlightedTags = parsedTags
 
-                if (search && search.trim()) {
+                if (search?.trim()) {
                     const searchTerm = search.trim().toLowerCase()
                     const searchRegex = new RegExp(
                         `(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`,
@@ -243,7 +242,7 @@ export async function POST(request: NextRequest) {
         // Use the final metadata (client + server fallback)
         const finalPlatform = platform || parsedUrl.platform
 
-        let newVideo
+        let newVideo: any
         try {
             newVideo = await db
                 .insert(videos)

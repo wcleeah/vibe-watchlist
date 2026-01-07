@@ -129,7 +129,7 @@ export class VideoService {
         })
 
         if (!response.ok) {
-            const error = await response.json()
+            const _error = await response.json()
             throw new Error('Failed to bulk delete videos')
         }
     }

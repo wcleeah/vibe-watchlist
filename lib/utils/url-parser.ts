@@ -105,9 +105,9 @@ function extractYouTubeId(urlObj: URL): string | null {
     return null
 }
 
-function extractYouTubePlaylistId(urlObj: URL): string | null {
+function _extractYouTubePlaylistId(urlObj: URL): string | null {
     const playlistId = urlObj.searchParams.get('list')
-    if (playlistId && playlistId.startsWith('PL') && playlistId.length > 2) {
+    if (playlistId?.startsWith('PL') && playlistId.length > 2) {
         return playlistId
     }
     return null
@@ -126,7 +126,7 @@ function extractTwitchId(urlObj: URL): string | undefined {
 }
 
 function extractVideoId(urlObj: URL, platformId: string): string | undefined {
-    const hostname = urlObj.hostname.toLowerCase()
+    const _hostname = urlObj.hostname.toLowerCase()
 
     switch (platformId) {
         case 'youtube':

@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { platformConfigs } from '@/lib/db/schema'
 
 export async function GET(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {
@@ -97,7 +97,8 @@ export async function PUT(
             }
 
             const validPatterns = updates.patterns.filter(
-                (p: any) => typeof p === 'string' && p.trim(),
+                (p: unknown): p is string =>
+                    typeof p === 'string' && p.trim().length > 0,
             )
             if (validPatterns.length === 0) {
                 return NextResponse.json(
@@ -114,7 +115,7 @@ export async function PUT(
         // Validate confidence score if provided
         if (updates.confidenceScore !== undefined) {
             const score = parseFloat(updates.confidenceScore)
-            if (isNaN(score) || score < 0 || score > 1) {
+            if (Number.isNaN(score) || score < 0 || score > 1) {
                 return NextResponse.json(
                     {
                         success: false,
@@ -153,7 +154,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
 ) {
     try {

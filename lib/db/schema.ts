@@ -5,7 +5,6 @@ import {
     foreignKey,
     integer,
     jsonb,
-    pgEnum,
     pgTable,
     serial,
     text,

@@ -1,4 +1,4 @@
-import { desc, eq, sql } from 'drizzle-orm'
+import { desc, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { aiMetadataCache } from '@/lib/db/schema'
@@ -6,8 +6,8 @@ import { aiMetadataCache } from '@/lib/db/schema'
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
-        const page = parseInt(searchParams.get('page') || '1')
-        const limit = parseInt(searchParams.get('limit') || '20')
+        const page = parseInt(searchParams.get('page') || '1', 10)
+        const limit = parseInt(searchParams.get('limit') || '20', 10)
         const offset = (page - 1) * limit
 
         // Get total count

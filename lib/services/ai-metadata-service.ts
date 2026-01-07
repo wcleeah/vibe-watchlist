@@ -503,7 +503,7 @@ export class AIMetadataService {
                     )
 
                     console.log('🧠 AI ANALYSIS: Converting suggestion:', {
-                        title: suggestion.title.substring(0, 50) + '...',
+                        title: `${suggestion.title.substring(0, 50)}...`,
                         confidence: suggestion.confidence,
                         inferredPlatform: platform,
                         hasThumbnail: !!thumbnailUrl,
@@ -791,7 +791,7 @@ export class AIMetadataService {
      */
     private inferThumbnail(
         url: string,
-        htmlContent: string,
+        _htmlContent: string,
         searchResults: GoogleSearchResult[],
         extractedMetadata: HtmlMetadata,
     ): string | undefined {

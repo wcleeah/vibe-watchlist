@@ -20,13 +20,11 @@ export async function GET(request: NextRequest) {
         const results = await db.select().from(platformConfigs)
 
         // Find platform where domain matches any pattern
-        const matchingPlatform = results.find(
-            (platform) =>
-                platform.patterns &&
-                platform.patterns.some(
-                    (pattern) =>
-                        pattern.includes(domain) || domain.includes(pattern),
-                ),
+        const matchingPlatform = results.find((platform) =>
+            platform.patterns?.some(
+                (pattern) =>
+                    pattern.includes(domain) || domain.includes(pattern),
+            ),
         )
 
         if (!matchingPlatform) {
@@ -72,13 +70,11 @@ export async function POST(request: NextRequest) {
         // Check if a platform config already includes this domain in patterns
         const existing = await db.select().from(platformConfigs)
 
-        const existingMapping = existing.find(
-            (config) =>
-                config.patterns &&
-                config.patterns.some(
-                    (pattern) =>
-                        pattern.includes(domain) || domain.includes(pattern),
-                ),
+        const existingMapping = existing.find((config) =>
+            config.patterns?.some(
+                (pattern) =>
+                    pattern.includes(domain) || domain.includes(pattern),
+            ),
         )
 
         if (existingMapping) {

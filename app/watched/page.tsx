@@ -4,6 +4,7 @@ import {
     Filter,
     Gamepad2,
     Globe,
+    type LucideIcon,
     Search,
     Tag,
     Tv,
@@ -20,7 +21,7 @@ import type { VideoWithTags as Video } from '@/types/video'
 
 // Helper function to get icon component from string
 const getIconComponent = (iconName: string) => {
-    const iconMap: Record<string, any> = {
+    const iconMap: Record<string, LucideIcon> = {
         youtube: Youtube,
         tv: Tv,
         gamepad2: Gamepad2,
@@ -71,7 +72,7 @@ export default function WatchedPage() {
         }
 
         fetchVideos()
-    }, [watched, searchQuery, selectedPlatforms, selectedTagIds])
+    }, [searchQuery, selectedPlatforms, selectedTagIds])
 
     // Fetch available tags
     useEffect(() => {
@@ -163,7 +164,7 @@ export default function WatchedPage() {
         Array<{
             key: string
             label: string
-            icon: any
+            icon: LucideIcon
             color: string
         }>
     >([])

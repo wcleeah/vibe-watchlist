@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Toaster } from 'sonner'
-import { AnalyticsProvider } from '@/lib/analytics-context'
 import { PreferencesProvider } from '@/lib/preferences-context'
 import '@fontsource/jetbrains-mono/400.css'
 import '@fontsource/jetbrains-mono/500.css'
