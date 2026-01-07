@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useCallback, useEffect, useState } from 'react'
 import { FormProvider, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
-import { z } from 'zod'
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { UrlInputSection } from '@/components/url-input-section'
 import { FormLayout } from '@/components/video-form'
@@ -13,6 +12,7 @@ import { useAIMetadataFetching } from '@/hooks/use-ai-metadata-fetching'
 import { useUrlValidation } from '@/hooks/use-url-validation'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import type { Tag } from '@/types/tag'
+import { videoSchema, type VideoFormData } from '@/types/form'
 
 export default function Home() {
     // URL validation hook
@@ -52,15 +52,6 @@ export default function Home() {
         aiMetadata.fetchDone &&
         (urlValidation.urlValidationResult.platform !== 'unknown' ||
             platformDiscoveryProcessed)
-
-    // Form schema
-    const videoSchema = z.object({
-        title: z.string().min(1, 'Title is required'),
-        thumbnailUrl: z.string().optional(),
-        tags: z.array(z.number()),
-    })
-
-    type VideoFormData = z.infer<typeof videoSchema>
 
     // Initialize RHF form
     const form = useForm<VideoFormData>({

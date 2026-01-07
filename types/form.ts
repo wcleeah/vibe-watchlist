@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type { Tag } from './tag'
 import type { ParsedUrl, VideoMetadata } from './video'
 
@@ -31,3 +32,12 @@ export interface VideoFormOptions {
     onVideoAdded?: () => void
     autoPreview?: boolean
 }
+
+// Video addition form schema and types
+export const videoSchema = z.object({
+    title: z.string().min(1, 'Title is required'),
+    thumbnailUrl: z.string().optional(),
+    tags: z.array(z.number()),
+})
+
+export type VideoFormData = z.infer<typeof videoSchema>
