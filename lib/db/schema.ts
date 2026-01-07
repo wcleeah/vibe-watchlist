@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp, pgEnum, integer, jsonb, decimal } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, boolean, timestamp, pgEnum, integer, jsonb, decimal, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Removed videoPlatformEnum - now using dynamic platform IDs from platformConfigs table
@@ -12,7 +12,14 @@ export const videos = pgTable('videos', {
   isWatched: boolean('is_watched').default(false),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => [
+  // Foreign key relationship to platformConfigs
+  foreignKey({
+    columns: [table.platform],
+    foreignColumns: [platformConfigs.platformId],
+    name: "videos_platform_fkey"
+  }).onDelete("restrict"), // Prevent deletion of referenced platforms
+]);
 
 export const tags = pgTable('tags', {
   id: serial('id').primaryKey(),

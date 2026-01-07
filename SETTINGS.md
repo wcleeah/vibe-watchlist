@@ -20,6 +20,7 @@ I need a central page to manage all application settings, configurations, cache,
 - [x] Phase 6: Dynamic Platform Loading (3-4 hours) - ✅ COMPLETED
 - [x] Phase 7: Platform Discovery (AI-powered) (3-5 hours) - ✅ COMPLETED
 - [x] Phase 8: Platform Integration - Foundation (4-6 hours) - ✅ COMPLETED
+- [x] Phase 8.5: Database Migration & Foreign Key Setup (15-30 minutes) ✅
 - [ ] Phase 9: Platform Integration - Core Logic (3-4 hours)
 - [ ] Phase 10: Platform Integration - UI/UX Polish (2-3 hours)
 
@@ -412,6 +413,26 @@ const validPlatforms = await PlatformService.getPlatforms()
 
 ---
 
+### Phase 8.5: Database Migration & Foreign Key Setup (15-30 minutes)
+**Goal:** Enable dynamic platform system by migrating database and establishing data integrity
+
+#### 8.5.1: Execute Manual SQL Migration
+```sql
+-- Run the complete migration from drizzle/0006_phase_8_5_migration.sql
+-- This handles data migration and foreign key setup in one step
+```
+
+#### 8.5.2: Alternative Schema-Only Approach
+```bash
+# If you prefer schema-driven approach instead:
+# 1. Update lib/db/schema.ts with foreign key (already done)
+# 2. Run: bunx drizzle-kit generate
+# 3. Run: bunx drizzle-kit push
+# 4. Then run data migration SQL separately
+```
+
+---
+
 ### Phase 9: Platform Integration - Core Logic (3-4 hours)
 **Goal:** Update all validation and service logic to use dynamic platform configs
 
@@ -626,6 +647,12 @@ switch (platformConfig.extractor) {
 - [x] **Component Updates**: PlatformBadge/Icon use dynamic configurations
 - [x] **Database Schema**: Removed enum constraints for dynamic platform IDs
 
+### Phase 8.5 (Database Migration & Foreign Key Setup)
+- [x] **Manual SQL Migration**: Run drizzle/0006_phase_8_5_migration.sql ✅
+- [x] **Data Integrity**: Videos reference valid platform configurations ✅
+- [x] **Foreign Key Constraint**: Referential integrity between videos and platform_configs ✅
+- [x] **Unknown Fallback**: "unknown" platform available as ultimate fallback ✅
+
 ### Phase 9 (Platform Integration - Core Logic)
 - [ ] **Validation Services**: Dynamic platform validation without hardcoded lists
 - [ ] **API Route Updates**: All endpoints use dynamic platform queries
@@ -649,6 +676,7 @@ switch (platformConfig.extractor) {
 - **Phase 6**: 3-4 hours (Dynamic Platform Loading) ✅
 - **Phase 7**: 3-5 hours (Platform Discovery) ✅
 - **Phase 8**: 4-6 hours (Platform Integration - Foundation) ✅
+- **Phase 8.5**: 15-30 minutes (Database Migration & Foreign Key Setup)
 - **Phase 9**: 3-4 hours (Platform Integration - Core Logic)
 - **Phase 10**: 2-3 hours (Platform Integration - UI/UX Polish)
 
