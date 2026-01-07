@@ -14,7 +14,6 @@ export interface VideoData {
   highlightedTitle?: string;
   highlightedTags?: Tag[];
   metadata?: VideoMetadata | null;
-  isLoading?: boolean;
   error?: string | null;
 }
 

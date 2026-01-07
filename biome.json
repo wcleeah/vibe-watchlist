@@ -1,0 +1,62 @@
+{
+    "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+    "files": {
+        "includes": [
+            "**",
+            "!**/node_modules/**",
+            "!**/.next/**",
+            "!**/.turbo/**",
+            "!**/dist/**",
+            "!**/build/**",
+            "!**/.cache/**",
+            "!**/public/**",
+            "!**/*.json",
+            "!**/*.md"
+        ],
+        "ignoreUnknown": true
+    },
+    "formatter": {
+        "enabled": true,
+        "formatWithErrors": false,
+        "indentStyle": "space",
+        "indentWidth": 4,
+        "lineEnding": "lf",
+        "lineWidth": 80,
+        "attributePosition": "auto"
+    },
+    "assist": { "actions": { "source": { "organizeImports": "on" } } },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "recommended": true,
+            "suspicious": {
+                "noArrayIndexKey": "off"
+            },
+            "style": {
+                "noNonNullAssertion": "off"
+            }
+        }
+    },
+    "javascript": {
+        "formatter": {
+            "jsxQuoteStyle": "single",
+            "quoteProperties": "asNeeded",
+            "trailingCommas": "all",
+            "semicolons": "asNeeded",
+            "arrowParentheses": "always",
+            "bracketSpacing": true,
+            "bracketSameLine": false,
+            "quoteStyle": "single"
+        }
+    },
+    "overrides": [
+        {
+            "includes": ["**/*.ts", "**/*.tsx"],
+            "linter": {
+                "rules": {
+                    "recommended": true
+                }
+            }
+        }
+    ]
+}

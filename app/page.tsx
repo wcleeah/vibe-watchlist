@@ -45,7 +45,7 @@ export default function Home() {
   // Full loading condition for mode transition
   const isReadyForForm = urlValidation.urlValidationResult?.validated &&
   urlValidation.urlValidationResult.isValid &&
-    !aiMetadata.isLoading &&
+    aiMetadata.fetchDone &&
     (urlValidation.urlValidationResult.platform !== 'unknown' || platformDiscoveryProcessed);
 
   // Form schema
@@ -98,6 +98,7 @@ export default function Home() {
 
   // Mode transition: Input → Form when all async operations complete
   useEffect(() => {
+      console.log(isReadyForForm);
     if (isReadyForForm && mode === 'input') {
       setMode('form');
     }
@@ -105,7 +106,7 @@ export default function Home() {
 
   // Reset mode to input when URL becomes invalid
   useEffect(() => {
-    if (!urlValidation || (urlValidation.urlValidationResult?.isValid && urlValidation.urlValidationResult.validated)) {
+    if (!urlValidation || (!urlValidation.urlValidationResult?.isValid || !urlValidation.urlValidationResult?.validated)) {
       setMode('input');
     }
   }, [urlValidation.urlValidationResult, mode]);
@@ -203,7 +204,7 @@ export default function Home() {
               disabled={isSubmitting}
             />
           ) : (
-            <div className="w-full max-w-4xl">
+            <div className="w-full max-w-16xl">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
                   <FormLayout
@@ -214,7 +215,6 @@ export default function Home() {
                     aiSuggestions={aiMetadata.suggestions}
                     selectedSuggestion={aiMetadata.selectedSuggestion}
                     onSuggestionSelect={aiMetadata.setSelectedSuggestion}
-                    isLoadingAIMetadata={aiMetadata.isLoading}
                     aiMetadataError={aiMetadata.error}
                     onManualEdit={() => setManualMode(!manualMode)}
                     // Tag props
@@ -236,7 +236,6 @@ export default function Home() {
                         title: aiMetadata.selectedSuggestion.title,
                         thumbnailUrl: aiMetadata.selectedSuggestion.thumbnailUrl || null,
                       } : null,
-                      isLoading: aiMetadata.isLoading,
                       error: aiMetadata.error || undefined,
                     }}
                     showActions={false}

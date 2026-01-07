@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, Star, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronDown, Check, Star, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MetadataSuggestion } from '@/lib/types/ai-metadata';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,6 @@ interface MetadataSelectorProps {
   selectedIndex?: number;
   onSelect: (index: number) => void;
   onManualEdit?: () => void;
-  isLoading?: boolean;
   error?: string;
   className?: string;
   disabled?: boolean;
@@ -31,7 +30,6 @@ export function MetadataSelector({
   selectedIndex,
   onSelect,
   onManualEdit,
-  isLoading = false,
   error,
   className,
   disabled = false,
@@ -64,15 +62,6 @@ export function MetadataSelector({
   };
 
   const selectedSuggestion = selectedIndex !== undefined ? suggestions[selectedIndex] : null;
-
-  if (isLoading) {
-    return (
-      <div className={cn("flex items-center gap-2 p-3 border rounded-lg bg-gray-50", className)}>
-        <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
-        <span className="text-sm text-gray-600">Analyzing video metadata...</span>
-      </div>
-    );
-  }
 
   if (error) {
     return (

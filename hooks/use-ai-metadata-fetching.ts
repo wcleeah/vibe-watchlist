@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
     MetadataExtractionResponse,
     MetadataSuggestion,
@@ -10,7 +10,7 @@ import { UrlValidationResult } from "./use-url-validation.js";
 export interface UseAIMetadataFetchingReturn {
     suggestions: MetadataSuggestion[];
     fallback: { title?: string; thumbnailUrl?: string } | null;
-    isLoading: boolean;
+    fetchDone: boolean;
     error: string | null;
     selectedSuggestion?: MetadataSuggestion;
     setSelectedSuggestion: (suggestion: MetadataSuggestion | undefined) => void;
@@ -24,7 +24,7 @@ export function useAIMetadataFetching(
         title?: string;
         thumbnailUrl?: string;
     } | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [fetchDone, setFetchDone] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedSuggestion, setSelectedSuggestion] = useState<
         MetadataSuggestion | undefined
@@ -35,12 +35,12 @@ export function useAIMetadataFetching(
             setSuggestions([]);
             setFallback(null);
             setError(null);
-            setIsLoading(false);
             setSelectedSuggestion(undefined);
+            setFetchDone(false);
             return;
         }
 
-        setIsLoading(true);
+            setFetchDone(false);
         setError(null);
 
         fetch("/api/metadata/extract", {
@@ -79,6 +79,7 @@ export function useAIMetadataFetching(
                 } else {
                     setSelectedSuggestion(undefined);
                 }
+        setFetchDone(true);
             })
             .catch((err) => {
                 const errorMessage =
@@ -91,14 +92,13 @@ export function useAIMetadataFetching(
                 setSelectedSuggestion(undefined);
                 console.error("AI metadata fetch failed:", err);
             });
-        setIsLoading(false);
 
     }, [urlValidationResult]);
 
     return {
         suggestions,
         fallback,
-        isLoading,
+        fetchDone,
         error,
         selectedSuggestion,
         setSelectedSuggestion,

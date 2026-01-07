@@ -20,14 +20,6 @@ export function PreviewCard({
   const [loadingMarkWatched, setLoadingMarkWatched] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
 
-  if (video.isLoading) {
-    return (
-      <div className={`bg-white dark:bg-black rounded-lg border border-black dark:border-white p-6 min-h-[300px] flex items-center justify-center ${className}`}>
-        <div className="text-lg text-gray-500 dark:text-gray-400">loading...</div>
-      </div>
-    );
-  }
-
   if (video.error) {
     return (
       <div className={`bg-white dark:bg-black rounded-lg border border-black dark:border-white p-6 min-h-[300px] ${className}`}>

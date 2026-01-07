@@ -17,7 +17,6 @@ interface FormLayoutProps {
   aiSuggestions?: MetadataSuggestion[];
   selectedSuggestion?: MetadataSuggestion;
   onSuggestionSelect?: (suggestion: MetadataSuggestion | undefined) => void;
-  isLoadingAIMetadata?: boolean;
   aiMetadataError?: string | null;
   onManualEdit?: () => void;
   // Tag props to sync with preview
@@ -31,7 +30,6 @@ export function FormLayout({
   aiSuggestions = [],
   selectedSuggestion,
   onSuggestionSelect,
-  isLoadingAIMetadata = false,
   aiMetadataError,
   onManualEdit,
   // Tag props
@@ -160,7 +158,6 @@ export function FormLayout({
             onSuggestionSelect?.(suggestion);
           }}
           onManualEdit={onManualEdit}
-          isLoading={isLoadingAIMetadata}
           error={aiMetadataError || undefined}
           disabled={isSubmitting}
         />
