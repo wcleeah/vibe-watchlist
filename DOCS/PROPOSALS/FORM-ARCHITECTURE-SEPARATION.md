@@ -1,4 +1,4 @@
-# Form Architecture Separation Plan
+# Form Architecture Separation - Executable Plan
 
 ## Overview
 Refactor the video submission form to separate URL input from form editing, implementing page-level loading to eliminate component remounting issues.
@@ -12,14 +12,14 @@ Refactor the video submission form to separate URL input from form editing, impl
 ## Proposed Solution
 
 ### Two-Mode Architecture
-**Input Mode**: Dedicated URL input with immediate availability
+**Input Mode**: Dedicated URL input with immediate availability  
 **Form Mode**: Metadata editing with full async loading
 
 ### Key Changes
 
 #### 1. Extract UrlInputSection Component
 - New component: `components/url-input-section.tsx`
-- Contains: "Add New Video" heading + URL input field
+- Contains: "Add New Video" heading (extracted from current page header) + URL input field
 - Handles URL validation and initial parsing
 - Triggers mode transition when URL is valid
 
@@ -46,24 +46,28 @@ Refactor the video submission form to separate URL input from form editing, impl
 ## Implementation Phases
 
 ### Phase 1: Extract Components
-- Create UrlInputSection
-- Refactor FormLayout
-- Update imports
+- [x] Create UrlInputSection component with URL input and validation
+- [ ] Refactor FormLayout to remove URL/platform logic
+- [ ] Update FormLayout to accept platform/metadata as props
+- [ ] Update all import statements in affected files
 
 ### Phase 2: State Management
-- Add mode state to page.tsx
-- Move platform detection logic
-- Implement loading conditions
+- [ ] Add mode state ('input' | 'form') to page.tsx
+- [ ] Move platform detection logic to page level
+- [ ] Implement full loading condition for mode transition
 
 ### Phase 3: Layout Changes
-- Remove LayoutManager
-- Implement conditional rendering
-- Update component props
+- [ ] Remove LayoutManager from page.tsx
+- [ ] Implement conditional rendering based on mode
+- [ ] Update component props to pass required data
 
-### Phase 4: Testing
-- Verify no remounts
-- Test mode transitions
-- Confirm platform detection works once
+### Phase 4: Testing & Validation
+- [ ] Run lint and typecheck to ensure code quality
+- [ ] Test immediate URL input availability
+- [ ] Test smooth mode transitions
+- [ ] Verify no component remounts
+- [ ] Confirm single API calls for platform detection
+- [ ] Test form state preservation
 
 ## Benefits
 - Immediate URL input availability
@@ -83,8 +87,11 @@ Refactor the video submission form to separate URL input from form editing, impl
 - `components/url-input-section.tsx` (new)
 
 ## Acceptance Criteria
-- URL input appears immediately on page load
-- Form transitions smoothly after all data loads
-- No console errors or duplicate API calls
-- Platform detection triggers exactly once
-- Form state preserved across interactions
+- [ ] URL input appears immediately on page load
+- [ ] Form transitions smoothly after all data loads
+- [ ] No console errors or duplicate API calls
+- [ ] Platform detection triggers exactly once
+- [ ] Form state preserved across interactions
+
+## Progress Tracking
+Use this checklist to track implementation progress. Mark items complete as you work through each phase.
