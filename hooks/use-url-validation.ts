@@ -7,6 +7,7 @@ export interface UseUrlValidationReturn {
     setUrl: (url: string) => void;
     unsetUrl: () => void;
     urlValidationResult?: UrlValidationResult;
+    validating: boolean;
 }
 
 export type UrlValidationResult = ParsedUrl & {
@@ -17,8 +18,10 @@ export function useUrlValidation(): UseUrlValidationReturn {
     const [urlValidationResult, setUrlValidationResult] = useState<
         UrlValidationResult | undefined
     >(undefined);
+    const [validating, setValidating] = useState(false);
 
     const setUrl = useCallback(async (newUrl: string) => {
+        setValidating(true);
         if (!newUrl.trim()) {
             setUrlValidationResult(undefined);
             return;
@@ -29,6 +32,7 @@ export function useUrlValidation(): UseUrlValidationReturn {
             ...parsed,
             validated: true,
         });
+        setValidating(false);
     }, []);
 
     const unsetUrl = useCallback(() => {
@@ -39,5 +43,6 @@ export function useUrlValidation(): UseUrlValidationReturn {
         setUrl,
         unsetUrl,
         urlValidationResult,
+        validating
     };
 }

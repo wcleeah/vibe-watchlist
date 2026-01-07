@@ -31,6 +31,7 @@ export interface PreviewCardProps {
   onManualTitleChange?: (title: string) => void;
   manualThumbnailUrl?: string;
   onManualThumbnailChange?: (url: string) => void;
+  showBackground: boolean;
 }
 
 export interface LoadingSkeletonProps {
