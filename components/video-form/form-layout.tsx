@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import type { MetadataSuggestion } from '@/lib/types/ai-metadata'
@@ -118,8 +118,9 @@ export function FormLayout({
     // Get current selected tags from form
     const selectedTagIds =
         useWatch({ control: useFormContext().control, name: 'tags' }) || []
-    const selectedTags = availableTags.filter((tag) =>
-        selectedTagIds.includes(tag.id),
+    const selectedTags = useMemo(
+        () => availableTags.filter((tag) => selectedTagIds.includes(tag.id)),
+        [availableTags, selectedTagIds],
     )
 
     // Load available tags on mount
