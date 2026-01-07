@@ -1,51 +1,35 @@
 'use client'
 
-import { FileText, Loader2 } from 'lucide-react'
-import { useState } from 'react'
-import { FormControl, FormField, FormMessage } from '@/components/ui/form'
+import { FileText } from 'lucide-react'
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils'
 import { ErrorDisplay } from './error-display'
 import { ThumbnailDisplay } from './metadata-components'
-import { VideoCardView } from './video-card-view'
-import type { PreviewCardProps } from './types'
+import type { VideoData } from './types'
+import type { Tag } from '@/types/tag'
 
-export function PreviewCard({
+interface VideoCardViewProps {
+    video: VideoData
+    showActions?: boolean
+    onMarkWatched?: (id: number) => void
+    onDelete?: (id: number) => void
+    className?: string
+    showBackground?: boolean
+}
+
+export function VideoCardView({
     video,
     showActions = false,
     onMarkWatched,
     onDelete,
     className,
-    onToggleManual: externalToggleManual,
-    manualMode: externalManualMode,
     showBackground = true,
-}: PreviewCardProps) {
-    const [loadingMarkWatched, setLoadingMarkWatched] = useState(false)
-    const [loadingDelete, setLoadingDelete] = useState(false)
-
-    // Internal manual mode state - overrides external if provided
-    const [internalManualMode, setInternalManualMode] = useState(false)
-    const manualMode =
-        externalManualMode !== undefined
-            ? externalManualMode
-            : internalManualMode
-
-    const toggleManual = () => {
-        if (externalToggleManual) {
-            externalToggleManual()
-        } else {
-            setInternalManualMode(!internalManualMode)
-        }
-    }
-
+}: VideoCardViewProps) {
     if (video.error) {
         return (
             <div
                 className={`bg-white dark:bg-black rounded-lg border border-black dark:border-white p-6 min-h-[300px] ${className}`}
             >
-                <ErrorDisplay
-                    error={video.error}
-                    onToggleManual={toggleManual}
-                />
+                <ErrorDisplay error={video.error} />
             </div>
         )
     }
@@ -66,96 +50,19 @@ export function PreviewCard({
                 <div className='px-4 pt-4 pb-4 space-y-1'>
                     {/* Title Section */}
                     <div className='pb-2 border-b border-black dark:border-white'>
-                        {manualMode ? (
-                            <div className='space-y-2'>
-                                <label className='text-sm font-medium text-gray-700 dark:text-gray-300'>
-                                    Title
-                                </label>
-                                <FormField
-                                    name='title'
-                                    render={({ field }) => (
-                                        <>
-                                            <FormControl>
-                                                <input
-                                                    type='text'
-                                                    placeholder='Enter video title'
-                                                    className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono'
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </>
-                                    )}
-                                />
-                                <button
-                                    type='button'
-                                    onClick={toggleManual}
-                                    className='text-sm text-blue-600 dark:text-blue-400 hover:underline'
-                                >
-                                    Cancel manual entry
-                                </button>
-                            </div>
-                        ) : (
-                            <div className='flex items-center justify-between'>
-                                <h3
-                                    className='text-lg font-bold text-black dark:text-white font-mono truncate text-center sm:text-left flex-1'
-                                    title={video.title || 'Untitled Video'}
-                                >
-                                    {video.title || 'Untitled Video'}
-                                </h3>
-                                {/* Manual mode toggle - only show when metadata is available */}
-                                {video.metadata && !video.error && (
-                                    <button
-                                        type='button'
-                                        onClick={toggleManual}
-                                        className='text-sm text-blue-600 dark:text-blue-400 hover:underline ml-2 flex-shrink-0'
-                                        title='Switch to manual entry mode'
-                                    >
-                                        Edit manually
-                                    </button>
-                                )}
-                            </div>
-                        )}
+                        <h3
+                            className='text-lg font-bold text-black dark:text-white font-mono truncate text-center sm:text-left flex-1'
+                            title={video.title || 'Untitled Video'}
+                        >
+                            {video.title || 'Untitled Video'}
+                        </h3>
                     </div>
 
                     {/* Thumbnail + Content Row */}
                     <div className='flex flex-col sm:flex-row gap-4'>
                         {/* Thumbnail */}
                         <div className='w-full sm:w-[304px] aspect-video sm:aspect-auto sm:flex-shrink-0 sm:h-[171px] pt-4'>
-                            {manualMode ? (
-                                <div className='space-y-2'>
-                                    <label className='text-sm font-medium text-gray-700 dark:text-gray-300'>
-                                        Thumbnail URL
-                                    </label>
-                                    <FormField
-                                        name='thumbnailUrl'
-                                        render={({ field }) => (
-                                            <>
-                                                <FormControl>
-                                                    <input
-                                                        type='url'
-                                                        placeholder='https://example.com/thumbnail.jpg'
-                                                        className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white font-mono text-sm'
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </>
-                                        )}
-                                    />
-                                    {video.thumbnailUrl && (
-                                        <img
-                                            src={video.thumbnailUrl}
-                                            alt='Thumbnail preview'
-                                            className='w-full h-auto max-h-[171px] object-cover rounded'
-                                            onError={(e) => {
-                                                e.currentTarget.style.display =
-                                                    'none'
-                                            }}
-                                        />
-                                    )}
-                                </div>
-                            ) : video.thumbnailUrl ? (
+                            {video.thumbnailUrl ? (
                                 <ThumbnailDisplay video={video} />
                             ) : (
                                 <div className='w-full h-full bg-gray-200 rounded flex items-center justify-center'>
@@ -208,7 +115,7 @@ export function PreviewCard({
                                                         [
                                                         {video.tags
                                                             .map(
-                                                                (tag) =>
+                                                                (tag: Tag) =>
                                                                     `"${tag.name}"`,
                                                             )
                                                             .join(', ')}
@@ -262,14 +169,8 @@ export function PreviewCard({
                                 <button
                                     type='button'
                                     onClick={async () => {
-                                        setLoadingMarkWatched(true)
-                                        try {
-                                            await onMarkWatched(video.id)
-                                        } finally {
-                                            setLoadingMarkWatched(false)
-                                        }
+                                        // onMarkWatched(video.id)
                                     }}
-                                    disabled={loadingMarkWatched}
                                     className='w-full h-8 min-h-[44px] text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
                                     title={
                                         video.isWatched
@@ -282,13 +183,9 @@ export function PreviewCard({
                                             : 'Mark as watched'
                                     }
                                 >
-                                    {loadingMarkWatched ? (
-                                        <Loader2 className='w-4 h-4 animate-spin' />
-                                    ) : video.isWatched ? (
-                                        'unWatch()'
-                                    ) : (
-                                        'markWatched()'
-                                    )}
+                                    {video.isWatched
+                                        ? 'unWatch()'
+                                        : 'markWatched()'}
                                 </button>
                             )}
                         </div>
@@ -299,23 +196,13 @@ export function PreviewCard({
                                 <button
                                     type='button'
                                     onClick={async () => {
-                                        setLoadingDelete(true)
-                                        try {
-                                            await onDelete(video.id)
-                                        } finally {
-                                            setLoadingDelete(false)
-                                        }
+                                        // onDelete(video.id)
                                     }}
-                                    disabled={loadingDelete}
                                     className='w-full h-8 min-h-[44px] text-xs px-2 bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
                                     title='delete()'
                                     aria-label='Delete video'
                                 >
-                                    {loadingDelete ? (
-                                        <Loader2 className='w-4 h-4 animate-spin' />
-                                    ) : (
-                                        'delete()'
-                                    )}
+                                    delete()
                                 </button>
                             </div>
                         )}

@@ -21,6 +21,9 @@ export default function Home() {
     // AI Metadata fetching hook
     const aiMetadata = useAIMetadataFetching(urlValidation.urlValidationResult)
 
+    // Selected tags state for preview display
+    const [selectedTags, setSelectedTags] = useState<Tag[]>([])
+
     // Global reset function
     const reset = () => {
         urlValidation.setUrl('')
@@ -28,9 +31,6 @@ export default function Home() {
 
     // Manual mode state
     const [manualMode, setManualModeRaw] = useState(false)
-
-    // Selected tags state (managed via callback from FormLayout)
-    const [selectedTags, setSelectedTags] = useState<Tag[]>([])
 
     // Submission state
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -134,6 +134,7 @@ export default function Home() {
         control: form.control,
         name: 'thumbnailUrl',
     })
+    const watchedTags = useWatch({ control: form.control, name: 'tags' })
 
     // Smart mode transitions for manual mode
     const setManualMode = useCallback(

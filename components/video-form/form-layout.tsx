@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import type { MetadataSuggestion } from '@/lib/types/ai-metadata'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
@@ -25,7 +25,7 @@ interface FormLayoutProps {
     // Platform creation callback
     onPlatformCreated?: (platform: any) => void
     // Tag props to sync with preview
-    onSelectedTagsChange: (tags: Tag[]) => void
+    onSelectedTagsChange?: (tags: Tag[]) => void
     onReset?: () => void
 }
 
@@ -101,12 +101,18 @@ export function FormLayout({
     }
 
     // Tag state
-    const [selectedTags, setSelectedTags] = useState<Tag[]>([])
     const [availableTags, setAvailableTags] = useState<Tag[]>([])
     const [tagInput, setTagInput] = useState('')
     const [showTagSuggestions, setShowTagSuggestions] = useState(false)
     const [isLoadingTags, setIsLoadingTags] = useState(false)
     const [tagError, setTagError] = useState<string | null>(null)
+
+    // Get current selected tags from form
+    const selectedTagIds =
+        useWatch({ control: useFormContext().control, name: 'tags' }) || []
+    const selectedTags = availableTags.filter((tag) =>
+        selectedTagIds.includes(tag.id),
+    )
 
     // Load available tags on mount
     useEffect(() => {
@@ -124,14 +130,10 @@ export function FormLayout({
         fetchTags()
     }, [])
 
-    // Notify parent and update form when selectedTags changes
+    // Sync selectedTags to parent for preview
     useEffect(() => {
-        onSelectedTagsChange(selectedTags)
-        setValue(
-            'tags',
-            selectedTags.map((tag) => tag.id),
-        )
-    }, [selectedTags, onSelectedTagsChange, setValue])
+        onSelectedTagsChange?.(selectedTags)
+    }, [selectedTags, onSelectedTagsChange])
 
     // Tag management functions
     const handleTagInputChange = useCallback((value: string) => {
@@ -159,7 +161,7 @@ export function FormLayout({
                 (tag) => tag.name.toLowerCase() === tagName.toLowerCase(),
             )
             if (existingTag) {
-                setSelectedTags((prev) => [...prev, existingTag])
+                setValue('tags', [...selectedTagIds, existingTag.id])
                 setTagInput('')
                 setShowTagSuggestions(false)
                 return
@@ -177,7 +179,7 @@ export function FormLayout({
                 if (response.ok) {
                     const newTag = await response.json()
                     setAvailableTags((prev) => [...prev, newTag])
-                    setSelectedTags((prev) => [...prev, newTag])
+                    setValue('tags', [...selectedTagIds, newTag.id])
                     setTagInput('')
                     setShowTagSuggestions(false)
                 } else if (response.status === 409) {
@@ -187,7 +189,7 @@ export function FormLayout({
                             tag.name.toLowerCase() === tagName.toLowerCase(),
                     )
                     if (existingTag) {
-                        setSelectedTags((prev) => [...prev, existingTag])
+                        setValue('tags', [...selectedTagIds, existingTag.id])
                     }
                     setTagError('Tag already exists')
                 } else {
@@ -200,22 +202,28 @@ export function FormLayout({
                 setIsLoadingTags(false)
             }
         },
-        [selectedTags, availableTags],
+        [selectedTagIds, setValue, availableTags],
     )
 
-    const removeTag = useCallback((tagId: number) => {
-        setSelectedTags((prev) => prev.filter((tag) => tag.id !== tagId))
-    }, [])
+    const removeTag = useCallback(
+        (tagId: number) => {
+            setValue(
+                'tags',
+                selectedTagIds.filter((id) => id !== tagId),
+            )
+        },
+        [selectedTagIds, setValue],
+    )
 
     const selectSuggestedTag = useCallback(
         (tag: Tag) => {
-            if (!selectedTags.some((t) => t.id === tag.id)) {
-                setSelectedTags((prev) => [...prev, tag])
+            if (!selectedTagIds.includes(tag.id)) {
+                setValue('tags', [...selectedTagIds, tag.id])
             }
             setTagInput('')
             setShowTagSuggestions(false)
         },
-        [selectedTags],
+        [selectedTagIds, setValue],
     )
 
     // Filter suggestions based on input
