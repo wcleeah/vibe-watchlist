@@ -86,6 +86,7 @@ export function PlatformSuggestions({
                             size='sm'
                             onClick={() => onAccept(suggestion)}
                             className='flex-1 h-8 text-xs'
+                            type="button"
                         >
                             <Check className='w-3 h-3 mr-1' />
                             Add Platform
@@ -95,6 +96,7 @@ export function PlatformSuggestions({
                             variant='outline'
                             onClick={onReject}
                             className='h-8 text-xs'
+                            type="button"
                         >
                             <X className='w-3 h-3 mr-1' />
                             Dismiss

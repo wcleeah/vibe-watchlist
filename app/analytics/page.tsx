@@ -1,23 +1,11 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import { AnalyticsDashboard } from '@/components/analytics-dashboard'
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { AnalyticsProvider, useAnalytics } from '@/lib/analytics-context'
 
 function AnalyticsPageContent() {
-    const { countdown, refreshStats } = useAnalytics()
-    const lastFetchRef = useRef(0)
-
-    // Ensure fresh data on page entry (throttled to prevent server overload)
-    useEffect(() => {
-        const now = Date.now()
-        if (now - lastFetchRef.current > 10000) {
-            // Only fetch if more than 10 seconds since last fetch
-            refreshStats()
-            lastFetchRef.current = now
-        }
-    }, [refreshStats])
+    const { countdown } = useAnalytics()
 
     return (
         <div className='min-h-screen bg-background text-foreground'>

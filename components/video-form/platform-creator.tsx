@@ -138,180 +138,175 @@ export function PlatformCreator({ onPlatformCreated }: PlatformCreatorProps) {
             </CardHeader>
 
             <CardContent>
-                <form onSubmit={handleSubmit} className='space-y-4'>
-                    <div className='grid grid-cols-2 gap-4'>
-                        <div>
-                            <Label htmlFor='platformId'>Platform ID *</Label>
-                            <Input
-                                id='platformId'
-                                value={formData.platformId}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        platformId: e.target.value
-                                            .toLowerCase()
-                                            .replace(/\s+/g, ''),
-                                    }))
-                                }
-                                placeholder='e.g., vimeo'
-                                disabled={isSubmitting}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor='name'>Internal Name *</Label>
-                            <Input
-                                id='name'
-                                value={formData.name}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        name: e.target.value,
-                                    }))
-                                }
-                                placeholder='e.g., vimeo'
-                                disabled={isSubmitting}
-                            />
-                        </div>
-                    </div>
-
+                <div className='grid grid-cols-2 gap-4'>
                     <div>
-                        <Label htmlFor='displayName'>Display Name *</Label>
+                        <Label htmlFor='platformId'>Platform ID *</Label>
                         <Input
-                            id='displayName'
-                            value={formData.displayName}
+                            id='platformId'
+                            value={formData.platformId}
                             onChange={(e) =>
                                 setFormData((prev) => ({
                                     ...prev,
-                                    displayName: e.target.value,
+                                    platformId: e.target.value
+                                        .toLowerCase()
+                                        .replace(/\s+/g, ''),
                                 }))
                             }
-                            placeholder='e.g., Vimeo'
+                            placeholder='e.g., vimeo'
                             disabled={isSubmitting}
                         />
                     </div>
-
                     <div>
-                        <Label>URL Patterns *</Label>
-                        <div className='flex gap-2 mb-2'>
-                            <Input
-                                value={formData.currentPattern}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        currentPattern: e.target.value,
-                                    }))
-                                }
-                                placeholder='e.g., vimeo.com'
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault()
-                                        addPattern()
-                                    }
-                                }}
-                                disabled={isSubmitting}
-                            />
-                            <Button
-                                type='button'
-                                size='sm'
-                                onClick={addPattern}
-                                disabled={
-                                    !formData.currentPattern.trim() ||
-                                    isSubmitting
-                                }
-                            >
-                                <Plus className='w-4 h-4' />
-                            </Button>
-                        </div>
-                        {formData.patterns.length > 0 && (
-                            <div className='flex flex-wrap gap-1'>
-                                {formData.patterns.map((pattern) => (
-                                    <Badge
-                                        key={pattern}
-                                        variant='secondary'
-                                        className='text-xs'
-                                    >
-                                        {pattern}
-                                        <button
-                                            type='button'
-                                            onClick={() =>
-                                                removePattern(pattern)
-                                            }
-                                            className='ml-1 hover:text-red-500'
-                                            disabled={isSubmitting}
-                                        >
-                                            <X className='w-3 h-3' />
-                                        </button>
-                                    </Badge>
-                                ))}
-                            </div>
-                        )}
+                        <Label htmlFor='name'>Internal Name *</Label>
+                        <Input
+                            id='name'
+                            value={formData.name}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                }))
+                            }
+                            placeholder='e.g., vimeo'
+                            disabled={isSubmitting}
+                        />
                     </div>
+                </div>
 
-                    <div className='grid grid-cols-2 gap-4'>
-                        <div>
-                            <Label htmlFor='color'>Color</Label>
-                            <Input
-                                id='color'
-                                type='color'
-                                value={formData.color}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        color: e.target.value,
-                                    }))
-                                }
-                                disabled={isSubmitting}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor='icon'>Icon</Label>
-                            <Input
-                                id='icon'
-                                value={formData.icon}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        icon: e.target.value,
-                                    }))
-                                }
-                                placeholder='Video'
-                                disabled={isSubmitting}
-                            />
-                        </div>
-                    </div>
+                <div>
+                    <Label htmlFor='displayName'>Display Name *</Label>
+                    <Input
+                        id='displayName'
+                        value={formData.displayName}
+                        onChange={(e) =>
+                            setFormData((prev) => ({
+                                ...prev,
+                                displayName: e.target.value,
+                            }))
+                        }
+                        placeholder='e.g., Vimeo'
+                        disabled={isSubmitting}
+                    />
+                </div>
 
-                    <div className='flex gap-2 pt-4'>
+                <div>
+                    <Label>URL Patterns *</Label>
+                    <div className='flex gap-2 mb-2'>
+                        <Input
+                            value={formData.currentPattern}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    currentPattern: e.target.value,
+                                }))
+                            }
+                            placeholder='e.g., vimeo.com'
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    addPattern()
+                                }
+                            }}
+                            disabled={isSubmitting}
+                        />
                         <Button
                             type='button'
-                            variant='outline'
-                            onClick={() => setIsExpanded(false)}
-                            disabled={isSubmitting}
-                            className='flex-1'
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type='submit'
+                            size='sm'
+                            onClick={addPattern}
                             disabled={
-                                isSubmitting ||
-                                !formData.platformId.trim() ||
-                                !formData.name.trim() ||
-                                !formData.displayName.trim() ||
-                                formData.patterns.length === 0
+                                !formData.currentPattern.trim() || isSubmitting
                             }
-                            className='flex-1'
                         >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className='w-4 h-4 animate-spin mr-2' />
-                                    Creating...
-                                </>
-                            ) : (
-                                'Create Platform'
-                            )}
+                            <Plus className='w-4 h-4' />
                         </Button>
                     </div>
-                </form>
+                    {formData.patterns.length > 0 && (
+                        <div className='flex flex-wrap gap-1'>
+                            {formData.patterns.map((pattern) => (
+                                <Badge
+                                    key={pattern}
+                                    variant='secondary'
+                                    className='text-xs'
+                                >
+                                    {pattern}
+                                    <button
+                                        type='button'
+                                        onClick={() => removePattern(pattern)}
+                                        className='ml-1 hover:text-red-500'
+                                        disabled={isSubmitting}
+                                    >
+                                        <X className='w-3 h-3' />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className='grid grid-cols-2 gap-4'>
+                    <div>
+                        <Label htmlFor='color'>Color</Label>
+                        <Input
+                            id='color'
+                            type='color'
+                            value={formData.color}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    color: e.target.value,
+                                }))
+                            }
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor='icon'>Icon</Label>
+                        <Input
+                            id='icon'
+                            value={formData.icon}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    icon: e.target.value,
+                                }))
+                            }
+                            placeholder='Video'
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                </div>
+
+                <div className='flex gap-2 pt-4'>
+                    <Button
+                        type='button'
+                        variant='outline'
+                        onClick={() => setIsExpanded(false)}
+                        disabled={isSubmitting}
+                        className='flex-1'
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        disabled={
+                            isSubmitting ||
+                            !formData.platformId.trim() ||
+                            !formData.name.trim() ||
+                            !formData.displayName.trim() ||
+                            formData.patterns.length === 0
+                        }
+                        className='flex-1'
+                        onClick={handleSubmit}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className='w-4 h-4 animate-spin mr-2' />
+                                Creating...
+                            </>
+                        ) : (
+                            'Create Platform'
+                        )}
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     )
