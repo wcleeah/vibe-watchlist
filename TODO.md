@@ -48,4 +48,19 @@
 - [x] Phase 3 completed: VideoCardView extracted, manualMode moved to PreviewCard, tags managed via form context
 - [x] Phase 4 completed: Suggestion handling moved to FormLayout with form initialization
 - [x] Phase 5 completed: onSubmit verified to use form data
-- [ ] Testing and validation...
+- [x] Testing completed: Dev server starts without errors, infinite loop fixed
+
+## ✅ Refactoring Complete
+
+All TODO items have been successfully implemented:
+
+- [x] unify suggestions passing, one big object, with two kind of suggestions
+- [x] add back platform suggestions form
+- [x] suggestion related should be handle in form, preview card will use form context to get the values, including:
+  - [x] init form values
+  - [x] dropdown selections
+- [x] PreviewCard is used in listing, which breaks since they don't have form (VideoCardView extracted)
+- [x] move manual mode to preview card input
+- [x] remove tags state at page.tsx, can use form context directly
+- [x] move VideoFormData and the schema to a separate type file
+- [x] make sure onSubmit is using data in the form
