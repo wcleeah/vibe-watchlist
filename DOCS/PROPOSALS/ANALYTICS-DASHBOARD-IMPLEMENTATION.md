@@ -13,9 +13,11 @@ Implement a comprehensive analytics dashboard for Vibe Watchlist to provide insi
 - `platform_configured`
 - `search_performed`
 
-### ❌ Missing Events:
-- `suggestion_accepted`: When users accept AI suggestions (title/thumbnail/platform)
-- `platform_suggestion_accepted`: When users accept platform discovery suggestions
+### ✅ Event Logging Status:
+- `suggestion_accepted`: ✅ Implemented via `/api/events/log` endpoint
+- `platform_suggestion_accepted`: ✅ Implemented via `/api/events/log` endpoint
+
+**Note**: Fixed critical issue where frontend components were incorrectly calling backend-only `logEvent()` function. Now uses safe API endpoint for frontend event logging.
 
 ## Implementation Phases
 
@@ -90,13 +92,18 @@ Implement a comprehensive analytics dashboard for Vibe Watchlist to provide insi
 - [x] Phase 1: Enhanced event logging completed (2025-01-08)
 
 ### Current Status:
-- **Phase**: All phases complete
+- **Phase**: All phases complete with critical fixes
 - **Last Update**: 2025-01-08
-- **Implementation**: Analytics dashboard fully implemented
+- **Implementation**: Analytics dashboard fully functional with proper event logging
 
 ## Notes
 - Keep implementation simple and focused
 - Use existing patterns and libraries (Drizzle, Recharts)
 - Test incrementally to avoid breaking changes
-- Commit frequently with descriptive messages</content>
+- Commit frequently with descriptive messages
+
+## Critical Fix Applied
+- **Issue**: Frontend components incorrectly called backend-only `logEvent()` function
+- **Solution**: Created `/api/events/log` endpoint for safe frontend event logging
+- **Impact**: Suggestion acceptance metrics now work correctly in analytics dashboard</content>
 <parameter name="filePath">DOCS/PROPOSALS/ANALYTICS-DASHBOARD-IMPLEMENTATION.md
