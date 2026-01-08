@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { tags } from '@/lib/db/schema'
+import { logEvent } from '@/lib/analytics/events'
 
 // PUT /api/tags/[id] - Update a tag
 export async function PUT(
@@ -70,6 +71,11 @@ export async function PUT(
         return NextResponse.json(updatedTag[0])
     } catch (error) {
         console.error('Error updating tag:', error)
+        logEvent('error_occurred', {
+            operation: 'tag_update',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'tags/[id]',
+        })
         return NextResponse.json(
             { error: 'Failed to update tag' },
             { status: 500 },
@@ -108,9 +114,20 @@ export async function DELETE(
 
         await db.delete(tags).where(eq(tags.id, tagId))
 
+        // Log tag deletion event
+        logEvent('tag_deleted', {
+            tagId,
+            name: existingTag[0].name,
+        })
+
         return NextResponse.json({ success: true })
     } catch (error) {
         console.error('Error deleting tag:', error)
+        logEvent('error_occurred', {
+            operation: 'tag_delete',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'tags/[id]',
+        })
         return NextResponse.json(
             { error: 'Failed to delete tag' },
             { status: 500 },

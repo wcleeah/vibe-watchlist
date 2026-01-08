@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { tags } from '@/lib/db/schema'
+import { logEvent } from '@/lib/analytics/events'
 
 // GET /api/tags - Get all tags
 export async function GET() {
@@ -10,6 +11,11 @@ export async function GET() {
         return NextResponse.json(allTags)
     } catch (error) {
         console.error('Error fetching tags:', error)
+        logEvent('error_occurred', {
+            operation: 'tag_fetch',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'tags',
+        })
         return NextResponse.json(
             { error: 'Failed to fetch tags' },
             { status: 500 },
@@ -54,9 +60,21 @@ export async function POST(request: NextRequest) {
             })
             .returning()
 
+        // Log tag creation event
+        logEvent('tag_created', {
+            tagId: newTag[0].id,
+            name: newTag[0].name,
+            color: newTag[0].color,
+        })
+
         return NextResponse.json(newTag[0], { status: 201 })
     } catch (error) {
         console.error('Error creating tag:', error)
+        logEvent('error_occurred', {
+            operation: 'tag_create',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'tags',
+        })
         return NextResponse.json(
             { error: 'Failed to create tag' },
             { status: 500 },

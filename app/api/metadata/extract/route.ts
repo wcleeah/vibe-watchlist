@@ -3,6 +3,7 @@ import { aiMetadataService } from '@/lib/services/ai-metadata-service'
 import { PlatformDataService } from '@/lib/services/platform-data-service'
 import { parseVideoUrlWithPlatforms } from '@/lib/utils/url-parser'
 import { logger } from '@/lib/utils/logger'
+import { logEvent } from '@/lib/analytics/events'
 
 export async function POST(request: NextRequest) {
     try {
@@ -44,6 +45,12 @@ export async function POST(request: NextRequest) {
         const result = await aiMetadataService.extractMetadata(url)
 
         if (result.success) {
+            // Log successful metadata extraction
+            logEvent('metadata_extract_success', {
+                url,
+                platform,
+                suggestionsCount: result.suggestions.length,
+            })
             return NextResponse.json({
                 success: true,
                 suggestions: result.suggestions,
@@ -52,6 +59,12 @@ export async function POST(request: NextRequest) {
                 url: url,
             })
         } else {
+            // Log failed metadata extraction
+            logEvent('metadata_extract_failure', {
+                url,
+                platform,
+                error: result.error,
+            })
             return NextResponse.json(
                 { error: result.error || 'Failed to extract metadata' },
                 { status: 500 },
@@ -59,6 +72,11 @@ export async function POST(request: NextRequest) {
         }
     } catch (error) {
         logger.error('AI metadata extraction API error:', error)
+        logEvent('error_occurred', {
+            operation: 'metadata_extract',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'metadata/extract',
+        })
         return NextResponse.json(
             {
                 error: 'Internal server error',
@@ -102,6 +120,11 @@ export async function GET(request: NextRequest) {
         }
     } catch (error) {
         logger.error('AI metadata cache check error:', error)
+        logEvent('error_occurred', {
+            operation: 'metadata_cache_check',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'metadata/extract',
+        })
         return NextResponse.json(
             { error: 'Failed to check cache' },
             { status: 500 },

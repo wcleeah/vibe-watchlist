@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { platformConfigs } from '@/lib/db/schema'
+import { logEvent } from '@/lib/analytics/events'
 
 export async function GET() {
     try {
@@ -13,6 +14,11 @@ export async function GET() {
         return NextResponse.json({ success: true, data: platforms })
     } catch (error) {
         console.error('Failed to fetch platforms:', error)
+        logEvent('error_occurred', {
+            operation: 'platform_fetch',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'platforms',
+        })
         return NextResponse.json(
             { success: false, error: 'Failed to fetch platforms' },
             { status: 500 },
@@ -89,6 +95,13 @@ export async function POST(request: NextRequest) {
             .values(newPlatform)
             .returning()
 
+        // Log platform configuration event
+        logEvent('platform_configured', {
+            platformId: result[0].platformId,
+            name: result[0].name,
+            isPreset: result[0].isPreset,
+        })
+
         return NextResponse.json(
             {
                 success: true,
@@ -99,6 +112,11 @@ export async function POST(request: NextRequest) {
         )
     } catch (error) {
         console.error('Failed to create platform:', error)
+        logEvent('error_occurred', {
+            operation: 'platform_create',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'platforms',
+        })
         return NextResponse.json(
             { success: false, error: 'Failed to create platform' },
             { status: 500 },

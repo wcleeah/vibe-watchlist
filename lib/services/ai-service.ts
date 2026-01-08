@@ -1,3 +1,5 @@
+import { logEvent } from '@/lib/analytics/events'
+
 export interface PlatformSuggestion {
     platform: string
     confidence: number
@@ -174,6 +176,16 @@ export class AIService {
                 '🤖 AI PLATFORM DETECTION: Successfully parsed structured response:',
                 suggestion,
             )
+
+            // Log token usage
+            if (data.usage) {
+                logEvent('ai_token_used', {
+                    tokens: data.usage.total_tokens,
+                    operation: 'platform_detection',
+                    model: data.model,
+                })
+            }
+
             return suggestion
         } catch (error) {
             console.error('🤖 AI PLATFORM DETECTION: Failed:', error)
@@ -289,6 +301,16 @@ export class AIService {
                 '🤖 AI TITLE SUGGESTIONS: Successfully parsed structured response:',
                 JSON.stringify(suggestions, null, 2),
             )
+
+            // Log token usage
+            if (data.usage) {
+                logEvent('ai_token_used', {
+                    tokens: data.usage.total_tokens,
+                    operation: 'title_suggestions',
+                    model: data.model,
+                })
+            }
+
             return suggestions
         } catch (error) {
             console.error('🤖 AI TITLE SUGGESTIONS: Failed:', error)
@@ -408,6 +430,16 @@ export class AIService {
                 '🤖 AI METADATA QUALITY: Successfully parsed structured response:',
                 JSON.stringify(result, null, 2),
             )
+
+            // Log token usage
+            if (data.usage) {
+                logEvent('ai_token_used', {
+                    tokens: data.usage.total_tokens,
+                    operation: 'metadata_quality_analysis',
+                    model: data.model,
+                })
+            }
+
             return result
         } catch (error) {
             console.error('🤖 AI METADATA QUALITY: Failed:', error)

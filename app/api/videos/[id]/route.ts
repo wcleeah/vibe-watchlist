@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { tags, videos, videoTags } from '@/lib/db/schema'
+import { logEvent } from '@/lib/analytics/events'
 
 // GET /api/videos/[id] - Get a specific video with tags
 export async function GET(
@@ -72,6 +73,11 @@ export async function GET(
         return NextResponse.json(videoWithTags)
     } catch (error) {
         console.error('Error fetching video:', error)
+        logEvent('error_occurred', {
+            operation: 'video_fetch',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'videos/[id]',
+        })
         return NextResponse.json(
             { error: 'Failed to fetch video' },
             { status: 500 },
@@ -128,6 +134,15 @@ export async function PUT(
                 { error: 'Video not found' },
                 { status: 404 },
             )
+        }
+
+        // Log watch/unwatch events
+        if (typeof isWatched === 'boolean') {
+            logEvent(isWatched ? 'video_watched' : 'video_unwatched', {
+                videoId: id,
+                url: result[0].url,
+                platform: result[0].platform,
+            })
         }
 
         const videoWithTags = {
@@ -197,6 +212,11 @@ export async function PUT(
         return NextResponse.json(videoWithTags)
     } catch (error) {
         console.error('Error updating video:', error)
+        logEvent('error_occurred', {
+            operation: 'video_update',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'videos/[id]',
+        })
         return NextResponse.json(
             { error: 'Failed to update video' },
             { status: 500 },
@@ -218,6 +238,16 @@ export async function DELETE(
             )
         }
 
+        // Get video data before deletion for logging
+        const videoData = await db
+            .select({
+                url: videos.url,
+                platform: videos.platform,
+            })
+            .from(videos)
+            .where(eq(videos.id, id))
+            .limit(1)
+
         const result = await db
             .delete(videos)
             .where(eq(videos.id, id))
@@ -230,9 +260,23 @@ export async function DELETE(
             )
         }
 
+        // Log video deletion event
+        if (videoData.length > 0) {
+            logEvent('video_deleted', {
+                videoId: id,
+                url: videoData[0].url,
+                platform: videoData[0].platform,
+            })
+        }
+
         return NextResponse.json({ success: true })
     } catch (error) {
         console.error('Error deleting video:', error)
+        logEvent('error_occurred', {
+            operation: 'video_delete',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: 'videos/[id]',
+        })
         return NextResponse.json(
             { error: 'Failed to delete video' },
             { status: 500 },

@@ -5,6 +5,7 @@ import { aiMetadataCache } from '@/lib/db/schema'
 import { AIService } from '@/lib/services/ai-service'
 import { MetascraperService } from '@/lib/services/metascraper-service'
 import { SharedMetadataService } from '@/lib/services/shared-metadata-service'
+import { logEvent } from '@/lib/analytics/events'
 import type {
     AIMetadataConfig,
     GoogleSearchResult,
@@ -52,6 +53,10 @@ export class AIMetadataService {
                     cached.aiAnalysis?.length || 0,
                     'items',
                 )
+                // Log cache hit event
+                logEvent('cache_hit', {
+                    url,
+                })
                 return {
                     success: true,
                     suggestions: cached.aiAnalysis,
@@ -63,6 +68,11 @@ export class AIMetadataService {
                     },
                 }
             }
+
+            // Log cache miss event
+            logEvent('cache_miss', {
+                url,
+            })
 
             logger.log(
                 '🔍 AI METADATA SERVICE: No cache hit, parsing URL for platform detection',
