@@ -1,7 +1,7 @@
 'use client'
 
 import { BarChart3, RefreshCw, TrendingUp } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
     Bar,
     BarChart,
@@ -76,12 +76,16 @@ export default function AnalyticsPage() {
     const [temporalData, setTemporalData] = useState<TemporalData | null>(null)
     const [loading, setLoading] = useState(false)
 
-    const fetchData = useCallback(async () => {
+    const fetchData = async () => {
         setLoading(true)
         try {
             const [metricsRes, temporalRes] = await Promise.all([
-                fetch(`/api/analytics/metrics?startDate=${startDate}&endDate=${endDate}`),
-                fetch(`/api/analytics/temporal?startDate=${startDate}&endDate=${endDate}`)
+                fetch(
+                    `/api/analytics/metrics?startDate=${startDate}&endDate=${endDate}`,
+                ),
+                fetch(
+                    `/api/analytics/temporal?startDate=${startDate}&endDate=${endDate}`,
+                ),
             ])
 
             if (metricsRes.ok) {
@@ -98,22 +102,11 @@ export default function AnalyticsPage() {
         } finally {
             setLoading(false)
         }
-    }, [startDate, endDate])
-
-            if (temporalRes.ok) {
-                const temporal = await temporalRes.json()
-                setTemporalData(temporal)
-            }
-        } catch (error) {
-            console.error('Failed to fetch analytics data:', error)
-        } finally {
-            setLoading(false)
-        }
     }
 
     useEffect(() => {
         fetchData()
-    }, [startDate, endDate, fetchData])
+    }, [startDate, endDate])
 
     // Prepare chart data
     const hotHoursChartData = temporalData
