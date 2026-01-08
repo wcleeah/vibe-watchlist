@@ -68,6 +68,7 @@ export const analyticsEvents = pgTable('analytics_events', {
     eventData: jsonb('event_data'),
     userId: text('user_id'), // For future multi-user support
     sessionId: text('session_id'),
+    processed: boolean('processed').default(false),
     createdAt: timestamp('created_at').defaultNow(),
 })
 

@@ -10,10 +10,20 @@ export type EventType =
     | 'bulk_operation'
     | 'page_view'
     | 'metadata_extracted'
+    | 'metadata_extract_success'
+    | 'metadata_extract_failure'
     | 'search_performed'
     | 'token_used'
+    | 'ai_token_used'
+    | 'cache_hit'
+    | 'cache_miss'
     | 'add_video'
     | 'error_occurred'
+    | 'platform_configured'
+    | 'tag_created'
+    | 'tag_deleted'
+    | 'settings_changed'
+    | 'feature_used'
 
 export interface EventPayload {
     videoId?: number
