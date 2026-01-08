@@ -220,18 +220,18 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
             // Fetch daily analytics data
             const [dailyResponse, performanceResponse] = await Promise.all([
                 fetch('/api/analytics/daily?days=30'),
-                fetch('/api/analytics/performance?days=30')
+                fetch('/api/analytics/performance?days=30'),
             ])
 
             if (dailyResponse.ok && performanceResponse.ok) {
                 const [dailyData, performanceData] = await Promise.all([
                     dailyResponse.json(),
-                    performanceResponse.json()
+                    performanceResponse.json(),
                 ])
 
                 setChartData({
                     daily: dailyData.data || [],
-                    performance: performanceData.data || []
+                    performance: performanceData.data || [],
                 })
             } else {
                 console.error('Failed to fetch chart data')
@@ -268,7 +268,14 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
 
     return (
         <AnalyticsContext.Provider
-            value={{ stats, chartData, refreshStats, refreshCharts, isLoading, countdown }}
+            value={{
+                stats,
+                chartData,
+                refreshStats,
+                refreshCharts,
+                isLoading,
+                countdown,
+            }}
         >
             {children}
         </AnalyticsContext.Provider>

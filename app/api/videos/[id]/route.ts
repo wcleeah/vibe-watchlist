@@ -1,8 +1,8 @@
 import { eq, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
+import { logEvent } from '@/lib/analytics/events'
 import { db } from '@/lib/db'
 import { tags, videos, videoTags } from '@/lib/db/schema'
-import { logEvent } from '@/lib/analytics/events'
 
 // GET /api/videos/[id] - Get a specific video with tags
 export async function GET(

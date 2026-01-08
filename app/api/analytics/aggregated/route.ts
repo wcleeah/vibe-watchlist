@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { desc, sql } from 'drizzle-orm'
+import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { analyticsEvents } from '@/lib/db/schema'
-import { sql, desc } from 'drizzle-orm'
 
 // GET /api/analytics/aggregated - Get aggregated analytics data
 export async function GET(request: NextRequest) {

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { and, desc, eq, gte, lte, sql } from 'drizzle-orm'
+import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { analyticsEvents } from '@/lib/db/schema'
-import { desc, sql, and, gte, lte, eq } from 'drizzle-orm'
 
 // GET /api/analytics/events - Get analytics events with optional filters
 export async function GET(request: NextRequest) {
@@ -21,14 +21,19 @@ export async function GET(request: NextRequest) {
         }
 
         if (startDate) {
-            whereConditions.push(gte(analyticsEvents.createdAt, new Date(startDate)))
+            whereConditions.push(
+                gte(analyticsEvents.createdAt, new Date(startDate)),
+            )
         }
 
         if (endDate) {
-            whereConditions.push(lte(analyticsEvents.createdAt, new Date(endDate)))
+            whereConditions.push(
+                lte(analyticsEvents.createdAt, new Date(endDate)),
+            )
         }
 
-        const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined
+        const whereClause =
+            whereConditions.length > 0 ? and(...whereConditions) : undefined
 
         const events = await db
             .select()

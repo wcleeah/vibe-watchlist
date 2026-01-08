@@ -1,6 +1,14 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts'
 
 interface PerformanceChartProps {
     data: Array<{
@@ -13,7 +21,7 @@ interface PerformanceChartProps {
 
 export function PerformanceChart({ data }: PerformanceChartProps) {
     // Transform data for the chart
-    const chartData = data.map(item => ({
+    const chartData = data.map((item) => ({
         date: new Date(item.date).toLocaleDateString(),
         'Cache Hit %': Math.round(item.cacheHitRate * 100) / 100,
         'Error %': Math.round(item.errorRate * 100) / 100,
@@ -21,21 +29,17 @@ export function PerformanceChart({ data }: PerformanceChartProps) {
     }))
 
     return (
-        <div className="w-full h-64">
-            <ResponsiveContainer width="100%" height="100%">
+        <div className='w-full h-64'>
+            <ResponsiveContainer width='100%' height='100%'>
                 <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray='3 3' />
                     <XAxis
-                        dataKey="date"
+                        dataKey='date'
                         fontSize={12}
                         tickLine={false}
                         axisLine={false}
                     />
-                    <YAxis
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                    />
+                    <YAxis fontSize={12} tickLine={false} axisLine={false} />
                     <Tooltip
                         contentStyle={{
                             backgroundColor: 'hsl(var(--background))',
@@ -44,14 +48,14 @@ export function PerformanceChart({ data }: PerformanceChartProps) {
                         }}
                     />
                     <Bar
-                        dataKey="Cache Hit %"
-                        fill="hsl(var(--primary))"
-                        name="Cache Hit Rate %"
+                        dataKey='Cache Hit %'
+                        fill='hsl(var(--primary))'
+                        name='Cache Hit Rate %'
                     />
                     <Bar
-                        dataKey="Error %"
-                        fill="hsl(0 84% 60%)"
-                        name="Error Rate %"
+                        dataKey='Error %'
+                        fill='hsl(0 84% 60%)'
+                        name='Error Rate %'
                     />
                 </BarChart>
             </ResponsiveContainer>

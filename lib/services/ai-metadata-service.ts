@@ -1,11 +1,10 @@
 import { eq } from 'drizzle-orm'
-import { logger } from '@/lib/utils/logger'
+import { logEvent } from '@/lib/analytics/events'
 import { db } from '@/lib/db'
 import { aiMetadataCache } from '@/lib/db/schema'
 import { AIService } from '@/lib/services/ai-service'
 import { MetascraperService } from '@/lib/services/metascraper-service'
 import { SharedMetadataService } from '@/lib/services/shared-metadata-service'
-import { logEvent } from '@/lib/analytics/events'
 import type {
     AIMetadataConfig,
     GoogleSearchResult,
@@ -14,6 +13,7 @@ import type {
     MetadataExtractionResponse,
     MetadataSuggestion,
 } from '@/lib/types/ai-metadata'
+import { logger } from '@/lib/utils/logger'
 import { parseVideoUrlWithPlatforms } from '@/lib/utils/url-parser'
 import { PlatformDataService } from './platform-data-service'
 

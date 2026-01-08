@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
-import { analyticsEvents } from '@/lib/db/schema'
 import type { NewAnalyticsEvent } from '@/lib/db/schema'
+import { analyticsEvents } from '@/lib/db/schema'
 
 export type EventType =
     | 'video_added'

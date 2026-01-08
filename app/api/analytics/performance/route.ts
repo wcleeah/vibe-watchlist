@@ -1,7 +1,7 @@
+import { desc, gte } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { performanceMetrics } from '@/lib/db/schema'
-import { desc, gte } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
     try {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
             .orderBy(desc(performanceMetrics.date))
 
         // Transform data for charts
-        const chartData = performanceData.map(item => ({
+        const chartData = performanceData.map((item) => ({
             date: item.date,
             cacheHitRate: parseFloat(item.cacheHitRate || '0'),
             avgResponseTime: item.avgResponseTime || 0,

@@ -1,16 +1,23 @@
 'use client'
 
-import { RefreshCw, TrendingUp, BarChart3 } from 'lucide-react'
+import { BarChart3, RefreshCw, TrendingUp } from 'lucide-react'
+import { useState } from 'react'
+import {
+    EventTrendChart,
+    PerformanceChart,
+    PlatformUsageChart,
+} from '@/components/analytics/charts'
+import { EventAnalyticsSection } from '@/components/analytics/event-analytics-section'
 import { Button } from '@/components/ui/button'
 import { useAnalytics } from '@/lib/analytics-context'
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils'
-import { EventAnalyticsSection } from '@/components/analytics/event-analytics-section'
-import { EventTrendChart, PlatformUsageChart, PerformanceChart } from '@/components/analytics/charts'
-import { useState } from 'react'
 
 export function AnalyticsDashboard() {
-    const { stats, chartData, refreshStats, refreshCharts, isLoading } = useAnalytics()
-    const [activeTab, setActiveTab] = useState<'live' | 'events' | 'charts'>('live')
+    const { stats, chartData, refreshStats, refreshCharts, isLoading } =
+        useAnalytics()
+    const [activeTab, setActiveTab] = useState<'live' | 'events' | 'charts'>(
+        'live',
+    )
 
     if (!stats) {
         return (
@@ -254,7 +261,13 @@ export function AnalyticsDashboard() {
                                         Platform Usage (Latest Data)
                                     </h3>
                                     {chartData.daily.length > 0 ? (
-                                        <PlatformUsageChart data={chartData.daily[chartData.daily.length - 1]?.platformUsage || {}} />
+                                        <PlatformUsageChart
+                                            data={
+                                                chartData.daily[
+                                                    chartData.daily.length - 1
+                                                ]?.platformUsage || {}
+                                            }
+                                        />
                                     ) : (
                                         <div className='text-center py-8 text-gray-500'>
                                             No platform data available
@@ -267,7 +280,9 @@ export function AnalyticsDashboard() {
                                     <h3 className='text-lg font-semibold font-mono mb-4'>
                                         Performance Metrics (Last 30 Days)
                                     </h3>
-                                    <PerformanceChart data={chartData.performance} />
+                                    <PerformanceChart
+                                        data={chartData.performance}
+                                    />
                                 </div>
 
                                 {/* Refresh Charts Button */}

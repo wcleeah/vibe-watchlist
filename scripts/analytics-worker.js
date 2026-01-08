@@ -1,6 +1,6 @@
+import { eq } from 'drizzle-orm';
 import { db } from '../lib/db';
 import { analyticsEvents } from '../lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 /**
  * Analytics Worker - Processes queued analytics events

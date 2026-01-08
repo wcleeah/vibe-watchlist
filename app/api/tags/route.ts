@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
+import { logEvent } from '@/lib/analytics/events'
 import { db } from '@/lib/db'
 import { tags } from '@/lib/db/schema'
-import { logEvent } from '@/lib/analytics/events'
 
 // GET /api/tags - Get all tags
 export async function GET() {

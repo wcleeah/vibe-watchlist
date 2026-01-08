@@ -1,7 +1,11 @@
-import { db } from '@/lib/db'
-import { analyticsEvents, dailyAnalytics, performanceMetrics } from '@/lib/db/schema'
+import { and, eq, gte, lte } from 'drizzle-orm'
 import { logEvent } from '@/lib/analytics/events'
-import { and, gte, lte, eq } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import {
+    analyticsEvents,
+    dailyAnalytics,
+    performanceMetrics,
+} from '@/lib/db/schema'
 
 export interface DailyMetrics {
     date: string
@@ -40,7 +44,9 @@ export class AnalyticsWorker {
                 return
             }
 
-            console.log(`🔄 ANALYTICS WORKER: Processing ${pendingEvents.length} events`)
+            console.log(
+                `🔄 ANALYTICS WORKER: Processing ${pendingEvents.length} events`,
+            )
 
             // Group events by date
             const eventsByDate = this.groupEventsByDate(pendingEvents)
@@ -56,9 +62,14 @@ export class AnalyticsWorker {
                 .set({ processed: true })
                 .where(eq(analyticsEvents.processed, false))
 
-            console.log('✅ ANALYTICS WORKER: Event processing completed successfully')
+            console.log(
+                '✅ ANALYTICS WORKER: Event processing completed successfully',
+            )
         } catch (error) {
-            console.error('❌ ANALYTICS WORKER: Failed to process events:', error)
+            console.error(
+                '❌ ANALYTICS WORKER: Failed to process events:',
+                error,
+            )
             logEvent('error_occurred', {
                 operation: 'analytics_processing',
                 error: error instanceof Error ? error.message : 'Unknown error',
@@ -69,12 +80,17 @@ export class AnalyticsWorker {
     /**
      * Process events for a specific date
      */
-    private async processDailyEvents(dateStr: string, events: typeof analyticsEvents.$inferSelect[]): Promise<void> {
+    private async processDailyEvents(
+        dateStr: string,
+        events: (typeof analyticsEvents.$inferSelect)[],
+    ): Promise<void> {
         // Calculate daily metrics
         const metrics = this.calculateDailyMetrics(events)
 
         // Calculate performance data
-        const performance = await this.calculatePerformanceMetrics(new Date(dateStr))
+        const performance = await this.calculatePerformanceMetrics(
+            new Date(dateStr),
+        )
 
         // Insert or update daily analytics
         await db
@@ -124,12 +140,16 @@ export class AnalyticsWorker {
     /**
      * Group events by date (YYYY-MM-DD format)
      */
-    private groupEventsByDate(events: typeof analyticsEvents.$inferSelect[]): Record<string, typeof events> {
+    private groupEventsByDate(
+        events: (typeof analyticsEvents.$inferSelect)[],
+    ): Record<string, typeof events> {
         const groups: Record<string, typeof events> = {}
 
         for (const event of events) {
             if (!event.createdAt) continue
-            const dateStr = new Date(event.createdAt).toISOString().split('T')[0]
+            const dateStr = new Date(event.createdAt)
+                .toISOString()
+                .split('T')[0]
             if (!groups[dateStr]) {
                 groups[dateStr] = []
             }
@@ -142,7 +162,9 @@ export class AnalyticsWorker {
     /**
      * Calculate daily metrics from events
      */
-    private calculateDailyMetrics(events: typeof analyticsEvents.$inferSelect[]): DailyMetrics {
+    private calculateDailyMetrics(
+        events: (typeof analyticsEvents.$inferSelect)[],
+    ): DailyMetrics {
         const eventsByType: Record<string, number> = {}
         const platformUsage: Record<string, number> = {}
         let errorCount = 0
@@ -150,12 +172,14 @@ export class AnalyticsWorker {
 
         for (const event of events) {
             // Count events by type
-            eventsByType[event.eventType] = (eventsByType[event.eventType] || 0) + 1
+            eventsByType[event.eventType] =
+                (eventsByType[event.eventType] || 0) + 1
 
             // Extract platform usage
             const eventData = event.eventData as any
             if (eventData?.platform) {
-                platformUsage[eventData.platform] = (platformUsage[eventData.platform] || 0) + 1
+                platformUsage[eventData.platform] =
+                    (platformUsage[eventData.platform] || 0) + 1
             }
 
             // Count errors
@@ -191,7 +215,9 @@ export class AnalyticsWorker {
     /**
      * Calculate performance metrics for a date
      */
-    private async calculatePerformanceMetrics(date: Date): Promise<PerformanceData> {
+    private async calculatePerformanceMetrics(
+        date: Date,
+    ): Promise<PerformanceData> {
         const startOfDay = new Date(date)
         startOfDay.setHours(0, 0, 0, 0)
 
@@ -202,22 +228,35 @@ export class AnalyticsWorker {
         const dayEvents = await db
             .select()
             .from(analyticsEvents)
-            .where(and(
-                gte(analyticsEvents.createdAt, startOfDay),
-                lte(analyticsEvents.createdAt, endOfDay)
-            ))
+            .where(
+                and(
+                    gte(analyticsEvents.createdAt, startOfDay),
+                    lte(analyticsEvents.createdAt, endOfDay),
+                ),
+            )
 
         // Calculate cache hit rate
-        const cacheEvents = dayEvents.filter(e => e.eventType === 'cache_hit' || e.eventType === 'cache_miss')
-        const cacheHits = cacheEvents.filter(e => e.eventType === 'cache_hit').length
-        const cacheHitRate = cacheEvents.length > 0 ? (cacheHits / cacheEvents.length) * 100 : 0
+        const cacheEvents = dayEvents.filter(
+            (e) => e.eventType === 'cache_hit' || e.eventType === 'cache_miss',
+        )
+        const cacheHits = cacheEvents.filter(
+            (e) => e.eventType === 'cache_hit',
+        ).length
+        const cacheHitRate =
+            cacheEvents.length > 0 ? (cacheHits / cacheEvents.length) * 100 : 0
 
         // Calculate error rate
-        const errorRate = dayEvents.length > 0 ? (dayEvents.filter(e => e.eventType === 'error_occurred').length / dayEvents.length) * 100 : 0
+        const errorRate =
+            dayEvents.length > 0
+                ? (dayEvents.filter((e) => e.eventType === 'error_occurred')
+                      .length /
+                      dayEvents.length) *
+                  100
+                : 0
 
         // Sum AI tokens used
         const aiTokensUsed = dayEvents
-            .filter(e => e.eventType === 'ai_token_used')
+            .filter((e) => e.eventType === 'ai_token_used')
             .reduce((sum, e) => sum + ((e.eventData as any)?.tokens || 0), 0)
 
         return {

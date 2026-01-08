@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { logEvent } from '@/lib/analytics/events'
 import { aiMetadataService } from '@/lib/services/ai-metadata-service'
 import { PlatformDataService } from '@/lib/services/platform-data-service'
-import { parseVideoUrlWithPlatforms } from '@/lib/utils/url-parser'
 import { logger } from '@/lib/utils/logger'
-import { logEvent } from '@/lib/analytics/events'
+import { parseVideoUrlWithPlatforms } from '@/lib/utils/url-parser'
 
 export async function POST(request: NextRequest) {
     try {

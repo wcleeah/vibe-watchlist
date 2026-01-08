@@ -51,7 +51,10 @@ export const aiMetadataCache = pgTable(
         searchResults: jsonb('search_results').notNull(),
         extractedMetadata: jsonb('extracted_metadata').notNull(), // Structured metadata instead of raw HTML
         aiAnalysis: jsonb('ai_analysis').notNull(),
-        confidenceScore: decimal('confidence_score', { precision: 3, scale: 2 }),
+        confidenceScore: decimal('confidence_score', {
+            precision: 3,
+            scale: 2,
+        }),
         createdAt: timestamp('created_at').defaultNow(),
         expiresAt: timestamp('expires_at').notNull(),
     },

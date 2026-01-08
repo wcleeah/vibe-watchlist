@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
+import { logEvent } from '@/lib/analytics/events'
 import { db } from '@/lib/db'
 import { platformConfigs } from '@/lib/db/schema'
-import { logEvent } from '@/lib/analytics/events'
 
 export async function GET() {
     try {

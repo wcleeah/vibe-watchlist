@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { sql } from 'drizzle-orm'
+import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { analyticsEvents } from '@/lib/db/schema'
-import { sql } from 'drizzle-orm'
 
 // GET /api/analytics/export - Export analytics data as CSV
 export async function GET(request: NextRequest) {

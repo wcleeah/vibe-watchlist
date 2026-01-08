@@ -1,8 +1,8 @@
 import { inArray } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
+import { logEvent } from '@/lib/analytics/events'
 import { db } from '@/lib/db'
 import { videos } from '@/lib/db/schema'
-import { logEvent } from '@/lib/analytics/events'
 
 // POST /api/videos/bulk - Bulk operations (mark watched, delete)
 export async function POST(request: NextRequest) {

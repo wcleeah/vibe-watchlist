@@ -1,7 +1,7 @@
+import { desc, gte, lte } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { dailyAnalytics } from '@/lib/db/schema'
-import { desc, gte, lte } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
     try {
@@ -17,11 +17,13 @@ export async function GET(request: NextRequest) {
         const analyticsData = await db
             .select()
             .from(dailyAnalytics)
-            .where(gte(dailyAnalytics.date, startDate.toISOString().split('T')[0]))
+            .where(
+                gte(dailyAnalytics.date, startDate.toISOString().split('T')[0]),
+            )
             .orderBy(desc(dailyAnalytics.date))
 
         // Transform data for charts
-        const chartData = analyticsData.map(item => ({
+        const chartData = analyticsData.map((item) => ({
             date: item.date,
             totalEvents: item.totalEvents,
             eventsByType: item.eventsByType as Record<string, number>,
