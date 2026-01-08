@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { analyticsEvents } from '@/lib/db/schema'
-import { desc, sql } from 'drizzle-orm'
+import { desc, sql, and, gte, lte, eq } from 'drizzle-orm'
 
 // GET /api/analytics/events - Get analytics events with optional filters
 export async function GET(request: NextRequest) {
@@ -13,34 +13,27 @@ export async function GET(request: NextRequest) {
         const startDate = searchParams.get('startDate')
         const endDate = searchParams.get('endDate')
 
-        let whereConditions = []
+        // Build where conditions using Drizzle syntax
+        const whereConditions = []
 
         if (eventType) {
-            whereConditions.push(
-                sql`${analyticsEvents.eventType} = ${eventType}`,
-            )
+            whereConditions.push(eq(analyticsEvents.eventType, eventType))
         }
 
         if (startDate) {
-            whereConditions.push(
-                sql`${analyticsEvents.createdAt} >= ${new Date(startDate)}`,
-            )
+            whereConditions.push(gte(analyticsEvents.createdAt, new Date(startDate)))
         }
 
         if (endDate) {
-            whereConditions.push(
-                sql`${analyticsEvents.createdAt} <= ${new Date(endDate)}`,
-            )
+            whereConditions.push(lte(analyticsEvents.createdAt, new Date(endDate)))
         }
+
+        const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined
 
         const events = await db
             .select()
             .from(analyticsEvents)
-            .where(
-                whereConditions.length > 0
-                    ? sql`(${whereConditions.join(' AND ')})`
-                    : sql`TRUE`,
-            )
+            .where(whereClause)
             .orderBy(desc(analyticsEvents.createdAt))
             .limit(limit)
             .offset(offset)
@@ -49,11 +42,7 @@ export async function GET(request: NextRequest) {
         const totalResult = await db
             .select({ count: sql<number>`count(*)` })
             .from(analyticsEvents)
-            .where(
-                whereConditions.length > 0
-                    ? sql`(${whereConditions.join(' AND ')})`
-                    : sql`TRUE`,
-            )
+            .where(whereClause)
 
         return NextResponse.json({
             events,
