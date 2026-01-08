@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
+import { logEvent } from '@/lib/analytics/events'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import type { VideoFormData, VideoSuggestions } from '@/types/form'
 import type { Tag } from '@/types/tag'
@@ -229,6 +230,14 @@ export function FormLayout({
                     if (platform === 'unknown') {
                         setValue('platform', suggestion.platform || '')
                     }
+
+                    // Log suggestion acceptance
+                    logEvent('suggestion_accepted', {
+                        suggestionType: 'ai',
+                        platform: suggestion.platform,
+                        confidence: suggestion.confidence,
+                        hasThumbnail: !!suggestion.thumbnailUrl,
+                    })
                 }}
                 error={aiMetadataError || undefined}
                 disabled={isSubmitting}

@@ -181,6 +181,8 @@ export class AIService {
             if (data.usage) {
                 logEvent('ai_token_used', {
                     tokens: data.usage.total_tokens,
+                    inputTokens: data.usage.prompt_tokens,
+                    outputTokens: data.usage.completion_tokens,
                     operation: 'platform_detection',
                     model: data.model,
                 })
@@ -306,6 +308,8 @@ export class AIService {
             if (data.usage) {
                 logEvent('ai_token_used', {
                     tokens: data.usage.total_tokens,
+                    inputTokens: data.usage.prompt_tokens,
+                    outputTokens: data.usage.completion_tokens,
                     operation: 'title_suggestions',
                     model: data.model,
                 })
@@ -435,7 +439,9 @@ export class AIService {
             if (data.usage) {
                 logEvent('ai_token_used', {
                     tokens: data.usage.total_tokens,
-                    operation: 'metadata_quality_analysis',
+                    inputTokens: data.usage.prompt_tokens,
+                    outputTokens: data.usage.completion_tokens,
+                    operation: 'metadata_analysis',
                     model: data.model,
                 })
             }

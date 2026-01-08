@@ -24,6 +24,8 @@ export type EventType =
     | 'tag_deleted'
     | 'settings_changed'
     | 'feature_used'
+    | 'suggestion_accepted'
+    | 'platform_suggestion_accepted'
 
 export interface EventPayload {
     videoId?: number

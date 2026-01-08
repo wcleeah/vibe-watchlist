@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { logEvent } from '@/lib/analytics/events'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import { PlatformIcon } from './platform-badge'
 import { PlatformCreator } from './platform-creator'
@@ -92,6 +93,13 @@ export function PlatformSuggestions({
                             onClick={async () => {
                                 await onAccept(suggestion)
                                 setActionExecuted(true)
+
+                                // Log platform suggestion acceptance
+                                logEvent('platform_suggestion_accepted', {
+                                    suggestionType: 'platform',
+                                    platform: suggestion.platform,
+                                    confidence: suggestion.confidence,
+                                })
                             }}
                             className='flex-1 h-8 text-xs'
                             type='button'
