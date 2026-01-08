@@ -6,9 +6,6 @@ Sentry.init({
     tracesSampleRate: parseFloat(
         process.env.SENTRY_TRACES_SAMPLE_RATE || '0.1',
     ),
-    integrations: [
-        Sentry.httpIntegration(),
-        Sentry.nativeNodeFetchIntegration(),
-        Sentry.postgresIntegration(),
-    ],
+    // Integrations are automatically configured for Next.js
+    // API routes, HTTP requests, and database queries will be traced
 })
