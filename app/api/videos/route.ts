@@ -7,6 +7,7 @@ import {
     parseVideoUrlWithPlatforms,
     type VideoPlatform,
 } from '@/lib/utils/url-parser'
+import { logEvent } from '@/lib/analytics/events'
 
 // GET /api/videos - Get videos with optional filters
 export async function GET(request: NextRequest) {

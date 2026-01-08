@@ -12,6 +12,8 @@ export type EventType =
     | 'metadata_extracted'
     | 'search_performed'
     | 'token_used'
+    | 'add_video'
+    | 'error_occurred'
 
 export interface EventPayload {
     videoId?: number
