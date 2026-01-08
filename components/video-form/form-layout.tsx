@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
-import { logEvent } from '@/lib/analytics/events'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import type { VideoFormData, VideoSuggestions } from '@/types/form'
 import type { Tag } from '@/types/tag'
@@ -231,12 +230,24 @@ export function FormLayout({
                         setValue('platform', suggestion.platform || '')
                     }
 
-                    // Log suggestion acceptance
-                    logEvent('suggestion_accepted', {
-                        suggestionType: 'ai',
-                        platform: suggestion.platform,
-                        confidence: suggestion.confidence,
-                        hasThumbnail: !!suggestion.thumbnailUrl,
+                    // Log suggestion acceptance via API
+                    fetch('/api/events/log', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            eventType: 'suggestion_accepted',
+                            payload: {
+                                suggestionType: 'ai',
+                                platform: suggestion.platform,
+                                confidence: suggestion.confidence,
+                                hasThumbnail: !!suggestion.thumbnailUrl,
+                            },
+                        }),
+                    }).catch((error) => {
+                        console.warn(
+                            'Failed to log suggestion acceptance:',
+                            error,
+                        )
                     })
                 }}
                 error={aiMetadataError || undefined}
