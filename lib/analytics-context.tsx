@@ -39,9 +39,29 @@ export interface WatchStats {
     }>
 }
 
+export interface ChartData {
+    daily: Array<{
+        date: string
+        totalEvents: number
+        eventsByType: Record<string, number>
+        platformUsage: Record<string, number>
+        errorCount: number
+        aiTokenUsage: number
+    }>
+    performance: Array<{
+        date: string
+        cacheHitRate: number
+        errorRate: number
+        aiTokensUsed: number
+        avgResponseTime: number
+    }>
+}
+
 const AnalyticsContext = createContext<{
     stats: WatchStats | null
+    chartData: ChartData | null
     refreshStats: () => Promise<void>
+    refreshCharts: () => Promise<void>
     isLoading: boolean
     countdown: number
 } | null>(null)
@@ -60,6 +80,7 @@ interface AnalyticsProviderProps {
 
 export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     const [stats, setStats] = useState<WatchStats | null>(null)
+    const [chartData, setChartData] = useState<ChartData | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [countdown, setCountdown] = useState(15)
 
@@ -194,10 +215,39 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
         }
     }, [])
 
+    const refreshCharts = useCallback(async () => {
+        try {
+            // Fetch daily analytics data
+            const [dailyResponse, performanceResponse] = await Promise.all([
+                fetch('/api/analytics/daily?days=30'),
+                fetch('/api/analytics/performance?days=30')
+            ])
+
+            if (dailyResponse.ok && performanceResponse.ok) {
+                const [dailyData, performanceData] = await Promise.all([
+                    dailyResponse.json(),
+                    performanceResponse.json()
+                ])
+
+                setChartData({
+                    daily: dailyData.data || [],
+                    performance: performanceData.data || []
+                })
+            } else {
+                console.error('Failed to fetch chart data')
+                setChartData({ daily: [], performance: [] })
+            }
+        } catch (error) {
+            console.error('Failed to refresh charts:', error)
+            setChartData({ daily: [], performance: [] })
+        }
+    }, [])
+
     // Initial load and polling every 15 seconds with countdown
     useEffect(() => {
         // Initial load
         refreshStats()
+        refreshCharts()
 
         // Start countdown
         const countdownInterval = setInterval(() => {
@@ -207,17 +257,18 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
         // Polling
         const pollInterval = setInterval(() => {
             refreshStats()
+            refreshCharts()
         }, 15000)
 
         return () => {
             clearInterval(countdownInterval)
             clearInterval(pollInterval)
         }
-    }, [refreshStats])
+    }, [refreshStats, refreshCharts])
 
     return (
         <AnalyticsContext.Provider
-            value={{ stats, refreshStats, isLoading, countdown }}
+            value={{ stats, chartData, refreshStats, refreshCharts, isLoading, countdown }}
         >
             {children}
         </AnalyticsContext.Provider>

@@ -1,15 +1,16 @@
 'use client'
 
-import { RefreshCw, TrendingUp } from 'lucide-react'
+import { RefreshCw, TrendingUp, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAnalytics } from '@/lib/analytics-context'
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils'
 import { EventAnalyticsSection } from '@/components/analytics/event-analytics-section'
+import { EventTrendChart, PlatformUsageChart, PerformanceChart } from '@/components/analytics/charts'
 import { useState } from 'react'
 
 export function AnalyticsDashboard() {
-    const { stats, refreshStats, isLoading } = useAnalytics()
-    const [activeTab, setActiveTab] = useState<'live' | 'events'>('live')
+    const { stats, chartData, refreshStats, refreshCharts, isLoading } = useAnalytics()
+    const [activeTab, setActiveTab] = useState<'live' | 'events' | 'charts'>('live')
 
     if (!stats) {
         return (
@@ -78,6 +79,18 @@ export function AnalyticsDashboard() {
                         type='button'
                     >
                         Event Analytics
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('charts')}
+                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-1 ${
+                            activeTab === 'charts'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                        type='button'
+                    >
+                        <BarChart3 className='w-4 h-4' />
+                        Charts
                     </button>
                 </div>
 
@@ -218,6 +231,63 @@ export function AnalyticsDashboard() {
                 )}
 
                 {activeTab === 'events' && <EventAnalyticsSection />}
+
+                {activeTab === 'charts' && (
+                    <div className='space-y-6'>
+                        {!chartData ? (
+                            <div className='text-center py-8 text-gray-500'>
+                                Loading chart data...
+                            </div>
+                        ) : (
+                            <>
+                                {/* Event Trends Chart */}
+                                <div className='p-4 border border-gray-200'>
+                                    <h3 className='text-lg font-semibold font-mono mb-4'>
+                                        Event Trends (Last 30 Days)
+                                    </h3>
+                                    <EventTrendChart data={chartData.daily} />
+                                </div>
+
+                                {/* Platform Usage Chart */}
+                                <div className='p-4 border border-gray-200'>
+                                    <h3 className='text-lg font-semibold font-mono mb-4'>
+                                        Platform Usage (Latest Data)
+                                    </h3>
+                                    {chartData.daily.length > 0 ? (
+                                        <PlatformUsageChart data={chartData.daily[chartData.daily.length - 1]?.platformUsage || {}} />
+                                    ) : (
+                                        <div className='text-center py-8 text-gray-500'>
+                                            No platform data available
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Performance Metrics Chart */}
+                                <div className='p-4 border border-gray-200'>
+                                    <h3 className='text-lg font-semibold font-mono mb-4'>
+                                        Performance Metrics (Last 30 Days)
+                                    </h3>
+                                    <PerformanceChart data={chartData.performance} />
+                                </div>
+
+                                {/* Refresh Charts Button */}
+                                <div className='flex justify-center'>
+                                    <Button
+                                        onClick={refreshCharts}
+                                        disabled={isLoading}
+                                        variant='outline'
+                                        size='sm'
+                                    >
+                                        <RefreshCw
+                                            className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`}
+                                        />
+                                        Refresh Charts
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     )
