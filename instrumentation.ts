@@ -9,5 +9,6 @@ Sentry.init({
     integrations: [
         Sentry.httpIntegration(),
         Sentry.nativeNodeFetchIntegration(),
+        Sentry.postgresIntegration(),
     ],
 })
