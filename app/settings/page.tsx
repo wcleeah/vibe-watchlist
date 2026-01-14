@@ -11,7 +11,6 @@ import { useState } from 'react'
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { CacheActions } from '@/components/settings/cache/cache-actions'
 import { CacheEntries } from '@/components/settings/cache/cache-entries'
-import { CacheStats } from '@/components/settings/cache/cache-stats'
 import { PlatformForm } from '@/components/settings/platforms/platform-form'
 import { PlatformList } from '@/components/settings/platforms/platform-list'
 
@@ -64,7 +63,6 @@ export default function SettingsPage() {
             case 'cache':
                 return (
                     <div className='space-y-6'>
-                        <CacheStats />
                         <CacheActions onStatsRefresh={handleStatsRefresh} />
                         <CacheEntries onRefresh={handleStatsRefresh} />
                     </div>

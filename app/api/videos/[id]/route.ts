@@ -1,6 +1,5 @@
 import { eq, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
-import { logEvent } from '@/lib/analytics/events'
 import { db } from '@/lib/db'
 import { tags, videos, videoTags } from '@/lib/db/schema'
 
@@ -44,20 +43,16 @@ export async function GET(
             )
         }
 
-        // Parse the tags JSON string back to array
         let parsedTags = []
         try {
             if (Array.isArray(result[0].tags)) {
-                // Already parsed as array
                 parsedTags = result[0].tags
             } else if (typeof result[0].tags === 'string') {
-                // Need to parse JSON string
                 parsedTags =
                     result[0].tags && result[0].tags.trim() !== ''
                         ? JSON.parse(result[0].tags)
                         : []
             } else {
-                // Fallback for other cases
                 parsedTags = []
             }
         } catch (error) {
@@ -73,11 +68,6 @@ export async function GET(
         return NextResponse.json(videoWithTags)
     } catch (error) {
         console.error('Error fetching video:', error)
-        logEvent('error_occurred', {
-            operation: 'video_fetch',
-            error: error instanceof Error ? error.message : 'Unknown error',
-            endpoint: 'videos/[id]',
-        })
         return NextResponse.json(
             { error: 'Failed to fetch video' },
             { status: 500 },
@@ -136,15 +126,6 @@ export async function PUT(
             )
         }
 
-        // Log watch/unwatch events
-        if (typeof isWatched === 'boolean') {
-            logEvent(isWatched ? 'video_watched' : 'video_unwatched', {
-                videoId: id,
-                url: result[0].url,
-                platform: result[0].platform,
-            })
-        }
-
         const videoWithTags = {
             ...result[0],
             tags: [] as Array<{
@@ -154,7 +135,6 @@ export async function PUT(
             }>,
         }
 
-        // Handle tag associations if provided
         if (tagIds !== undefined) {
             if (!Array.isArray(tagIds)) {
                 return NextResponse.json(
@@ -163,11 +143,9 @@ export async function PUT(
                 )
             }
 
-            // Delete existing tag associations
             await db.delete(videoTags).where(eq(videoTags.videoId, id))
 
             if (tagIds.length > 0) {
-                // Validate that all tagIds exist
                 const tagPromises = tagIds.map((tagId) =>
                     db.select().from(tags).where(eq(tags.id, tagId)).limit(1),
                 )
@@ -178,14 +156,12 @@ export async function PUT(
                     .filter((tag) => tag !== undefined)
 
                 if (validTags.length !== tagIds.length) {
-                    // Some tags don't exist, return error
                     return NextResponse.json(
                         { error: 'One or more tag IDs do not exist' },
                         { status: 400 },
                     )
                 }
 
-                // Create new video-tag associations
                 const videoTagInserts = validTags.map((tag) => ({
                     videoId: id,
                     tagId: tag.id,
@@ -195,7 +171,6 @@ export async function PUT(
                 videoWithTags.tags = validTags
             }
         } else {
-            // If no tagIds provided, fetch existing tags
             const existingTags = await db
                 .select({
                     id: tags.id,
@@ -212,11 +187,6 @@ export async function PUT(
         return NextResponse.json(videoWithTags)
     } catch (error) {
         console.error('Error updating video:', error)
-        logEvent('error_occurred', {
-            operation: 'video_update',
-            error: error instanceof Error ? error.message : 'Unknown error',
-            endpoint: 'videos/[id]',
-        })
         return NextResponse.json(
             { error: 'Failed to update video' },
             { status: 500 },
@@ -238,16 +208,6 @@ export async function DELETE(
             )
         }
 
-        // Get video data before deletion for logging
-        const videoData = await db
-            .select({
-                url: videos.url,
-                platform: videos.platform,
-            })
-            .from(videos)
-            .where(eq(videos.id, id))
-            .limit(1)
-
         const result = await db
             .delete(videos)
             .where(eq(videos.id, id))
@@ -260,23 +220,9 @@ export async function DELETE(
             )
         }
 
-        // Log video deletion event
-        if (videoData.length > 0) {
-            logEvent('video_deleted', {
-                videoId: id,
-                url: videoData[0].url,
-                platform: videoData[0].platform,
-            })
-        }
-
         return NextResponse.json({ success: true })
     } catch (error) {
         console.error('Error deleting video:', error)
-        logEvent('error_occurred', {
-            operation: 'video_delete',
-            error: error instanceof Error ? error.message : 'Unknown error',
-            endpoint: 'videos/[id]',
-        })
         return NextResponse.json(
             { error: 'Failed to delete video' },
             { status: 500 },

@@ -1,6 +1,5 @@
 import { inArray } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
-import { logEvent } from '@/lib/analytics/events'
 import { db } from '@/lib/db'
 import { videos } from '@/lib/db/schema'
 
@@ -69,13 +68,6 @@ export async function POST(request: NextRequest) {
                 break
         }
 
-        // Log bulk operation event
-        logEvent('bulk_operation', {
-            operation,
-            count: result.length,
-            videoIds: result.map((r) => r.id),
-        })
-
         return NextResponse.json({
             operation,
             affectedCount: result.length,
@@ -83,11 +75,6 @@ export async function POST(request: NextRequest) {
         })
     } catch (error) {
         console.error('Error performing bulk operation:', error)
-        logEvent('error_occurred', {
-            operation: 'bulk_operation',
-            error: error instanceof Error ? error.message : 'Unknown error',
-            endpoint: 'videos/bulk',
-        })
         return NextResponse.json(
             { error: 'Failed to perform bulk operation' },
             { status: 500 },

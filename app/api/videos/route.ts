@@ -1,6 +1,5 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
-import { logEvent } from '@/lib/analytics/events'
 import { db } from '@/lib/db'
 import { tags, videos, videoTags } from '@/lib/db/schema'
 import { PlatformDataService } from '@/lib/services/platform-data-service'
@@ -53,17 +52,6 @@ export async function GET(request: NextRequest) {
           WHERE ${videoTags.videoId} = ${videos.id} AND ${tags.name} ILIKE ${sql.placeholder('search')}
         )
       )`)
-
-            // Log search event
-            // Note: This will log on every search API call, could be rate-limited in production
-            setTimeout(() => {
-                import('@/lib/analytics/events').then(({ logEvent }) => {
-                    logEvent('search_performed', {
-                        query: search.trim(),
-                        hasResults: true, // We'll assume true for now
-                    })
-                })
-            }, 0)
         }
 
         // Build dynamic order by clause
@@ -335,22 +323,9 @@ export async function POST(request: NextRequest) {
             videoWithTags.tags = validTags
         }
 
-        // Log video addition event
-        logEvent('add_video', {
-            videoId: newVideo[0].id,
-            url,
-            platform: finalPlatform,
-        })
-
         return NextResponse.json(videoWithTags, { status: 201 })
     } catch (error) {
         console.error('Error creating video:', error)
-        // Log error event
-        logEvent('error_occurred', {
-            operation: 'video_creation',
-            error: error instanceof Error ? error.message : 'Unknown error',
-            endpoint: '/api/videos',
-        })
         return NextResponse.json(
             { error: 'Failed to create video' },
             { status: 500 },

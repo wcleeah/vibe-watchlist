@@ -1,7 +1,6 @@
 import { relations } from 'drizzle-orm'
 import {
     boolean,
-    date,
     decimal,
     foreignKey,
     integer,
@@ -129,36 +128,6 @@ export const userConfig = pgTable(
     (table) => [unique('user_config_config_key_unique').on(table.configKey)],
 )
 
-// Analytics aggregation tables
-export const dailyAnalytics = pgTable('daily_analytics', {
-    date: date('date', { mode: 'string' }).primaryKey(),
-    totalEvents: integer('total_events').notNull(),
-    eventsByType: jsonb('events_by_type').notNull(),
-    platformUsage: jsonb('platform_usage').notNull(),
-    topTags: jsonb('top_tags').notNull(),
-    errorCount: integer('error_count').notNull(),
-    aiTokenUsage: integer('ai_token_usage').notNull(),
-})
-
-export const performanceMetrics = pgTable('performance_metrics', {
-    date: date('date', { mode: 'string' }).primaryKey(),
-    cacheHitRate: numeric('cache_hit_rate', { precision: 5, scale: 2 }),
-    avgResponseTime: integer('avg_response_time'),
-    errorRate: numeric('error_rate', { precision: 5, scale: 2 }),
-    aiTokensUsed: integer('ai_tokens_used'),
-})
-
-// Analytics events for tracking usage
-export const analyticsEvents = pgTable('analytics_events', {
-    id: serial('id').primaryKey(),
-    eventType: text('event_type').notNull(),
-    eventData: jsonb('event_data'),
-    userId: text('user_id'), // For future multi-user support
-    sessionId: text('session_id'),
-    processed: boolean('processed').default(false),
-    createdAt: timestamp('created_at').defaultNow(),
-})
-
 // Relations
 export const videosRelations = relations(videos, ({ many }) => ({
     videoTags: many(videoTags),
@@ -190,7 +159,5 @@ export type VideoTag = typeof videoTags.$inferSelect
 export type NewVideoTag = typeof videoTags.$inferInsert
 export type UserConfig = typeof userConfig.$inferSelect
 export type NewUserConfig = typeof userConfig.$inferInsert
-export type AnalyticsEvent = typeof analyticsEvents.$inferSelect
-export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert
 export type PlatformConfig = typeof platformConfigs.$inferSelect
 export type NewPlatformConfig = typeof platformConfigs.$inferInsert
