@@ -249,6 +249,7 @@ export function FormLayout({
 
             <div className='flex gap-2'>
                 <Button
+                    type='button'
                     variant='secondary'
                     className='flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
                     onClick={onReset}

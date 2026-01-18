@@ -190,7 +190,7 @@ export class AIService {
             const context = {
                 url: metadata.url,
                 existingTitle: metadata.title,
-                searchResults: searchResults.slice(0, 3), // Limit to first 3 results
+                searchResults: searchResults,
                 platform: metadata.platform,
             }
             console.log(

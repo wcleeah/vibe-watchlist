@@ -128,6 +128,7 @@ export function MetadataSelector({
         <div ref={dropdownRef} className={cn('relative', className)}>
             {/* Selected option display */}
             <button
+                type='button'
                 onClick={() => setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={cn(
@@ -205,6 +206,7 @@ export function MetadataSelector({
                 <div className='absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto'>
                     {suggestions.map((suggestion, index) => (
                         <button
+                            type='button'
                             key={index}
                             onClick={() => {
                                 onSelect(index)
@@ -278,6 +280,7 @@ export function MetadataSelector({
                     {onManualEdit && (
                         <div className='border-t border-gray-100 p-2'>
                             <Button
+                                type='button'
                                 variant='ghost'
                                 size='sm'
                                 className='w-full text-left justify-start'

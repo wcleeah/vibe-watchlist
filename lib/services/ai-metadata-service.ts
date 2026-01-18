@@ -553,81 +553,87 @@ export class AIMetadataService {
         url: string,
     ): Promise<GoogleSearchResult[]> {
         logger.log('🔍 GOOGLE SEARCH: Starting Google search for URL:', url)
+        const aggregatedResults: GoogleSearchResult[] = []
 
         try {
-            const urlObj = new URL(url)
-            const domain = urlObj.hostname
-            const path = urlObj.pathname.slice(1, 50) // first 50 chars of path
+            for (const lr in ['lang_en', 'lang_zh-TW']) {
+                const urlObj = new URL(url)
+                const domain = urlObj.hostname
+                const path = urlObj.pathname.slice(1, 50) // first 50 chars of path
 
-            logger.log(
-                '🔍 GOOGLE SEARCH: Parsed URL - domain:',
-                domain,
-                'path:',
-                path,
-            )
-
-            // Create smart search query
-            const query = `site:${domain} ${path}`.trim()
-            logger.log('🔍 GOOGLE SEARCH: Generated search query:', query)
-
-            const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?key=${this.config.googleSearchApiKey}&cx=${this.config.googleSearchEngineId}&q=${encodeURIComponent(query)}&num=3`
-            logger.log(
-                '🔍 GOOGLE SEARCH: Making API request to Google Custom Search',
-            )
-
-            const response = await fetch(searchUrl, {
-                signal: AbortSignal.timeout(this.config.timeout),
-            })
-
-            logger.log(
-                '🔍 GOOGLE SEARCH: API response status:',
-                response.status,
-            )
-
-            if (!response.ok) {
                 logger.log(
-                    '🔍 GOOGLE SEARCH: API request failed with status:',
+                    '🔍 GOOGLE SEARCH: Parsed URL - domain:',
+                    domain,
+                    'path:',
+                    path,
+                )
+
+                // Create smart search query
+                const query = `site:${domain} ${path}`.trim()
+                logger.log('🔍 GOOGLE SEARCH: Generated search query:', query)
+
+                const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?key=${this.config.googleSearchApiKey}&gl=HK&cx=${this.config.googleSearchEngineId}&q=${encodeURIComponent(query)}&num=3&hl=${lr.split("_"[0])}&lr=${lr}`
+                logger.log(
+                    '🔍 GOOGLE SEARCH: Making API request to Google Custom Search',
+                )
+
+                const response = await fetch(searchUrl, {
+                    signal: AbortSignal.timeout(this.config.timeout),
+                })
+
+                logger.log(
+                    '🔍 GOOGLE SEARCH: API response status:',
                     response.status,
                 )
 
-                // Log response body for debugging
-                try {
-                    const errorBody = await response.text()
+                if (!response.ok) {
                     logger.log(
-                        '🔍 GOOGLE SEARCH: Error response body:',
-                        errorBody.substring(0, 500),
+                        '🔍 GOOGLE SEARCH: API request failed with status:',
+                        response.status,
                     )
-                } catch (bodyError) {
-                    logger.log(
-                        '🔍 GOOGLE SEARCH: Could not read error response body:',
-                        bodyError,
+
+                    // Log response body for debugging
+                    try {
+                        const errorBody = await response.text()
+                        logger.log(
+                            '🔍 GOOGLE SEARCH: Error response body:',
+                            errorBody.substring(0, 500),
+                        )
+                    } catch (bodyError) {
+                        logger.log(
+                            '🔍 GOOGLE SEARCH: Could not read error response body:',
+                            bodyError,
+                        )
+                    }
+
+                    throw new Error(
+                        `Google Search API error: ${response.status}`,
                     )
                 }
 
-                throw new Error(`Google Search API error: ${response.status}`)
-            }
-
-            const data = await response.json()
-            logger.log(
-                '🔍 GOOGLE SEARCH: Full API response body:',
-                JSON.stringify(data, null, 2),
-            )
-
-            const results = data.items || []
-            logger.log(
-                '🔍 GOOGLE SEARCH: Successfully retrieved',
-                results.length,
-                'search results',
-            )
-
-            if (results.length > 0) {
+                const data = await response.json()
                 logger.log(
-                    '🔍 GOOGLE SEARCH: First result title:',
-                    results[0].title?.substring(0, 50),
+                    '🔍 GOOGLE SEARCH: Full API response body:',
+                    JSON.stringify(data, null, 2),
                 )
-            }
 
-            return results
+                const results = data.items || []
+                logger.log(
+                    '🔍 GOOGLE SEARCH: Successfully retrieved',
+                    results.length,
+                    'search results',
+                )
+
+                if (results.length > 0) {
+                    logger.log(
+                        '🔍 GOOGLE SEARCH: First result title:',
+                        results[0].title?.substring(0, 50),
+                    )
+                }
+
+                aggregatedResults.push(...results)
+            }
+            return aggregatedResults
         } catch (error) {
             logger.error('❌ GOOGLE SEARCH: Google search failed:', error)
             logger.error(
