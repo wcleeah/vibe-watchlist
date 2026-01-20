@@ -16,6 +16,7 @@ import { NavigationTabs } from '@/components/navigation-tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { VideoEditModal } from '@/components/video-form/video-edit-modal'
 import { VideoList } from '@/components/videos/video-list'
 import type { Video } from '@/lib/db/schema'
 
@@ -59,6 +60,10 @@ export default function ListPage() {
     const [selectedVideoIds, setSelectedVideoIds] = useState<number[]>([])
     const [bulkMode, setBulkMode] = useState(false)
     const [bulkLoading, setBulkLoading] = useState(false)
+
+    // Edit modal state
+    const [editVideo, setEditVideo] = useState<VideoWithTags | null>(null)
+    const [editModalOpen, setEditModalOpen] = useState(false)
 
     // Platform state
     const [platforms, setPlatforms] = useState<
@@ -273,6 +278,11 @@ export default function ListPage() {
         } catch (error) {
             console.error('Error deleting video:', error)
         }
+    }
+
+    const handleEdit = (video: VideoWithTags) => {
+        setEditVideo(video)
+        setEditModalOpen(true)
     }
 
     return (
@@ -558,11 +568,20 @@ export default function ListPage() {
                         ))}
                     </div>
                 ) : (
-                    <VideoList
-                        videos={filteredVideos}
-                        onMarkWatched={handleMarkWatched}
-                        onDelete={handleDelete}
-                    />
+                    <>
+                        <VideoList
+                            videos={filteredVideos}
+                            onMarkWatched={handleMarkWatched}
+                            onDelete={handleDelete}
+                            onEdit={handleEdit}
+                        />
+                        <VideoEditModal
+                            video={editVideo}
+                            open={editModalOpen}
+                            onOpenChange={setEditModalOpen}
+                            onSuccess={fetchVideos}
+                        />
+                    </>
                 )}
             </main>
         </div>
