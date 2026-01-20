@@ -3,6 +3,7 @@ import {
     boolean,
     decimal,
     foreignKey,
+    index,
     integer,
     jsonb,
     numeric,
@@ -128,6 +129,26 @@ export const userConfig = pgTable(
     (table) => [unique('user_config_config_key_unique').on(table.configKey)],
 )
 
+export const apiUsageStats = pgTable(
+    'api_usage_stats',
+    {
+        id: serial('id').primaryKey(),
+        operationType: text('operation_type').notNull(),
+        promptTokens: integer('prompt_tokens').notNull(),
+        completionTokens: integer('completion_tokens').notNull(),
+        totalTokens: integer('total_tokens').notNull(),
+        model: text().notNull(),
+        promptText: text('prompt_text'),
+        completionText: text('completion_text'),
+        durationMs: integer('duration_ms'),
+        createdAt: timestamp('created_at').defaultNow(),
+    },
+    (table) => [
+        index('api_usage_operation_idx').on(table.operationType),
+        index('api_usage_created_idx').on(table.createdAt),
+    ],
+)
+
 // Relations
 export const videosRelations = relations(videos, ({ many }) => ({
     videoTags: many(videoTags),
@@ -161,3 +182,5 @@ export type UserConfig = typeof userConfig.$inferSelect
 export type NewUserConfig = typeof userConfig.$inferInsert
 export type PlatformConfig = typeof platformConfigs.$inferSelect
 export type NewPlatformConfig = typeof platformConfigs.$inferInsert
+export type APIUsageStat = typeof apiUsageStats.$inferSelect
+export type NewAPIUsageStat = typeof apiUsageStats.$inferInsert

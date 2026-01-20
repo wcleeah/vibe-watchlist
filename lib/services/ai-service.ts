@@ -66,6 +66,18 @@ const metadataQualitySchema = {
     additionalProperties: false,
 }
 
+import { APIUsageService } from './api-usage-service'
+
+const MODEL_NAME = 'mistralai/devstral-2512:free'
+
+function extractMessages(body: unknown): string {
+    const b = body as { messages?: Array<{ role: string; content: string }> }
+    if (b.messages) {
+        return JSON.stringify(b.messages)
+    }
+    return ''
+}
+
 export class AIService {
     private apiKey: string
     private baseUrl = 'https://openrouter.ai/api/v1'
@@ -83,38 +95,42 @@ export class AIService {
         try {
             console.log('🤖 AI PLATFORM DETECTION: Analyzing URL:', url)
 
+            const requestBody = {
+                model: MODEL_NAME,
+                messages: [
+                    {
+                        role: 'system',
+                        content:
+                            'You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema.',
+                    },
+                    {
+                        role: 'user',
+                        content: `Analyze this URL and suggest platform details: ${url}`,
+                    },
+                ],
+                provider: {
+                    require_parameters: true,
+                },
+                response_format: {
+                    type: 'json_schema',
+                    json_schema: {
+                        name: 'platform_suggestion',
+                        schema: platformSuggestionSchema,
+                        strict: true,
+                    },
+                },
+            }
+
+            const startTime = Date.now()
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${this.apiKey}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    model: 'mistralai/devstral-2512:free',
-                    messages: [
-                        {
-                            role: 'system',
-                            content:
-                                'You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema.',
-                        },
-                        {
-                            role: 'user',
-                            content: `Analyze this URL and suggest platform details: ${url}`,
-                        },
-                    ],
-                    provider: {
-                        require_parameters: true,
-                    },
-                    response_format: {
-                        type: 'json_schema',
-                        json_schema: {
-                            name: 'platform_suggestion',
-                            schema: platformSuggestionSchema,
-                            strict: true,
-                        },
-                    },
-                }),
+                body: JSON.stringify(requestBody),
             })
+            const durationMs = Date.now() - startTime
 
             if (!response.ok) {
                 console.log(
@@ -123,7 +139,6 @@ export class AIService {
                     response.statusText,
                 )
 
-                // Log response body for debugging
                 try {
                     const errorBody = await response.text()
                     console.log(
@@ -152,12 +167,10 @@ export class AIService {
                 throw new Error('Invalid AI response format')
             }
 
-            // Parse the structured JSON response directly
             const suggestion: PlatformSuggestion = JSON.parse(
                 data.choices[0].message.content,
             )
 
-            // Validate the response structure (TypeScript will help, but double-check)
             if (
                 !suggestion.platform ||
                 typeof suggestion.confidence !== 'number' ||
@@ -174,6 +187,22 @@ export class AIService {
                 '🤖 AI PLATFORM DETECTION: Successfully parsed structured response:',
                 suggestion,
             )
+
+            const usage = data.usage
+            if (usage) {
+                await APIUsageService.log(
+                    'platform_detection',
+                    {
+                        prompt: usage.prompt_tokens || 0,
+                        completion: usage.completion_tokens || 0,
+                        total: usage.total_tokens || 0,
+                    },
+                    MODEL_NAME,
+                    extractMessages(requestBody),
+                    data.choices[0].message.content,
+                    durationMs,
+                )
+            }
 
             return suggestion
         } catch (error) {
@@ -198,6 +227,33 @@ export class AIService {
                 JSON.stringify(context, null, 2),
             )
 
+            const requestBody = {
+                model: MODEL_NAME,
+                messages: [
+                    {
+                        role: 'system',
+                        content:
+                            'You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema.',
+                    },
+                    {
+                        role: 'user',
+                        content: `Analyze this video metadata and suggeest the actual titles:\n\n${JSON.stringify(context, null, 2)}`,
+                    },
+                ],
+                provider: {
+                    require_parameters: true,
+                },
+                response_format: {
+                    type: 'json_schema',
+                    json_schema: {
+                        name: 'title_suggestions',
+                        schema: titleSuggestionsSchema,
+                        strict: true,
+                    },
+                },
+            }
+
+            const startTime = Date.now()
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
@@ -208,32 +264,9 @@ export class AIService {
                         'http://localhost:3000',
                     'X-Title': 'Video Watchlist App',
                 },
-                body: JSON.stringify({
-                    model: 'mistralai/devstral-2512:free',
-                    messages: [
-                        {
-                            role: 'system',
-                            content:
-                                'You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema.',
-                        },
-                        {
-                            role: 'user',
-                            content: `Analyze this video metadata and suggeest the actual titles:\n\n${JSON.stringify(context, null, 2)}`,
-                        },
-                    ],
-                    provider: {
-                        require_parameters: true,
-                    },
-                    response_format: {
-                        type: 'json_schema',
-                        json_schema: {
-                            name: 'title_suggestions',
-                            schema: titleSuggestionsSchema,
-                            strict: true,
-                        },
-                    },
-                }),
+                body: JSON.stringify(requestBody),
             })
+            const durationMs = Date.now() - startTime
 
             if (!response.ok) {
                 console.log(
@@ -241,7 +274,6 @@ export class AIService {
                     response.status,
                 )
 
-                // Log response body for debugging
                 try {
                     const errorBody = await response.text()
                     console.log(
@@ -268,12 +300,10 @@ export class AIService {
                 throw new Error('Invalid AI response format')
             }
 
-            // Parse the structured JSON response directly
             const suggestions: TitleSuggestions = JSON.parse(
                 data.choices[0].message.content,
             )
 
-            // Validate structure
             if (
                 !suggestions.suggestions ||
                 !Array.isArray(suggestions.suggestions) ||
@@ -291,10 +321,25 @@ export class AIService {
                 JSON.stringify(suggestions, null, 2),
             )
 
+            const usage = data.usage
+            if (usage) {
+                await APIUsageService.log(
+                    'title_suggestion',
+                    {
+                        prompt: usage.prompt_tokens || 0,
+                        completion: usage.completion_tokens || 0,
+                        total: usage.total_tokens || 0,
+                    },
+                    MODEL_NAME,
+                    extractMessages(requestBody),
+                    data.choices[0].message.content,
+                    durationMs,
+                )
+            }
+
             return suggestions
         } catch (error) {
             console.error('🤖 AI TITLE SUGGESTIONS: Failed:', error)
-            // Return fallback suggestions
             return {
                 suggestions: [
                     {
@@ -324,6 +369,32 @@ export class AIService {
                 JSON.stringify(metadata, null, 2),
             )
 
+            const requestBody = {
+                model: MODEL_NAME,
+                messages: [
+                    {
+                        role: 'system',
+                        content:
+                            'You are a helpful assistant that analyzes video metadata quality and provides improvement suggestions. Always respond with valid JSON that matches the required schema.',
+                    },
+                    {
+                        role: 'user',
+                        content: `Analyze the quality of this video metadata and suggest improvements:\n\n${JSON.stringify(metadata, null, 2)}`,
+                    },
+                ],
+                response_format: {
+                    type: 'json_schema',
+                    json_schema: {
+                        name: 'metadata_quality_analysis',
+                        schema: metadataQualitySchema,
+                        strict: true,
+                    },
+                },
+                max_tokens: 300,
+                temperature: 0.1,
+            }
+
+            const startTime = Date.now()
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
@@ -334,31 +405,9 @@ export class AIService {
                         'http://localhost:3000',
                     'X-Title': 'Video Watchlist App',
                 },
-                body: JSON.stringify({
-                    model: 'mistralai/devstral-2512:free',
-                    messages: [
-                        {
-                            role: 'system',
-                            content:
-                                'You are a helpful assistant that analyzes video metadata quality and provides improvement suggestions. Always respond with valid JSON that matches the required schema.',
-                        },
-                        {
-                            role: 'user',
-                            content: `Analyze the quality of this video metadata and suggest improvements:\n\n${JSON.stringify(metadata, null, 2)}`,
-                        },
-                    ],
-                    response_format: {
-                        type: 'json_schema',
-                        json_schema: {
-                            name: 'metadata_quality_analysis',
-                            schema: metadataQualitySchema,
-                            strict: true,
-                        },
-                    },
-                    max_tokens: 300,
-                    temperature: 0.1,
-                }),
+                body: JSON.stringify(requestBody),
             })
+            const durationMs = Date.now() - startTime
 
             if (!response.ok) {
                 console.log(
@@ -366,7 +415,6 @@ export class AIService {
                     response.status,
                 )
 
-                // Log response body for debugging
                 try {
                     const errorBody = await response.text()
                     console.log(
@@ -393,10 +441,8 @@ export class AIService {
                 throw new Error('Invalid AI response format')
             }
 
-            // Parse the structured JSON response directly
             const analysis = JSON.parse(data.choices[0].message.content)
 
-            // Validate and provide defaults
             const result = {
                 quality:
                     (analysis.quality as 'high' | 'medium' | 'low') || 'medium',
@@ -410,6 +456,22 @@ export class AIService {
                 '🤖 AI METADATA QUALITY: Successfully parsed structured response:',
                 JSON.stringify(result, null, 2),
             )
+
+            const usage = data.usage
+            if (usage) {
+                await APIUsageService.log(
+                    'metadata_quality',
+                    {
+                        prompt: usage.prompt_tokens || 0,
+                        completion: usage.completion_tokens || 0,
+                        total: usage.total_tokens || 0,
+                    },
+                    MODEL_NAME,
+                    extractMessages(requestBody),
+                    data.choices[0].message.content,
+                    durationMs,
+                )
+            }
 
             return result
         } catch (error) {

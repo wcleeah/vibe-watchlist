@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm'
 import {
     boolean,
+    date,
     foreignKey,
     integer,
     jsonb,
@@ -29,15 +31,6 @@ export const aiMetadataCache = pgTable(
     (table) => [unique('ai_metadata_cache_url_unique').on(table.url)],
 )
 
-export const analyticsEvents = pgTable('analytics_events', {
-    id: serial().primaryKey().notNull(),
-    eventType: text('event_type').notNull(),
-    eventData: jsonb('event_data'),
-    userId: text('user_id'),
-    sessionId: text('session_id'),
-    createdAt: timestamp('created_at', { mode: 'string' }).defaultNow(),
-})
-
 export const videos = pgTable(
     'videos',
     {
@@ -56,7 +49,6 @@ export const videos = pgTable(
             foreignColumns: [platformConfigs.platformId],
             name: 'videos_platform_fkey',
         }).onDelete('restrict'),
-        unique('videos_url_unique').on(table.url),
     ],
 )
 
@@ -110,6 +102,16 @@ export const tags = pgTable(
     (table) => [unique('tags_name_unique').on(table.name)],
 )
 
+export const analyticsEvents = pgTable('analytics_events', {
+    id: serial().primaryKey().notNull(),
+    eventType: text('event_type').notNull(),
+    eventData: jsonb('event_data'),
+    userId: text('user_id'),
+    sessionId: text('session_id'),
+    createdAt: timestamp('created_at', { mode: 'string' }).defaultNow(),
+    processed: boolean().default(false),
+})
+
 export const videoTags = pgTable(
     'video_tags',
     {
@@ -130,3 +132,21 @@ export const videoTags = pgTable(
         }).onDelete('cascade'),
     ],
 )
+
+export const dailyAnalytics = pgTable('daily_analytics', {
+    date: date().primaryKey().notNull(),
+    totalEvents: integer('total_events').notNull(),
+    eventsByType: jsonb('events_by_type').notNull(),
+    platformUsage: jsonb('platform_usage').notNull(),
+    topTags: jsonb('top_tags').notNull(),
+    errorCount: integer('error_count').notNull(),
+    aiTokenUsage: integer('ai_token_usage').notNull(),
+})
+
+export const performanceMetrics = pgTable('performance_metrics', {
+    date: date().primaryKey().notNull(),
+    cacheHitRate: numeric('cache_hit_rate', { precision: 5, scale: 2 }),
+    avgResponseTime: integer('avg_response_time'),
+    errorRate: numeric('error_rate', { precision: 5, scale: 2 }),
+    aiTokensUsed: integer('ai_tokens_used'),
+})

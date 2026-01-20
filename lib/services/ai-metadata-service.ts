@@ -572,7 +572,7 @@ export class AIMetadataService {
                 const query = `site:${domain} ${path}`.trim()
                 logger.log('🔍 GOOGLE SEARCH: Generated search query:', query)
 
-                const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?key=${this.config.googleSearchApiKey}&gl=HK&cx=${this.config.googleSearchEngineId}&q=${encodeURIComponent(query)}&num=3&hl=${lr.split("_"[0])}&lr=${lr}`
+                const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?key=${this.config.googleSearchApiKey}&gl=HK&cx=${this.config.googleSearchEngineId}&q=${encodeURIComponent(query)}&num=3&hl=${lr.split('_'[0])}&lr=${lr}`
                 logger.log(
                     '🔍 GOOGLE SEARCH: Making API request to Google Custom Search',
                 )
