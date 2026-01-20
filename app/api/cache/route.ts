@@ -1,4 +1,4 @@
-import { desc, sql } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { aiMetadataCache } from '@/lib/db/schema'
@@ -61,9 +61,21 @@ export async function DELETE(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
         const clearAll = searchParams.get('all') === 'true'
+        const url = searchParams.get('url')
+
+        if (url) {
+            const result = await db
+                .delete(aiMetadataCache)
+                .where(eq(aiMetadataCache.url, url))
+
+            return NextResponse.json({
+                success: true,
+                message: 'Cache entry cleared',
+                deletedCount: result.rowCount || 0,
+            })
+        }
 
         if (clearAll) {
-            // Clear all cache entries
             const result = await db.delete(aiMetadataCache)
             return NextResponse.json({
                 success: true,
@@ -71,7 +83,6 @@ export async function DELETE(request: NextRequest) {
                 deletedCount: result.rowCount || 0,
             })
         } else {
-            // Clear only expired entries
             const now = new Date()
             const result = await db
                 .delete(aiMetadataCache)

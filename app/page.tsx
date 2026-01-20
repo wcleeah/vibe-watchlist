@@ -111,7 +111,19 @@ export default function Home() {
         }
     }, [aiMetadata.fetchDone, aiMetadata.suggestions, setValue])
 
-    const reset = () => {
+    const reset = async (clearCache: boolean = false) => {
+        const currentUrl = urlValidation.urlValidationResult?.url
+
+        if (clearCache && currentUrl) {
+            try {
+                fetch(`/api/cache?url=${encodeURIComponent(currentUrl)}`, {
+                    method: 'DELETE',
+                })
+            } catch (e) {
+                console.error('Failed to clear cache:', e)
+            }
+        }
+
         urlValidation.unsetUrl()
         form.reset()
     }
@@ -151,7 +163,7 @@ export default function Home() {
                     setSubmitError('Failed to add video')
                 }
             } else {
-                reset() // Reset URL and global state
+                reset(false) // Reset URL and global state
                 form.reset() // Reset form
                 toast.success('Video added successfully!')
             }
@@ -214,7 +226,7 @@ export default function Home() {
                                                 platform: platformSuggestions,
                                             }}
                                             aiMetadataError={aiMetadata.error}
-                                            onReset={reset}
+                                            onReset={() => reset(true)}
                                         />
                                     </div>
                                     <div>

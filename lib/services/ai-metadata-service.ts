@@ -3,7 +3,10 @@ import { db } from '@/lib/db'
 import { aiMetadataCache } from '@/lib/db/schema'
 import { AIService } from '@/lib/services/ai-service'
 import { MetascraperService } from '@/lib/services/metascraper-service'
-import { SharedMetadataService } from '@/lib/services/shared-metadata-service'
+import {
+    SharedMetadataService,
+    type VideoMetadata,
+} from '@/lib/services/shared-metadata-service'
 import type {
     AIMetadataConfig,
     GoogleSearchResult,
@@ -36,31 +39,41 @@ export class AIMetadataService {
         )
 
         try {
-            logger.log('🔍 AI METADATA SERVICE: Checking cache for URL:', url)
-            // Check cache first
-            const cached = await this.getCachedResult(url)
-            logger.log(
-                '🔍 AI METADATA SERVICE: Cache result:',
-                cached
-                    ? 'HIT - returning cached data'
-                    : 'MISS - proceeding with extraction',
-            )
+            const cacheDisabled = process.env.DISABLE_METADATA_CACHE === 'true'
 
-            if (cached) {
+            if (cacheDisabled) {
                 logger.log(
-                    '🔍 AI METADATA SERVICE: Returning cached suggestions:',
-                    cached.aiAnalysis?.length || 0,
-                    'items',
+                    '🔍 AI METADATA SERVICE: Caching disabled, skipping cache check',
                 )
-                return {
-                    success: true,
-                    suggestions: cached.aiAnalysis,
-                    fallback: {
-                        title: cached.extractedMetadata?.title,
-                        thumbnailUrl:
-                            cached.extractedMetadata?.ogImage ||
-                            cached.extractedMetadata?.twitterImage,
-                    },
+            } else {
+                logger.log(
+                    '🔍 AI METADATA SERVICE: Checking cache for URL:',
+                    url,
+                )
+                const cached = await this.getCachedResult(url)
+                logger.log(
+                    '🔍 AI METADATA SERVICE: Cache result:',
+                    cached
+                        ? 'HIT - returning cached data'
+                        : 'MISS - proceeding with extraction',
+                )
+
+                if (cached) {
+                    logger.log(
+                        '🔍 AI METADATA SERVICE: Returning cached suggestions:',
+                        cached.aiAnalysis?.length || 0,
+                        'items',
+                    )
+                    return {
+                        success: true,
+                        suggestions: cached.aiAnalysis,
+                        fallback: {
+                            title: cached.extractedMetadata?.title,
+                            thumbnailUrl:
+                                cached.extractedMetadata?.ogImage ||
+                                cached.extractedMetadata?.twitterImage,
+                        },
+                    }
                 }
             }
 
@@ -94,12 +107,7 @@ export class AIMetadataService {
                     )
                     return this.handleAIPlatform(url, platform)
                 default:
-                    logger.log(
-                        '🔍 AI METADATA SERVICE: Routing to handleFallbackPlatform (strategy:',
-                        strategy,
-                        ')',
-                    )
-                    return this.handleFallbackPlatform(url, platform)
+                    throw Error("Fuck the default");
             }
         } catch (error) {
             logger.error(
@@ -133,7 +141,7 @@ export class AIMetadataService {
         )
 
         try {
-            let metadata
+            let metadata: VideoMetadata | null | undefined
             logger.log(
                 '🎯 OFFICIAL PLATFORM HANDLER: Determining API call based on platform',
             )
@@ -901,6 +909,13 @@ export class AIMetadataService {
         htmlContent: string,
         suggestions: MetadataSuggestion[],
     ): Promise<void> {
+        if (process.env.DISABLE_METADATA_CACHE === 'true') {
+            logger.log(
+                '💾 CACHE STORAGE: Caching disabled, skipping cache storage',
+            )
+            return
+        }
+
         logger.log('💾 CACHE STORAGE: Starting cache storage for URL:', url)
 
         try {

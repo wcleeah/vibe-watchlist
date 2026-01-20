@@ -39,7 +39,7 @@ export function PlatformForm({
         name: '',
         displayName: '',
         patterns: [''],
-        extractor: 'fallback',
+        extractor: 'ai',
         color: '#6b7280',
         icon: 'Video',
         enabled: true,
@@ -63,7 +63,7 @@ export function PlatformForm({
                 name: '',
                 displayName: '',
                 patterns: [''],
-                extractor: 'fallback',
+                extractor: 'ai',
                 color: '#6b7280',
                 icon: 'Video',
                 enabled: true,
@@ -357,7 +357,6 @@ export function PlatformForm({
                             >
                                 <option value='official'>Official API</option>
                                 <option value='ai'>AI Analysis</option>
-                                <option value='fallback'>Basic HTML</option>
                             </select>
                         </div>
 

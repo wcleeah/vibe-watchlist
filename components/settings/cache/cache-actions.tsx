@@ -7,21 +7,17 @@ import { Button } from '@/components/ui/button'
 
 interface CacheActionsProps {
     onStatsRefresh: () => void
+    onEntriesRefresh: () => void
 }
 
-export function CacheActions({ onStatsRefresh }: CacheActionsProps) {
+export function CacheActions({
+    onStatsRefresh,
+    onEntriesRefresh,
+}: CacheActionsProps) {
     const [clearingExpired, setClearingExpired] = useState(false)
     const [clearingAll, setClearingAll] = useState(false)
 
     const handleClearExpired = async () => {
-        if (
-            !confirm(
-                'Are you sure you want to clear all expired cache entries? This action cannot be undone.',
-            )
-        ) {
-            return
-        }
-
         try {
             setClearingExpired(true)
             const response = await fetch('/api/cache', {
@@ -34,6 +30,7 @@ export function CacheActions({ onStatsRefresh }: CacheActionsProps) {
                     `Cleared ${data.deletedCount} expired cache entries`,
                 )
                 onStatsRefresh()
+                onEntriesRefresh()
             } else {
                 throw new Error('Failed to clear expired cache')
             }
@@ -46,22 +43,6 @@ export function CacheActions({ onStatsRefresh }: CacheActionsProps) {
     }
 
     const handleClearAll = async () => {
-        const message =
-            'Are you sure you want to clear ALL cache entries? This will force fresh API calls for all videos and may temporarily slow down the application. This action cannot be undone.'
-
-        if (!confirm(message)) {
-            return
-        }
-
-        // Additional confirmation for destructive action
-        if (
-            !confirm(
-                'This is your final warning. All cached metadata will be permanently deleted. Continue?',
-            )
-        ) {
-            return
-        }
-
         try {
             setClearingAll(true)
             const response = await fetch('/api/cache?all=true', {
@@ -72,6 +53,7 @@ export function CacheActions({ onStatsRefresh }: CacheActionsProps) {
                 const data = await response.json()
                 toast.success(`Cleared all ${data.deletedCount} cache entries`)
                 onStatsRefresh()
+                onEntriesRefresh()
             } else {
                 throw new Error('Failed to clear all cache')
             }

@@ -64,10 +64,6 @@ export function CacheEntries({ onRefresh }: CacheEntriesProps) {
     }
 
     const handleDeleteEntry = async (cacheId: string) => {
-        if (!confirm('Are you sure you want to delete this cache entry?')) {
-            return
-        }
-
         try {
             const response = await fetch(`/api/cache/${cacheId}`, {
                 method: 'DELETE',
@@ -75,8 +71,8 @@ export function CacheEntries({ onRefresh }: CacheEntriesProps) {
 
             if (response.ok) {
                 toast.success('Cache entry deleted successfully')
-                fetchEntries(currentPage) // Refresh current page
-                onRefresh() // Refresh stats
+                fetchEntries(currentPage)
+                onRefresh()
             } else {
                 throw new Error('Failed to delete cache entry')
             }

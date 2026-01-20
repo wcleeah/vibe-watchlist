@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
             patterns,
             color,
             icon,
-            extractor = 'fallback',
+            extractor = 'ai',
             confidenceScore = 1.0,
         } = await request.json()
 

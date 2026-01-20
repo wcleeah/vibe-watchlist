@@ -23,7 +23,7 @@ export const platformConfigs = pgTable(
         name: text().notNull(),
         displayName: text('display_name').notNull(),
         patterns: text().array().notNull(),
-        extractor: text().default('fallback'),
+        extractor: text().default('ai'),
         color: text().default('#6b7280'),
         icon: text().default('Video'),
         enabled: boolean().default(true),

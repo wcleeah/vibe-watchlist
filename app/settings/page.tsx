@@ -31,16 +31,19 @@ export default function SettingsPage() {
     const [platformFormOpen, setPlatformFormOpen] = useState(false)
     const [editingPlatform, setEditingPlatform] = useState<any>(null)
     const [refreshing, setRefreshing] = useState(false)
+    const [cacheRefreshKey, setCacheRefreshKey] = useState(0)
 
     const handlePageRefresh = () => {
         setRefreshing(true)
-        // Trigger refresh for current tab content
         window.location.reload()
     }
 
     const handleStatsRefresh = () => {
-        // This will be called when cache operations complete
-        // The individual components handle their own refresh logic
+        setCacheRefreshKey((prev) => prev + 1)
+    }
+
+    const handleEntriesRefresh = () => {
+        setCacheRefreshKey((prev) => prev + 1)
     }
 
     const handlePlatformEdit = (platform: any) => {
@@ -62,9 +65,12 @@ export default function SettingsPage() {
         switch (activeTab) {
             case 'cache':
                 return (
-                    <div className='space-y-6'>
-                        <CacheActions onStatsRefresh={handleStatsRefresh} />
-                        <CacheEntries onRefresh={handleStatsRefresh} />
+                    <div className='space-y-6' key={cacheRefreshKey}>
+                        <CacheActions
+                            onStatsRefresh={handleStatsRefresh}
+                            onEntriesRefresh={handleEntriesRefresh}
+                        />
+                        <CacheEntries onRefresh={handleEntriesRefresh} />
                     </div>
                 )
             case 'platforms':

@@ -242,13 +242,13 @@ export class SharedMetadataService {
      */
     static async getPlatformStrategyAsync(
         platform: string,
-    ): Promise<'official' | 'ai' | 'fallback'> {
+    ): Promise<'official' | 'ai'> {
         try {
             const platformConfig =
                 await PlatformDataService.getPlatformById(platform)
 
             if (!platformConfig) {
-                return 'fallback' // Unknown platform
+                return 'ai' // Unknown platform
             }
 
             // Strategy based on extractor field from database
@@ -258,11 +258,11 @@ export class SharedMetadataService {
                 case 'ai':
                     return 'ai'
                 default:
-                    return 'fallback'
+                    return 'ai'
             }
         } catch (error) {
             console.error('Error determining platform strategy:', error)
-            return 'fallback'
+            return 'ai'
         }
     }
 }

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
             name: config.name,
             displayName: config.displayName,
             patterns: config.patterns,
-            extractor: config.extractor || 'fallback',
+            extractor: config.extractor || 'ai',
             color: config.color || '#6b7280',
             icon: config.icon || 'Video',
             enabled: config.enabled !== false, // Default true unless explicitly false

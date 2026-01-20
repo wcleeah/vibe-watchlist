@@ -115,7 +115,7 @@ export class AIDetector {
                             aiSuggestion.platform.charAt(0).toUpperCase() +
                             aiSuggestion.platform.slice(1),
                         patterns: aiSuggestion.patterns,
-                        extractor: 'fallback',
+                        extractor: 'ai',
                         color: aiSuggestion.color,
                         icon: aiSuggestion.icon,
                         enabled: true,
@@ -205,7 +205,7 @@ export class AIDetector {
                     suggestion.platform.charAt(0).toUpperCase() +
                     suggestion.platform.slice(1),
                 patterns: suggestion.patterns,
-                extractor: 'fallback',
+                extractor: 'ai',
                 color: suggestion.color,
                 icon: suggestion.icon,
                 enabled: true,
