@@ -3,6 +3,10 @@ export interface UsageSummary {
     totalPromptTokens: number
     totalCompletionTokens: number
     totalTokens: number
+    avgPromptTokens: number
+    avgCompletionTokens: number
+    avgTotalTokens: number
+    avgDurationMs: number | null
     byOperation: Record<
         string,
         {
@@ -10,6 +14,10 @@ export interface UsageSummary {
             promptTokens: number
             completionTokens: number
             totalTokens: number
+            avgPromptTokens: number
+            avgCompletionTokens: number
+            avgTotalTokens: number
+            avgDurationMs: number | null
         }
     >
 }
@@ -32,7 +40,4 @@ export type UsageStatsResponse = {
     requests: UsageRequest[]
 }
 
-export type OperationType =
-    | 'platform_detection'
-    | 'title_suggestion'
-    | 'metadata_quality'
+export type OperationType = 'platform_detection' | 'title_suggestion'

@@ -3,6 +3,7 @@
 import {
     ArrowDownToLine,
     ArrowUpFromLine,
+    Clock,
     Database,
     RefreshCw,
     TrendingUp,
@@ -45,7 +46,6 @@ interface WatchStats {
 const OPERATION_LABELS: Record<string, string> = {
     platform_detection: 'Platform Detection',
     title_suggestion: 'Title Suggestion',
-    metadata_quality: 'Metadata Quality',
 }
 
 export function AnalyticsDashboard() {
@@ -431,13 +431,13 @@ export function AnalyticsDashboard() {
                     </div>
                 ) : usageSummary ? (
                     <>
-                        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+                        <div className='grid grid-cols-2 lg:grid-cols-4 gap-4'>
                             <div className='p-4 border border-gray-200'>
                                 <div className='text-2xl font-bold font-mono'>
                                     {formatNumber(usageSummary.totalRequests)}
                                 </div>
                                 <div className='text-sm text-gray-600'>
-                                    Total Requests
+                                    Requests
                                 </div>
                             </div>
 
@@ -451,7 +451,7 @@ export function AnalyticsDashboard() {
                                     </div>
                                 </div>
                                 <div className='text-sm text-gray-600'>
-                                    Prompt Tokens (In)
+                                    In Tokens
                                 </div>
                             </div>
 
@@ -465,7 +465,7 @@ export function AnalyticsDashboard() {
                                     </div>
                                 </div>
                                 <div className='text-sm text-gray-600'>
-                                    Completion Tokens (Out)
+                                    Out Tokens
                                 </div>
                             </div>
 
@@ -477,9 +477,65 @@ export function AnalyticsDashboard() {
                                     Total Tokens
                                 </div>
                             </div>
+
+                            <div className='p-4 border border-gray-200'>
+                                <div className='flex items-center gap-2'>
+                                    <Clock className='w-4 h-4 text-purple-500' />
+                                    <div className='text-2xl font-bold font-mono'>
+                                        {usageSummary.avgDurationMs
+                                            ? `${(usageSummary.avgDurationMs / 1000).toFixed(3)}s`
+                                            : '-'}
+                                    </div>
+                                </div>
+                                <div className='text-sm text-gray-600'>
+                                    Avg Duration
+                                </div>
+                            </div>
+
+                            <div className='p-4 border border-gray-200'>
+                                <div className='flex items-center gap-2'>
+                                    <ArrowDownToLine className='w-4 h-4 text-blue-300' />
+                                    <div className='text-2xl font-bold font-mono'>
+                                        {formatNumber(
+                                            usageSummary.avgPromptTokens,
+                                        )}
+                                    </div>
+                                </div>
+                                <div className='text-sm text-gray-600'>
+                                    In Avg
+                                </div>
+                            </div>
+
+                            <div className='p-4 border border-gray-200'>
+                                <div className='flex items-center gap-2'>
+                                    <ArrowUpFromLine className='w-4 h-4 text-green-300' />
+                                    <div className='text-2xl font-bold font-mono'>
+                                        {formatNumber(
+                                            usageSummary.avgCompletionTokens,
+                                        )}
+                                    </div>
+                                </div>
+                                <div className='text-sm text-gray-600'>
+                                    Out Avg
+                                </div>
+                            </div>
+
+                            <div className='p-4 border border-gray-200'>
+                                <div className='flex items-center gap-2'>
+                                    <Database className='w-4 h-4 text-gray-500' />
+                                    <div className='text-2xl font-bold font-mono'>
+                                        {formatNumber(
+                                            usageSummary.avgTotalTokens,
+                                        )}
+                                    </div>
+                                </div>
+                                <div className='text-sm text-gray-600'>
+                                    Avg Tokens
+                                </div>
+                            </div>
                         </div>
 
-                        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                        <div className='grid grid-cols-2 gap-4'>
                             {Object.entries(usageSummary.byOperation).map(
                                 ([op, data]) => (
                                     <div
@@ -502,34 +558,48 @@ export function AnalyticsDashboard() {
                                             </div>
                                             <div className='flex justify-between'>
                                                 <span className='text-gray-600'>
-                                                    Prompt:
+                                                    In Avg:
                                                 </span>
                                                 <span className='font-mono'>
                                                     {formatNumber(
-                                                        data.promptTokens,
+                                                        data.avgPromptTokens,
                                                     )}
                                                 </span>
                                             </div>
                                             <div className='flex justify-between'>
                                                 <span className='text-gray-600'>
-                                                    Completion:
+                                                    Out Avg:
                                                 </span>
                                                 <span className='font-mono'>
                                                     {formatNumber(
-                                                        data.completionTokens,
+                                                        data.avgCompletionTokens,
                                                     )}
                                                 </span>
                                             </div>
                                             <div className='flex justify-between font-semibold'>
                                                 <span className='text-gray-600'>
-                                                    Total:
+                                                    Total Avg:
                                                 </span>
                                                 <span className='font-mono'>
                                                     {formatNumber(
-                                                        data.totalTokens,
+                                                        data.avgTotalTokens,
                                                     )}
                                                 </span>
                                             </div>
+                                            {data.avgDurationMs && (
+                                                <div className='flex justify-between'>
+                                                    <span className='text-gray-600'>
+                                                        Duration:
+                                                    </span>
+                                                    <span className='font-mono'>
+                                                        {(
+                                                            data.avgDurationMs /
+                                                            1000
+                                                        ).toFixed(3)}
+                                                        s
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ),

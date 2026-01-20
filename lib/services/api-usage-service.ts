@@ -35,20 +35,64 @@ export class APIUsageService {
                 totalPromptTokens: sql<number>`coalesce(sum(${apiUsageStats.promptTokens}), 0)`,
                 totalCompletionTokens: sql<number>`coalesce(sum(${apiUsageStats.completionTokens}), 0)`,
                 totalTokens: sql<number>`coalesce(sum(${apiUsageStats.totalTokens}), 0)`,
+                avgPromptTokens: sql<number>`coalesce(avg(${apiUsageStats.promptTokens})::integer, 0)`,
+                avgCompletionTokens: sql<number>`coalesce(avg(${apiUsageStats.completionTokens})::integer, 0)`,
+                avgTotalTokens: sql<number>`coalesce(avg(${apiUsageStats.totalTokens})::integer, 0)`,
+                avgDurationMs: sql<
+                    number | null
+                >`coalesce(avg(${apiUsageStats.durationMs})::integer, NULL)`,
                 operationType: apiUsageStats.operationType,
                 operationPromptTokens: sql<number>`coalesce(sum(${apiUsageStats.promptTokens}), 0)`,
                 operationCompletionTokens: sql<number>`coalesce(sum(${apiUsageStats.completionTokens}), 0)`,
                 operationTotalTokens: sql<number>`coalesce(sum(${apiUsageStats.totalTokens}), 0)`,
                 operationRequests: sql<number>`count(*)`,
+                operationAvgPromptTokens: sql<number>`coalesce(avg(${apiUsageStats.promptTokens})::integer, 0)`,
+                operationAvgCompletionTokens: sql<number>`coalesce(avg(${apiUsageStats.completionTokens})::integer, 0)`,
+                operationAvgTotalTokens: sql<number>`coalesce(avg(${apiUsageStats.totalTokens})::integer, 0)`,
+                operationAvgDurationMs: sql<
+                    number | null
+                >`coalesce(avg(${apiUsageStats.durationMs})::integer, NULL)`,
             })
             .from(apiUsageStats)
             .groupBy(apiUsageStats.operationType)
 
-        const summary: UsageSummary = {
+        const totalsResult = await db
+            .select({
+                totalRequests: sql<number>`count(*)`,
+                totalPromptTokens: sql<number>`coalesce(sum(${apiUsageStats.promptTokens}), 0)`,
+                totalCompletionTokens: sql<number>`coalesce(sum(${apiUsageStats.completionTokens}), 0)`,
+                totalTokens: sql<number>`coalesce(sum(${apiUsageStats.totalTokens}), 0)`,
+                avgPromptTokens: sql<number>`coalesce(avg(${apiUsageStats.promptTokens})::integer, 0)`,
+                avgCompletionTokens: sql<number>`coalesce(avg(${apiUsageStats.completionTokens})::integer, 0)`,
+                avgTotalTokens: sql<number>`coalesce(avg(${apiUsageStats.totalTokens})::integer, 0)`,
+                avgDurationMs: sql<
+                    number | null
+                >`coalesce(avg(${apiUsageStats.durationMs})::integer, NULL)`,
+            })
+            .from(apiUsageStats)
+
+        const totals = totalsResult[0] || {
             totalRequests: 0,
             totalPromptTokens: 0,
             totalCompletionTokens: 0,
             totalTokens: 0,
+            avgPromptTokens: 0,
+            avgCompletionTokens: 0,
+            avgTotalTokens: 0,
+            avgDurationMs: null,
+        }
+
+        const summary: UsageSummary = {
+            totalRequests: Number(totals.totalRequests) || 0,
+            totalPromptTokens: Number(totals.totalPromptTokens) || 0,
+            totalCompletionTokens: Number(totals.totalCompletionTokens) || 0,
+            totalTokens: Number(totals.totalTokens) || 0,
+            avgPromptTokens: Number(totals.avgPromptTokens) || 0,
+            avgCompletionTokens: Number(totals.avgCompletionTokens) || 0,
+            avgTotalTokens: Number(totals.avgTotalTokens) || 0,
+            avgDurationMs: totals.avgDurationMs
+                ? Number(totals.avgDurationMs)
+                : null,
             byOperation: {},
         }
 
@@ -59,12 +103,14 @@ export class APIUsageService {
                 promptTokens: Number(row.operationPromptTokens) || 0,
                 completionTokens: Number(row.operationCompletionTokens) || 0,
                 totalTokens: Number(row.operationTotalTokens) || 0,
+                avgPromptTokens: Number(row.operationAvgPromptTokens) || 0,
+                avgCompletionTokens:
+                    Number(row.operationAvgCompletionTokens) || 0,
+                avgTotalTokens: Number(row.operationAvgTotalTokens) || 0,
+                avgDurationMs: row.operationAvgDurationMs
+                    ? Number(row.operationAvgDurationMs)
+                    : null,
             }
-            summary.totalRequests += Number(row.totalRequests) || 0
-            summary.totalPromptTokens += Number(row.totalPromptTokens) || 0
-            summary.totalCompletionTokens +=
-                Number(row.totalCompletionTokens) || 0
-            summary.totalTokens += Number(row.totalTokens) || 0
         }
 
         return summary
