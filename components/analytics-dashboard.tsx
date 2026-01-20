@@ -16,6 +16,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { UsageRequest, UsageSummary } from '@/lib/types/usage'
 import { PLATFORM_NAMES } from '@/lib/utils/platform-utils'
 
@@ -646,111 +647,126 @@ export function AnalyticsDashboard() {
     }
 
     return (
-        <div className='space-y-12'>
-            {renderVideoStats()}
-            {renderUsageStats()}
+        <Tabs defaultValue='stats'>
+            <TabsList>
+                <TabsTrigger value='stats' className='flex items-center gap-2'>
+                    <TrendingUp className='w-4 h-4' />
+                    Live Stats
+                </TabsTrigger>
+                <TabsTrigger value='usage' className='flex items-center gap-2'>
+                    <Database className='w-4 h-4' />
+                    API Usage
+                </TabsTrigger>
+            </TabsList>
 
-            <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-                <DialogContent className='!w-[90vw] !max-w-[1200px]'>
-                    <DialogHeader>
-                        <DialogTitle className='font-mono text-base'>
-                            Request Details
-                        </DialogTitle>
-                    </DialogHeader>
-                    {selectedRequest && (
-                        <div className='space-y-4'>
-                            <div className='grid grid-cols-2 gap-4 text-sm'>
-                                <div>
-                                    <span className='text-gray-600'>
-                                        Operation:
-                                    </span>
-                                    <span className='ml-2 font-mono'>
-                                        {OPERATION_LABELS[
-                                            selectedRequest.operation
-                                        ] || selectedRequest.operation}
-                                    </span>
-                                </div>
-                                <div>
-                                    <span className='text-gray-600'>
-                                        Model:
-                                    </span>
-                                    <span className='ml-2 font-mono text-xs'>
-                                        {selectedRequest.model}
-                                    </span>
-                                </div>
-                                <div>
-                                    <span className='text-gray-600'>
-                                        Timestamp:
-                                    </span>
-                                    <span className='ml-2 font-mono text-xs'>
-                                        {formatDate(selectedRequest.createdAt)}
-                                    </span>
-                                </div>
-                                <div>
-                                    <span className='text-gray-600'>
-                                        Tokens:
-                                    </span>
-                                    <span className='ml-2 font-mono text-xs'>
-                                        {selectedRequest.promptTokens} /{' '}
-                                        {selectedRequest.completionTokens} /{' '}
-                                        {selectedRequest.totalTokens}
-                                    </span>
-                                </div>
-                                {selectedRequest.durationMs && (
+            <TabsContent value='stats'>{renderVideoStats()}</TabsContent>
+
+            <TabsContent value='usage'>
+                {renderUsageStats()}
+                <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+                    <DialogContent className='!w-[90vw] !max-w-[1200px]'>
+                        <DialogHeader>
+                            <DialogTitle className='font-mono text-base'>
+                                Request Details
+                            </DialogTitle>
+                        </DialogHeader>
+                        {selectedRequest && (
+                            <div className='space-y-4'>
+                                <div className='grid grid-cols-2 gap-4 text-sm'>
                                     <div>
                                         <span className='text-gray-600'>
-                                            Duration:
+                                            Operation:
                                         </span>
-                                        <span className='ml-2 font-mono text-xs'>
-                                            {(
-                                                selectedRequest.durationMs /
-                                                1000
-                                            ).toFixed(3)}
-                                            s
+                                        <span className='ml-2 font-mono'>
+                                            {OPERATION_LABELS[
+                                                selectedRequest.operation
+                                            ] || selectedRequest.operation}
                                         </span>
                                     </div>
-                                )}
-                            </div>
+                                    <div>
+                                        <span className='text-gray-600'>
+                                            Model:
+                                        </span>
+                                        <span className='ml-2 font-mono text-xs'>
+                                            {selectedRequest.model}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className='text-gray-600'>
+                                            Timestamp:
+                                        </span>
+                                        <span className='ml-2 font-mono text-xs'>
+                                            {formatDate(
+                                                selectedRequest.createdAt,
+                                            )}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className='text-gray-600'>
+                                            Tokens:
+                                        </span>
+                                        <span className='ml-2 font-mono text-xs'>
+                                            {selectedRequest.promptTokens} /{' '}
+                                            {selectedRequest.completionTokens} /{' '}
+                                            {selectedRequest.totalTokens}
+                                        </span>
+                                    </div>
+                                    {selectedRequest.durationMs && (
+                                        <div>
+                                            <span className='text-gray-600'>
+                                                Duration:
+                                            </span>
+                                            <span className='ml-2 font-mono text-xs'>
+                                                {(
+                                                    selectedRequest.durationMs /
+                                                    1000
+                                                ).toFixed(3)}
+                                                s
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
 
-                            <div>
-                                <h4 className='font-medium text-sm mb-2 flex items-center gap-2'>
-                                    <ArrowDownToLine className='w-4 h-4 text-blue-500' />
-                                    Prompt
-                                </h4>
-                                <pre className='bg-gray-100 p-3 rounded text-xs overflow-x-auto font-mono max-h-64 whitespace-pre-wrap break-all'>
-                                    {selectedRequest.promptText
-                                        ? JSON.stringify(
-                                              JSON.parse(
-                                                  selectedRequest.promptText,
-                                              ),
-                                              null,
-                                              2,
-                                          )
-                                        : 'N/A'}
-                                </pre>
-                            </div>
+                                <div>
+                                    <h4 className='font-medium text-sm mb-2 flex items-center gap-2'>
+                                        <ArrowDownToLine className='w-4 h-4 text-blue-500' />
+                                        Prompt
+                                    </h4>
+                                    <pre className='bg-gray-100 p-3 rounded text-xs overflow-x-auto font-mono max-h-64 whitespace-pre-wrap break-all'>
+                                        {selectedRequest.promptText
+                                            ? JSON.stringify(
+                                                  JSON.parse(
+                                                      selectedRequest.promptText,
+                                                  ),
+                                                  null,
+                                                  2,
+                                              )
+                                            : 'N/A'}
+                                    </pre>
+                                </div>
 
-                            <div>
-                                <h4 className='font-medium text-sm mb-2 flex items-center gap-2'>
-                                    <ArrowUpFromLine className='w-4 h-4 text-green-500' />
-                                    Completion
-                                </h4>
-                                <pre className='bg-gray-100 p-3 rounded text-xs overflow-x-auto font-mono max-h-64 whitespace-pre-wrap break-all'>
-                                    {selectedRequest.completionText
-                                        ? JSON.stringify(
-                                              JSON.parse(
-                                                  selectedRequest.completionText,
-                                              ),
-                                              null,
-                                              2,
-                                          )
-                                        : 'N/A'}
-                                </pre>
+                                <div>
+                                    <h4 className='font-medium text-sm mb-2 flex items-center gap-2'>
+                                        <ArrowUpFromLine className='w-4 h-4 text-green-500' />
+                                        Completion
+                                    </h4>
+                                    <pre className='bg-gray-100 p-3 rounded text-xs overflow-x-auto font-mono max-h-64 whitespace-pre-wrap break-all'>
+                                        {selectedRequest.completionText
+                                            ? JSON.stringify(
+                                                  JSON.parse(
+                                                      selectedRequest.completionText,
+                                                  ),
+                                                  null,
+                                                  2,
+                                              )
+                                            : 'N/A'}
+                                    </pre>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
-        </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
+            </TabsContent>
+        </Tabs>
     )
 }
