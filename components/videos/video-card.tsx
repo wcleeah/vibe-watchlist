@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, Loader2 } from 'lucide-react'
+import { FileText, Loader2, Pencil } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 import { ErrorDisplay } from './error-display'
@@ -42,6 +42,7 @@ export function VideoCard({
     showActions = false,
     onMarkWatched,
     onDelete,
+    onEdit,
     onThumbnailUrlChange,
     onTitleChange,
     className,
@@ -267,6 +268,18 @@ export function VideoCard({
                             >
                                 copyUrl()
                             </button>
+                            {onEdit && (
+                                <button
+                                    type='button'
+                                    onClick={() => onEdit(video)}
+                                    className='w-full h-8 min-h-[44px] text-xs px-2 bg-purple-500 text-white hover:bg-purple-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
+                                    title='edit()'
+                                    aria-label='Edit video'
+                                >
+                                    <Pencil className='w-3 h-3 mr-1' />
+                                    edit()
+                                </button>
+                            )}
                             {onMarkWatched && (
                                 <button
                                     type='button'

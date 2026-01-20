@@ -12,10 +12,12 @@ import {
     Youtube,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { VideoEditModal } from '@/components/video-form/video-edit-modal'
 import { VideoList } from '@/components/videos/video-list'
 import type { VideoWithTags as Video } from '@/types/video'
 
@@ -40,6 +42,10 @@ export default function WatchedPage() {
     const [allTags, setAllTags] = useState<
         { id: number; name: string; color?: string }[]
     >([])
+
+    // Edit modal state
+    const [editVideo, setEditVideo] = useState<Video | null>(null)
+    const [editModalOpen, setEditModalOpen] = useState(false)
 
     // Always show watched videos
     const watched = 'true'
@@ -142,6 +148,11 @@ export default function WatchedPage() {
         } catch (error) {
             console.error('Error deleting video:', error)
         }
+    }
+
+    const handleEdit = (video: Video) => {
+        setEditVideo(video)
+        setEditModalOpen(true)
     }
 
     const handlePlatformFilter = (platform: string) => {
@@ -291,11 +302,52 @@ export default function WatchedPage() {
                 </div>
 
                 {/* Video List */}
-                <VideoList
-                    videos={filteredVideos}
-                    onMarkWatched={handleMarkWatched}
-                    onDelete={handleDelete}
-                />
+                <div>
+                    <VideoList
+                        videos={filteredVideos}
+                        onMarkWatched={handleMarkWatched}
+                        onDelete={handleDelete}
+                        onEdit={handleEdit}
+                    />
+                    <VideoEditModal
+                        video={editVideo}
+                        open={editModalOpen}
+                        onOpenChange={setEditModalOpen}
+                        onSuccess={() => {
+                            const fetchVideos = async () => {
+                                setLoading(true)
+                                try {
+                                    const params = new URLSearchParams()
+                                    params.set('watched', watched)
+                                    if (searchQuery)
+                                        params.set('search', searchQuery)
+                                    for (const platform of selectedPlatforms) {
+                                        params.append('platforms', platform)
+                                    }
+                                    for (const tagId of selectedTagIds) {
+                                        params.append('tags', tagId.toString())
+                                    }
+
+                                    const response = await fetch(
+                                        `/api/videos?${params}`,
+                                    )
+                                    if (response.ok) {
+                                        const data = await response.json()
+                                        setVideos(data)
+                                    }
+                                } catch (error) {
+                                    console.error(
+                                        'Error fetching videos:',
+                                        error,
+                                    )
+                                } finally {
+                                    setLoading(false)
+                                }
+                            }
+                            fetchVideos()
+                        }}
+                    />
+                </div>
             </main>
         </div>
     )

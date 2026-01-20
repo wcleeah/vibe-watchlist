@@ -22,6 +22,7 @@ export interface PreviewCardProps {
     showActions?: boolean
     onMarkWatched?: (id: number) => Promise<void>
     onDelete?: (id: number) => Promise<void>
+    onEdit?: (video: VideoData) => void
     onTitleChange?: (title: string) => void
     onThumbnailUrlChange?: (url: string) => void
     className?: string

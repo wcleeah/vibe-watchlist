@@ -12,9 +12,15 @@ interface VideoListProps {
     videos: VideoWithTags[]
     onMarkWatched?: (id: number) => Promise<void>
     onDelete?: (id: number) => Promise<void>
+    onEdit?: (video: VideoWithTags) => void
 }
 
-export function VideoList({ videos, onMarkWatched, onDelete }: VideoListProps) {
+export function VideoList({
+    videos,
+    onMarkWatched,
+    onDelete,
+    onEdit,
+}: VideoListProps) {
     if (videos.length === 0) {
         return (
             <div className='text-center py-12'>
@@ -52,6 +58,7 @@ export function VideoList({ videos, onMarkWatched, onDelete }: VideoListProps) {
                         showActions={true}
                         onMarkWatched={onMarkWatched}
                         onDelete={onDelete}
+                        onEdit={onEdit ? () => onEdit(video) : undefined}
                     />
                 </div>
             ))}
