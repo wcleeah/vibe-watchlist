@@ -63,7 +63,7 @@ export function AnalyticsDashboard() {
                 (video: {
                     platform: string
                     isWatched: boolean
-                    tags?: Array<{ tag: { name: string } }>
+                    tags?: Array<{ name: string }>
                 }) => {
                     if (!platformStats[video.platform]) {
                         platformStats[video.platform] = {
@@ -78,21 +78,19 @@ export function AnalyticsDashboard() {
                     }
 
                     if (video.tags) {
-                        video.tags.forEach(
-                            ({ tag }: { tag: { name: string } }) => {
-                                if (!tagStats[tag.name]) {
-                                    tagStats[tag.name] = {
-                                        total: 0,
-                                        watched: 0,
-                                        percentage: 0,
-                                    }
+                        video.tags.forEach((tag: { name: string }) => {
+                            if (!tagStats[tag.name]) {
+                                tagStats[tag.name] = {
+                                    total: 0,
+                                    watched: 0,
+                                    percentage: 0,
                                 }
-                                tagStats[tag.name].total++
-                                if (video.isWatched) {
-                                    tagStats[tag.name].watched++
-                                }
-                            },
-                        )
+                            }
+                            tagStats[tag.name].total++
+                            if (video.isWatched) {
+                                tagStats[tag.name].watched++
+                            }
+                        })
                     }
                 },
             )
