@@ -15,6 +15,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 
 import { NavigationTabs } from '@/components/navigation-tabs'
+import { SeriesEditModal } from '@/components/series/series-edit-modal'
 import { SeriesList } from '@/components/series/series-list'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -118,6 +119,21 @@ export default function SeriesPage() {
             color: string
         }>
     >([])
+
+    // Edit modal state
+    const [editModalOpen, setEditModalOpen] = useState(false)
+    const [editingSeries, setEditingSeries] = useState<SeriesWithTags | null>(
+        null,
+    )
+
+    const handleEditSeries = (series: SeriesWithTags) => {
+        setEditingSeries(series)
+        setEditModalOpen(true)
+    }
+
+    const handleEditSuccess = () => {
+        refetch()
+    }
 
     // Load platforms dynamically
     useEffect(() => {
@@ -323,6 +339,15 @@ export default function SeriesPage() {
                     loading={loading}
                     onMarkWatched={markWatched}
                     onDelete={deleteSeries}
+                    onEdit={handleEditSeries}
+                />
+
+                {/* Edit Modal */}
+                <SeriesEditModal
+                    series={editingSeries}
+                    open={editModalOpen}
+                    onOpenChange={setEditModalOpen}
+                    onSuccess={handleEditSuccess}
                 />
             </main>
         </div>
