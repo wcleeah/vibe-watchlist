@@ -177,9 +177,10 @@ export function SeriesCard({
                                             ,
                                         </div>
                                         <div className='flex items-center gap-1'>
-                                            <CalendarDays className='w-3 h-3 text-orange-500' />
                                             <span className='text-purple-600 dark:text-purple-400'>
-                                                &quot;SCHEDULE&quot;
+                                                &quot;
+                                                <CalendarDays className='w-3 h-3 text-orange-500 inline' />{' '}
+                                                SCHEDULE&quot;
                                             </span>
                                             :{' '}
                                             <span className='text-orange-600 dark:text-orange-400'>
