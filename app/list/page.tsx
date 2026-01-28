@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { VideoEditModal } from '@/components/video-form/video-edit-modal'
+import { ConvertToSeriesModal } from '@/components/videos/convert-to-series-modal'
 import { VideoList } from '@/components/videos/video-list'
 import type { Video } from '@/lib/db/schema'
 
@@ -64,6 +65,10 @@ export default function ListPage() {
     // Edit modal state
     const [editVideo, setEditVideo] = useState<VideoWithTags | null>(null)
     const [editModalOpen, setEditModalOpen] = useState(false)
+
+    // Convert to series modal state
+    const [convertVideo, setConvertVideo] = useState<VideoWithTags | null>(null)
+    const [convertModalOpen, setConvertModalOpen] = useState(false)
 
     // Platform state
     const [platforms, setPlatforms] = useState<
@@ -283,6 +288,11 @@ export default function ListPage() {
     const handleEdit = (video: VideoWithTags) => {
         setEditVideo(video)
         setEditModalOpen(true)
+    }
+
+    const handleConvertToSeries = (video: VideoWithTags) => {
+        setConvertVideo(video)
+        setConvertModalOpen(true)
     }
 
     return (
@@ -574,11 +584,18 @@ export default function ListPage() {
                             onMarkWatched={handleMarkWatched}
                             onDelete={handleDelete}
                             onEdit={handleEdit}
+                            onConvertToSeries={handleConvertToSeries}
                         />
                         <VideoEditModal
                             video={editVideo}
                             open={editModalOpen}
                             onOpenChange={setEditModalOpen}
+                            onSuccess={fetchVideos}
+                        />
+                        <ConvertToSeriesModal
+                            video={convertVideo}
+                            open={convertModalOpen}
+                            onOpenChange={setConvertModalOpen}
                             onSuccess={fetchVideos}
                         />
                     </>
