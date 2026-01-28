@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
                     timezone = configValue.timezone
                 }
             }
-        } catch (e) {
+        } catch {
             console.warn('Cron: Could not fetch timezone config, using default')
         }
 

@@ -2,6 +2,7 @@
 
 import {
     BarChart3,
+    CalendarDays,
     CheckCircle,
     ListVideo,
     Menu,
@@ -24,6 +25,7 @@ export function NavigationTabs() {
     const navLinks = [
         { href: '/', label: 'Add Video', icon: VideoIcon },
         { href: '/list', label: 'My List', icon: ListVideo },
+        { href: '/series', label: 'Series', icon: CalendarDays },
         { href: '/watched', label: 'Watched', icon: CheckCircle },
         { href: '/analytics', label: 'Analytics', icon: BarChart3 },
         { href: '/settings', label: 'Settings', icon: Settings },

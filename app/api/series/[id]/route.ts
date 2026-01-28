@@ -15,12 +15,12 @@ interface RouteParams {
 }
 
 // GET /api/series/[id] - Get a single series
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params
         const seriesId = parseInt(id, 10)
 
-        if (isNaN(seriesId)) {
+        if (Number.isNaN(seriesId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid series ID' },
                 { status: 400 },
@@ -98,7 +98,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const { id } = await params
         const seriesId = parseInt(id, 10)
 
-        if (isNaN(seriesId)) {
+        if (Number.isNaN(seriesId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid series ID' },
                 { status: 400 },
@@ -192,7 +192,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         // Update series
-        const updatedSeries = await db
+        await db
             .update(series)
             .set(updateData)
             .where(eq(series.id, seriesId))
@@ -289,12 +289,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 // DELETE /api/series/[id] - Delete a series
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params
         const seriesId = parseInt(id, 10)
 
-        if (isNaN(seriesId)) {
+        if (Number.isNaN(seriesId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid series ID' },
                 { status: 400 },

@@ -11,12 +11,12 @@ interface RouteParams {
 }
 
 // POST /api/series/[id]/mark-watched - Mark a series as caught up
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(_request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params
         const seriesId = parseInt(id, 10)
 
-        if (isNaN(seriesId)) {
+        if (Number.isNaN(seriesId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid series ID' },
                 { status: 400 },
