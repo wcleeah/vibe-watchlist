@@ -14,7 +14,7 @@ import type {
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
-        const status = searchParams.get('status') || 'behind' // 'behind', 'caught-up', 'all'
+        const status = searchParams.get('status') || 'all' // 'behind', 'caught-up', 'all'
         const platform = searchParams.get('platform')
         const search = searchParams.get('search')
 
