@@ -3,11 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
+import { SeriesService } from '@/lib/services/series-service'
 import type { VideoFormData, VideoSuggestions } from '@/types/form'
+import type { ContentMode, ScheduleType, ScheduleValue } from '@/types/series'
 import type { Tag } from '@/types/tag'
+import { DatePickerField } from './date-picker-field'
 import { MetadataSelector } from './metadata-selector'
+import { ModeToggle } from './mode-toggle'
 import { PlatformSuggestions } from './platform-suggestions'
+import { ScheduleSelector } from './schedule-selector'
 import { SubmitButton } from './submit-button'
 import { TagInput } from './tag-input'
 
@@ -17,6 +24,8 @@ interface FormLayoutProps {
     suggestions?: VideoSuggestions
     aiMetadataError?: string | null
     onReset: () => void
+    defaultMode?: ContentMode
+    onSeriesCreated?: () => void
 }
 
 export function FormLayout({
@@ -25,6 +34,8 @@ export function FormLayout({
     suggestions = { ai: [], platform: [] },
     aiMetadataError,
     onReset,
+    defaultMode = 'video',
+    onSeriesCreated,
 }: FormLayoutProps) {
     const { setValue, getValues, watch } = useFormContext<VideoFormData>()
     const [selectedSuggestion, setSelectedSuggestion] = useState<
@@ -34,6 +45,25 @@ export function FormLayout({
     const [tagInput, setTagInput] = useState('')
     const [isLoadingTags, setIsLoadingTags] = useState(false)
     const [tagError, setTagError] = useState<string | null>(null)
+
+    // Series mode state
+    const [mode, setMode] = useState<ContentMode>(defaultMode)
+    const [scheduleType, setScheduleType] = useState<ScheduleType>('weekly')
+    const [scheduleValue, setScheduleValue] = useState<ScheduleValue>({
+        days: ['friday'],
+    })
+    const [startDate, setStartDate] = useState<string>(
+        new Date().toISOString().split('T')[0],
+    )
+    const [endDate, setEndDate] = useState<string | undefined>(undefined)
+    const [saveAsDefault, setSaveAsDefault] = useState(false)
+    const [seriesError, setSeriesError] = useState<string | null>(null)
+    const [isSubmittingSeries, setIsSubmittingSeries] = useState(false)
+
+    // Update mode when defaultMode changes
+    useEffect(() => {
+        setMode(defaultMode)
+    }, [defaultMode])
 
     // Platform suggestion handlers
     const acceptPlatformSuggestion = async (suggestion: PlatformSuggestion) => {
@@ -199,11 +229,69 @@ export function FormLayout({
         )
         .slice(0, 5)
 
+    // Series submission handler
+    const handleSeriesSubmit = async () => {
+        const formData = getValues()
+        setSeriesError(null)
+        setIsSubmittingSeries(true)
+
+        try {
+            await SeriesService.create({
+                url: formData.url,
+                title: formData.title,
+                platform: formData.platform || 'unknown',
+                thumbnailUrl: formData.thumbnailUrl || undefined,
+                scheduleType,
+                scheduleValue,
+                startDate,
+                endDate,
+                tagIds: selectedTagIds,
+            })
+
+            // Save as default mode for platform if checked
+            if (saveAsDefault && formData.platform) {
+                try {
+                    await fetch('/api/platforms/default-mode', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            platformId: formData.platform,
+                            defaultMode: 'series',
+                        }),
+                    })
+                } catch (error) {
+                    console.error('Failed to save default mode:', error)
+                }
+            }
+
+            onSeriesCreated?.()
+            onReset()
+        } catch (error) {
+            console.error('Failed to create series:', error)
+            setSeriesError(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to create series',
+            )
+        } finally {
+            setIsSubmittingSeries(false)
+        }
+    }
+
     return (
         <div className={`space-y-6`}>
             <div className='text-center mb-4'>
-                <h2 className='text-xl font-semibold'>Add Tags</h2>
+                <h2 className='text-xl font-semibold'>
+                    Add {mode === 'video' ? 'Video' : 'Series'}
+                </h2>
             </div>
+
+            {/* Mode Toggle - Video/Series */}
+            <ModeToggle
+                mode={mode}
+                onChange={setMode}
+                disabled={isSubmitting || isSubmittingSeries}
+            />
 
             {/* Platform Suggestions */}
             {suggestions.platform.length > 0 && (
@@ -231,8 +319,60 @@ export function FormLayout({
                     }
                 }}
                 error={aiMetadataError || undefined}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSubmittingSeries}
             />
+
+            {/* Schedule Fields - Only shown in Series mode */}
+            {mode === 'series' && (
+                <div className='space-y-4 p-4 bg-muted/50 rounded-lg'>
+                    <ScheduleSelector
+                        scheduleType={scheduleType}
+                        scheduleValue={scheduleValue}
+                        onTypeChange={setScheduleType}
+                        onValueChange={setScheduleValue}
+                        disabled={isSubmitting || isSubmittingSeries}
+                    />
+
+                    <div className='grid grid-cols-2 gap-4'>
+                        <DatePickerField
+                            id='start-date'
+                            label='Start Date'
+                            value={startDate}
+                            onChange={(date) =>
+                                setStartDate(
+                                    date ||
+                                        new Date().toISOString().split('T')[0],
+                                )
+                            }
+                            required
+                            disabled={isSubmitting || isSubmittingSeries}
+                        />
+                        <DatePickerField
+                            id='end-date'
+                            label='End Date (Optional)'
+                            value={endDate}
+                            onChange={setEndDate}
+                            disabled={isSubmitting || isSubmittingSeries}
+                        />
+                    </div>
+
+                    {/* Save as default mode checkbox */}
+                    <div className='flex items-center space-x-2'>
+                        <Checkbox
+                            id='save-default'
+                            checked={saveAsDefault}
+                            onChange={(e) => setSaveAsDefault(e.target.checked)}
+                            disabled={isSubmitting || isSubmittingSeries}
+                        />
+                        <Label
+                            htmlFor='save-default'
+                            className='text-sm text-muted-foreground cursor-pointer'
+                        >
+                            Save as default mode for this platform
+                        </Label>
+                    </div>
+                </div>
+            )}
 
             <TagInput
                 value={tagInput}
@@ -243,7 +383,7 @@ export function FormLayout({
                 suggestions={filteredTags}
                 showSuggestions={true}
                 onSelectSuggestion={selectSuggestedTag}
-                isLoading={isLoadingTags || isSubmitting}
+                isLoading={isLoadingTags || isSubmitting || isSubmittingSeries}
                 error={tagError}
             />
 
@@ -253,17 +393,37 @@ export function FormLayout({
                     variant='secondary'
                     className='flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
                     onClick={onReset}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isSubmittingSeries}
                 >
                     Reset
                 </Button>
-                <SubmitButton
-                    isLoading={isSubmitting}
-                    disabled={isSubmitting}
-                    className='flex-1'
-                />
-                {submitError && <div>{submitError}</div>}
+                {mode === 'video' ? (
+                    <SubmitButton
+                        isLoading={isSubmitting}
+                        disabled={isSubmitting || isSubmittingSeries}
+                        className='flex-1'
+                    />
+                ) : (
+                    <Button
+                        type='button'
+                        onClick={handleSeriesSubmit}
+                        disabled={isSubmitting || isSubmittingSeries}
+                        className='flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
+                    >
+                        {isSubmittingSeries ? 'Adding...' : 'Add Series'}
+                    </Button>
+                )}
             </div>
+            {submitError && mode === 'video' && (
+                <p className='text-sm text-destructive text-center'>
+                    {submitError}
+                </p>
+            )}
+            {seriesError && mode === 'series' && (
+                <p className='text-sm text-destructive text-center'>
+                    {seriesError}
+                </p>
+            )}
         </div>
     )
 }

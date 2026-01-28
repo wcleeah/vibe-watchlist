@@ -107,7 +107,7 @@ export class AIMetadataService {
                     )
                     return this.handleAIPlatform(url, platform)
                 default:
-                    throw Error("Fuck the default");
+                    throw Error('Fuck the default')
             }
         } catch (error) {
             logger.error(

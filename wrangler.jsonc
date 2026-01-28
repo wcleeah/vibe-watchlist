@@ -11,6 +11,11 @@
     "vars": {
         "NODE_ENV": "production"
     },
+    // Cron trigger for series schedule updates
+    // Runs daily at midnight HKT (16:00 UTC the previous day)
+    "triggers": {
+        "crons": ["0 16 * * *"]
+    },
     "observability": {
         "enabled": false,
         "head_sampling_rate": 1,

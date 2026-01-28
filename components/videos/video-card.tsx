@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, Loader2, Pencil } from 'lucide-react'
+import { FileText, Loader2, Pencil, RefreshCw } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 import { ErrorDisplay } from './error-display'
@@ -43,6 +43,7 @@ export function VideoCard({
     onMarkWatched,
     onDelete,
     onEdit,
+    onConvertToSeries,
     onThumbnailUrlChange,
     onTitleChange,
     className,
@@ -278,6 +279,18 @@ export function VideoCard({
                                 >
                                     <Pencil className='w-3 h-3 mr-1' />
                                     edit()
+                                </button>
+                            )}
+                            {onConvertToSeries && (
+                                <button
+                                    type='button'
+                                    onClick={() => onConvertToSeries(video)}
+                                    className='w-full h-8 min-h-[44px] text-xs px-2 bg-orange-500 text-white hover:bg-orange-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
+                                    title='toSeries()'
+                                    aria-label='Convert to series'
+                                >
+                                    <RefreshCw className='w-3 h-3 mr-1' />
+                                    toSeries()
                                 </button>
                             )}
                             {onMarkWatched && (

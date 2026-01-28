@@ -1,0 +1,329 @@
+import { eq, inArray, sql } from 'drizzle-orm'
+import { type NextRequest, NextResponse } from 'next/server'
+
+import { db } from '@/lib/db'
+import { series, seriesTags, tags } from '@/lib/db/schema'
+import { ScheduleService } from '@/lib/services/schedule-service'
+import type {
+    ScheduleType,
+    ScheduleValue,
+    UpdateSeriesRequest,
+} from '@/types/series'
+
+interface RouteParams {
+    params: Promise<{ id: string }>
+}
+
+// GET /api/series/[id] - Get a single series
+export async function GET(_request: NextRequest, { params }: RouteParams) {
+    try {
+        const { id } = await params
+        const seriesId = parseInt(id, 10)
+
+        if (Number.isNaN(seriesId)) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid series ID' },
+                { status: 400 },
+            )
+        }
+
+        const result = await db
+            .select({
+                id: series.id,
+                url: series.url,
+                title: series.title,
+                description: series.description,
+                platform: series.platform,
+                thumbnailUrl: series.thumbnailUrl,
+                scheduleType: series.scheduleType,
+                scheduleValue: series.scheduleValue,
+                startDate: series.startDate,
+                endDate: series.endDate,
+                lastWatchedAt: series.lastWatchedAt,
+                missedPeriods: series.missedPeriods,
+                nextEpisodeAt: series.nextEpisodeAt,
+                isActive: series.isActive,
+                createdAt: series.createdAt,
+                updatedAt: series.updatedAt,
+                tags: sql`COALESCE(json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}, 'color', ${tags.color})) FILTER (WHERE ${tags.id} IS NOT NULL), '[]'::json)`,
+            })
+            .from(series)
+            .leftJoin(seriesTags, eq(series.id, seriesTags.seriesId))
+            .leftJoin(tags, eq(seriesTags.tagId, tags.id))
+            .where(eq(series.id, seriesId))
+            .groupBy(series.id)
+
+        if (result.length === 0) {
+            return NextResponse.json(
+                { success: false, error: 'Series not found' },
+                { status: 404 },
+            )
+        }
+
+        const s = result[0]
+        let parsedTags: Array<Record<string, unknown>> = []
+
+        try {
+            if (typeof s.tags === 'string') {
+                parsedTags = JSON.parse(s.tags)
+            } else if (Array.isArray(s.tags)) {
+                parsedTags = s.tags
+            }
+        } catch {
+            parsedTags = []
+        }
+
+        const seriesWithTags = {
+            ...s,
+            scheduleValue: ScheduleService.parseScheduleValue(
+                s.scheduleType as ScheduleType,
+                s.scheduleValue,
+            ),
+            tags: parsedTags,
+        }
+
+        return NextResponse.json({ success: true, series: seriesWithTags })
+    } catch (error) {
+        console.error('Error fetching series:', error)
+        return NextResponse.json(
+            { success: false, error: 'Failed to fetch series' },
+            { status: 500 },
+        )
+    }
+}
+
+// PUT /api/series/[id] - Update a series
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+    try {
+        const { id } = await params
+        const seriesId = parseInt(id, 10)
+
+        if (Number.isNaN(seriesId)) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid series ID' },
+                { status: 400 },
+            )
+        }
+
+        const body: UpdateSeriesRequest = await request.json()
+        const {
+            title,
+            description,
+            thumbnailUrl,
+            scheduleType,
+            scheduleValue,
+            startDate,
+            endDate,
+            tagIds,
+            isActive,
+        } = body
+
+        // Check if series exists
+        const existingSeries = await db
+            .select()
+            .from(series)
+            .where(eq(series.id, seriesId))
+            .limit(1)
+
+        if (existingSeries.length === 0) {
+            return NextResponse.json(
+                { success: false, error: 'Series not found' },
+                { status: 404 },
+            )
+        }
+
+        // Build update object
+        const updateData: Record<string, unknown> = {
+            updatedAt: new Date(),
+        }
+
+        if (title !== undefined) updateData.title = title
+        if (description !== undefined) updateData.description = description
+        if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl
+        if (isActive !== undefined) updateData.isActive = isActive
+
+        // Handle schedule changes
+        if (scheduleType && scheduleValue) {
+            if (
+                !ScheduleService.isValidScheduleValue(
+                    scheduleType,
+                    scheduleValue,
+                )
+            ) {
+                return NextResponse.json(
+                    { success: false, error: 'Invalid schedule value' },
+                    { status: 400 },
+                )
+            }
+            updateData.scheduleType = scheduleType
+            updateData.scheduleValue = scheduleValue
+
+            // Recalculate next episode date
+            const baseDate = startDate
+                ? new Date(startDate)
+                : new Date(existingSeries[0].startDate)
+            updateData.nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
+                scheduleType,
+                scheduleValue as ScheduleValue,
+                baseDate,
+            )
+        }
+
+        if (startDate !== undefined) {
+            updateData.startDate = startDate
+            // Recalculate next episode if start date changed
+            const effectiveScheduleType =
+                scheduleType || (existingSeries[0].scheduleType as ScheduleType)
+            const effectiveScheduleValue =
+                scheduleValue ||
+                ScheduleService.parseScheduleValue(
+                    effectiveScheduleType,
+                    existingSeries[0].scheduleValue,
+                )
+            updateData.nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
+                effectiveScheduleType,
+                effectiveScheduleValue,
+                new Date(startDate),
+            )
+        }
+
+        if (endDate !== undefined) {
+            updateData.endDate = endDate
+        }
+
+        // Update series
+        await db
+            .update(series)
+            .set(updateData)
+            .where(eq(series.id, seriesId))
+            .returning()
+
+        // Handle tag updates if provided
+        if (tagIds !== undefined) {
+            // Delete existing tag associations
+            await db.delete(seriesTags).where(eq(seriesTags.seriesId, seriesId))
+
+            // Add new tag associations
+            if (tagIds.length > 0) {
+                const tagResults = await db
+                    .select()
+                    .from(tags)
+                    .where(inArray(tags.id, tagIds))
+
+                if (tagResults.length !== tagIds.length) {
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: 'One or more tag IDs do not exist',
+                        },
+                        { status: 400 },
+                    )
+                }
+
+                const seriesTagInserts = tagResults.map((tag) => ({
+                    seriesId,
+                    tagId: tag.id,
+                }))
+
+                await db.insert(seriesTags).values(seriesTagInserts)
+            }
+        }
+
+        // Fetch updated series with tags
+        const result = await db
+            .select({
+                id: series.id,
+                url: series.url,
+                title: series.title,
+                description: series.description,
+                platform: series.platform,
+                thumbnailUrl: series.thumbnailUrl,
+                scheduleType: series.scheduleType,
+                scheduleValue: series.scheduleValue,
+                startDate: series.startDate,
+                endDate: series.endDate,
+                lastWatchedAt: series.lastWatchedAt,
+                missedPeriods: series.missedPeriods,
+                nextEpisodeAt: series.nextEpisodeAt,
+                isActive: series.isActive,
+                createdAt: series.createdAt,
+                updatedAt: series.updatedAt,
+                tags: sql`COALESCE(json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}, 'color', ${tags.color})) FILTER (WHERE ${tags.id} IS NOT NULL), '[]'::json)`,
+            })
+            .from(series)
+            .leftJoin(seriesTags, eq(series.id, seriesTags.seriesId))
+            .leftJoin(tags, eq(seriesTags.tagId, tags.id))
+            .where(eq(series.id, seriesId))
+            .groupBy(series.id)
+
+        const s = result[0]
+        let parsedTags: Array<Record<string, unknown>> = []
+
+        try {
+            if (typeof s.tags === 'string') {
+                parsedTags = JSON.parse(s.tags)
+            } else if (Array.isArray(s.tags)) {
+                parsedTags = s.tags
+            }
+        } catch {
+            parsedTags = []
+        }
+
+        const seriesWithTags = {
+            ...s,
+            scheduleValue: ScheduleService.parseScheduleValue(
+                s.scheduleType as ScheduleType,
+                s.scheduleValue,
+            ),
+            tags: parsedTags,
+        }
+
+        return NextResponse.json({ success: true, series: seriesWithTags })
+    } catch (error) {
+        console.error('Error updating series:', error)
+        return NextResponse.json(
+            { success: false, error: 'Failed to update series' },
+            { status: 500 },
+        )
+    }
+}
+
+// DELETE /api/series/[id] - Delete a series
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+    try {
+        const { id } = await params
+        const seriesId = parseInt(id, 10)
+
+        if (Number.isNaN(seriesId)) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid series ID' },
+                { status: 400 },
+            )
+        }
+
+        // Check if series exists
+        const existingSeries = await db
+            .select()
+            .from(series)
+            .where(eq(series.id, seriesId))
+            .limit(1)
+
+        if (existingSeries.length === 0) {
+            return NextResponse.json(
+                { success: false, error: 'Series not found' },
+                { status: 404 },
+            )
+        }
+
+        // Delete series (cascade will handle seriesTags)
+        await db.delete(series).where(eq(series.id, seriesId))
+
+        return NextResponse.json({ success: true })
+    } catch (error) {
+        console.error('Error deleting series:', error)
+        return NextResponse.json(
+            { success: false, error: 'Failed to delete series' },
+            { status: 500 },
+        )
+    }
+}

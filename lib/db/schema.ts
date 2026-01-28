@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm'
 import {
     boolean,
+    date,
     decimal,
     foreignKey,
     index,
@@ -14,7 +15,7 @@ import {
     unique,
 } from 'drizzle-orm/pg-core'
 
-// Platform configs must be defined first (referenced by videos)
+// Platform configs must be defined first (referenced by videos and series)
 export const platformConfigs = pgTable(
     'platform_configs',
     {
@@ -34,6 +35,7 @@ export const platformConfigs = pgTable(
             scale: 2,
         }).default('1.0'),
         metadata: jsonb(),
+        defaultMode: text('default_mode').default('video'), // 'video' | 'series'
         createdAt: timestamp('created_at').defaultNow(),
         updatedAt: timestamp('updated_at').defaultNow(),
     },
@@ -117,6 +119,60 @@ export const videoTags = pgTable(
     ],
 )
 
+// Series table for tracking recurring/episodic content
+export const series = pgTable(
+    'series',
+    {
+        id: serial('id').primaryKey(),
+        url: text().notNull(),
+        title: text(),
+        description: text(),
+        platform: text().notNull(),
+        thumbnailUrl: text('thumbnail_url'),
+        scheduleType: text('schedule_type').notNull(), // 'daily' | 'weekly' | 'custom'
+        scheduleValue: jsonb('schedule_value').notNull(), // { interval: number } or { days: string[] }
+        startDate: date('start_date').notNull(),
+        endDate: date('end_date'),
+        lastWatchedAt: timestamp('last_watched_at'),
+        missedPeriods: integer('missed_periods').default(0).notNull(),
+        nextEpisodeAt: timestamp('next_episode_at').notNull(),
+        isActive: boolean('is_active').default(true).notNull(),
+        createdAt: timestamp('created_at').defaultNow(),
+        updatedAt: timestamp('updated_at').defaultNow(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.platform],
+            foreignColumns: [platformConfigs.platformId],
+            name: 'series_platform_fkey',
+        }).onDelete('restrict'),
+        index('series_is_active_idx').on(table.isActive),
+        index('series_next_episode_idx').on(table.nextEpisodeAt),
+    ],
+)
+
+// Series tags junction table
+export const seriesTags = pgTable(
+    'series_tags',
+    {
+        id: serial('id').primaryKey(),
+        seriesId: integer('series_id').notNull(),
+        tagId: integer('tag_id').notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.seriesId],
+            foreignColumns: [series.id],
+            name: 'series_tags_series_id_series_id_fk',
+        }).onDelete('cascade'),
+        foreignKey({
+            columns: [table.tagId],
+            foreignColumns: [tags.id],
+            name: 'series_tags_tag_id_tags_id_fk',
+        }).onDelete('cascade'),
+    ],
+)
+
 export const userConfig = pgTable(
     'user_config',
     {
@@ -156,6 +212,7 @@ export const videosRelations = relations(videos, ({ many }) => ({
 
 export const tagsRelations = relations(tags, ({ many }) => ({
     videoTags: many(videoTags),
+    seriesTags: many(seriesTags),
 }))
 
 export const videoTagsRelations = relations(videoTags, ({ one }) => ({
@@ -165,6 +222,21 @@ export const videoTagsRelations = relations(videoTags, ({ one }) => ({
     }),
     tag: one(tags, {
         fields: [videoTags.tagId],
+        references: [tags.id],
+    }),
+}))
+
+export const seriesRelations = relations(series, ({ many }) => ({
+    seriesTags: many(seriesTags),
+}))
+
+export const seriesTagsRelations = relations(seriesTags, ({ one }) => ({
+    series: one(series, {
+        fields: [seriesTags.seriesId],
+        references: [series.id],
+    }),
+    tag: one(tags, {
+        fields: [seriesTags.tagId],
         references: [tags.id],
     }),
 }))
@@ -184,3 +256,7 @@ export type PlatformConfig = typeof platformConfigs.$inferSelect
 export type NewPlatformConfig = typeof platformConfigs.$inferInsert
 export type APIUsageStat = typeof apiUsageStats.$inferSelect
 export type NewAPIUsageStat = typeof apiUsageStats.$inferInsert
+export type Series = typeof series.$inferSelect
+export type NewSeries = typeof series.$inferInsert
+export type SeriesTag = typeof seriesTags.$inferSelect
+export type NewSeriesTag = typeof seriesTags.$inferInsert

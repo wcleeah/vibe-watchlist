@@ -13,6 +13,7 @@ interface VideoListProps {
     onMarkWatched?: (id: number) => Promise<void>
     onDelete?: (id: number) => Promise<void>
     onEdit?: (video: VideoWithTags) => void
+    onConvertToSeries?: (video: VideoWithTags) => void
 }
 
 export function VideoList({
@@ -20,6 +21,7 @@ export function VideoList({
     onMarkWatched,
     onDelete,
     onEdit,
+    onConvertToSeries,
 }: VideoListProps) {
     if (videos.length === 0) {
         return (
@@ -59,6 +61,11 @@ export function VideoList({
                         onMarkWatched={onMarkWatched}
                         onDelete={onDelete}
                         onEdit={onEdit ? () => onEdit(video) : undefined}
+                        onConvertToSeries={
+                            onConvertToSeries
+                                ? () => onConvertToSeries(video)
+                                : undefined
+                        }
                     />
                 </div>
             ))}
