@@ -57,7 +57,7 @@ const titleSuggestionsSchema = {
 
 import { APIUsageService } from './api-usage-service'
 
-const MODEL_NAME = 'mistralai/devstral-2512:free'
+const MODEL_NAME = 'z-ai/glm-4.5-air:free'
 
 function extractMessages(body: unknown): string {
     const b = body as { messages?: Array<{ role: string; content: string }> }
