@@ -10,13 +10,14 @@ import {
     X,
     Youtube,
 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { VideoEditModal } from '@/components/video-form/video-edit-modal'
+import { ConvertToPlaylistModal } from '@/components/videos/convert-to-playlist-modal'
 import { ConvertToSeriesModal } from '@/components/videos/convert-to-series-modal'
 import { VideoList } from '@/components/videos/video-list'
 import type { Video } from '@/lib/db/schema'
@@ -69,6 +70,12 @@ export default function ListPage() {
     // Convert to series modal state
     const [convertVideo, setConvertVideo] = useState<VideoWithTags | null>(null)
     const [convertModalOpen, setConvertModalOpen] = useState(false)
+
+    // Convert to playlist modal state
+    const [convertPlaylistVideo, setConvertPlaylistVideo] =
+        useState<VideoWithTags | null>(null)
+    const [convertPlaylistModalOpen, setConvertPlaylistModalOpen] =
+        useState(false)
 
     // Platform state
     const [platforms, setPlatforms] = useState<
@@ -294,6 +301,33 @@ export default function ListPage() {
         setConvertVideo(video)
         setConvertModalOpen(true)
     }
+
+    const handleConvertToPlaylist = (video: VideoWithTags) => {
+        setConvertPlaylistVideo(video)
+        setConvertPlaylistModalOpen(true)
+    }
+
+    // Compute which videos have YouTube playlist URLs
+    const playlistUrlVideoIds = useMemo(() => {
+        const ids = new Set<number>()
+        for (const video of videos) {
+            // Check if URL contains a YouTube playlist ID
+            try {
+                const url = new URL(video.url)
+                const hasPlaylistId = url.searchParams.has('list')
+                const isPlaylistPage = url.pathname.includes('/playlist')
+                if (
+                    video.platform === 'youtube' &&
+                    (hasPlaylistId || isPlaylistPage)
+                ) {
+                    ids.add(video.id)
+                }
+            } catch {
+                // Invalid URL, skip
+            }
+        }
+        return ids
+    }, [videos])
 
     return (
         <div className='min-h-screen bg-background text-foreground'>
@@ -585,6 +619,8 @@ export default function ListPage() {
                             onDelete={handleDelete}
                             onEdit={handleEdit}
                             onConvertToSeries={handleConvertToSeries}
+                            onConvertToPlaylist={handleConvertToPlaylist}
+                            playlistUrlVideoIds={playlistUrlVideoIds}
                         />
                         <VideoEditModal
                             video={editVideo}
@@ -596,6 +632,12 @@ export default function ListPage() {
                             video={convertVideo}
                             open={convertModalOpen}
                             onOpenChange={setConvertModalOpen}
+                            onSuccess={fetchVideos}
+                        />
+                        <ConvertToPlaylistModal
+                            video={convertPlaylistVideo}
+                            open={convertPlaylistModalOpen}
+                            onOpenChange={setConvertPlaylistModalOpen}
                             onSuccess={fetchVideos}
                         />
                     </>

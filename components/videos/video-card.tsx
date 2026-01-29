@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, Loader2, Pencil, RefreshCw } from 'lucide-react'
+import { FileText, ListMusic, Loader2, Pencil, RefreshCw } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 import { ErrorDisplay } from './error-display'
@@ -44,6 +44,8 @@ export function VideoCard({
     onDelete,
     onEdit,
     onConvertToSeries,
+    onConvertToPlaylist,
+    isPlaylistUrl = false,
     onThumbnailUrlChange,
     onTitleChange,
     className,
@@ -291,6 +293,18 @@ export function VideoCard({
                                 >
                                     <RefreshCw className='w-3 h-3 mr-1' />
                                     toSeries()
+                                </button>
+                            )}
+                            {onConvertToPlaylist && isPlaylistUrl && (
+                                <button
+                                    type='button'
+                                    onClick={() => onConvertToPlaylist(video)}
+                                    className='w-full h-8 min-h-[44px] text-xs px-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
+                                    title='toPlaylist()'
+                                    aria-label='Convert to playlist'
+                                >
+                                    <ListMusic className='w-3 h-3 mr-1' />
+                                    toPlaylist()
                                 </button>
                             )}
                             {onMarkWatched && (
