@@ -1,8 +1,20 @@
 'use client'
 
-import { FileText, ListMusic, Loader2, Pencil, RefreshCw } from 'lucide-react'
+import {
+    ChevronDown,
+    Copy,
+    FileText,
+    ListMusic,
+    Loader2,
+    Pencil,
+    RefreshCw,
+} from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
+
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+
 import { ErrorDisplay } from './error-display'
 import type { PreviewCardProps, VideoData } from './types'
 
@@ -54,9 +66,14 @@ export function VideoCard({
 }: PreviewCardProps) {
     const [loadingMarkWatched, setLoadingMarkWatched] = useState(false)
     const [loadingDelete, setLoadingDelete] = useState(false)
+    const [actionsExpanded, setActionsExpanded] = useState(false)
 
     // Internal manual mode state - overrides external if provided
     const [manualMode, setManualMode] = useState(false)
+
+    // Determine if there are secondary actions to show
+    const hasSecondaryActions =
+        onEdit || onConvertToSeries || (onConvertToPlaylist && isPlaylistUrl)
 
     const toggleManual = () => {
         setManualMode(!manualMode)
@@ -245,130 +262,185 @@ export function VideoCard({
                     </div>
                 </div>
 
-                {/* Action Column (20%) - Full height on desktop, horizontal at bottom on mobile */}
+                {/* Action Column - Expandable Panel Design */}
                 {showActions && (
-                    <div className='px-4 pt-4 pb-4 flex flex-col md:border-l border-black dark:border-white justify-center'>
-                        {/* Main action buttons */}
-                        <div className='flex flex-col gap-2 justify-center mb-8'>
+                    <div className='px-4 py-4 flex flex-col md:border-l border-border justify-center gap-2'>
+                        {/* Primary Actions - Always visible */}
+                        <Button
+                            variant='default'
+                            size='sm'
+                            className='w-full text-xs font-bold'
+                            asChild
+                        >
                             <a
                                 href={video.url}
                                 target='_blank'
                                 rel='noopener noreferrer'
-                                className='w-full h-8 min-h-[44px] text-xs px-2 bg-primary text-primary-foreground dark:bg-white dark:text-black hover:bg-primary/90 dark:hover:bg-gray-100 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center font-bold'
                                 title='watch()'
                                 aria-label='Watch video'
                             >
                                 watch()
                             </a>
-                            <button
-                                type='button'
-                                onClick={() =>
-                                    navigator.clipboard.writeText(video.url)
-                                }
-                                className='w-full h-8 min-h-[44px] text-xs px-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
-                                title='copyUrl()'
-                                aria-label='Copy video URL'
-                            >
-                                copyUrl()
-                            </button>
-                            {onEdit && (
-                                <button
-                                    type='button'
-                                    onClick={() => onEdit(video)}
-                                    className='w-full h-8 min-h-[44px] text-xs px-2 bg-purple-500 text-white hover:bg-purple-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
-                                    title='edit()'
-                                    aria-label='Edit video'
-                                >
-                                    <Pencil className='w-3 h-3 mr-1' />
-                                    edit()
-                                </button>
-                            )}
-                            {onConvertToSeries && (
-                                <button
-                                    type='button'
-                                    onClick={() => onConvertToSeries(video)}
-                                    className='w-full h-8 min-h-[44px] text-xs px-2 bg-orange-500 text-white hover:bg-orange-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
-                                    title='toSeries()'
-                                    aria-label='Convert to series'
-                                >
-                                    <RefreshCw className='w-3 h-3 mr-1' />
-                                    toSeries()
-                                </button>
-                            )}
-                            {onConvertToPlaylist && isPlaylistUrl && (
-                                <button
-                                    type='button'
-                                    onClick={() => onConvertToPlaylist(video)}
-                                    className='w-full h-8 min-h-[44px] text-xs px-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
-                                    title='toPlaylist()'
-                                    aria-label='Convert to playlist'
-                                >
-                                    <ListMusic className='w-3 h-3 mr-1' />
-                                    toPlaylist()
-                                </button>
-                            )}
-                            {onMarkWatched && (
-                                <button
-                                    type='button'
-                                    onClick={async () => {
-                                        if (!video.id) return
-                                        setLoadingMarkWatched(true)
-                                        try {
-                                            await onMarkWatched(video.id)
-                                        } finally {
-                                            setLoadingMarkWatched(false)
-                                        }
-                                    }}
-                                    disabled={loadingMarkWatched}
-                                    className='w-full h-8 min-h-[44px] text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
-                                    title={
-                                        video.isWatched
-                                            ? 'un-watch()'
-                                            : 'markWatched()'
-                                    }
-                                    aria-label={
-                                        video.isWatched
-                                            ? 'Mark as unwatched'
-                                            : 'Mark as watched'
-                                    }
-                                >
-                                    {loadingMarkWatched ? (
-                                        <Loader2 className='w-4 h-4 animate-spin' />
-                                    ) : video.isWatched ? (
-                                        'unWatch()'
-                                    ) : (
-                                        'markWatched()'
-                                    )}
-                                </button>
-                            )}
-                        </div>
+                        </Button>
 
-                        {/* Delete button separated at bottom */}
+                        {onMarkWatched && (
+                            <Button
+                                variant='outline'
+                                size='sm'
+                                className='w-full text-xs'
+                                onClick={async () => {
+                                    if (!video.id) return
+                                    setLoadingMarkWatched(true)
+                                    try {
+                                        await onMarkWatched(video.id)
+                                    } finally {
+                                        setLoadingMarkWatched(false)
+                                    }
+                                }}
+                                disabled={loadingMarkWatched}
+                                title={
+                                    video.isWatched
+                                        ? 'unWatch()'
+                                        : 'markWatched()'
+                                }
+                                aria-label={
+                                    video.isWatched
+                                        ? 'Mark as unwatched'
+                                        : 'Mark as watched'
+                                }
+                            >
+                                {loadingMarkWatched ? (
+                                    <Loader2 className='w-4 h-4 animate-spin' />
+                                ) : video.isWatched ? (
+                                    'unWatch()'
+                                ) : (
+                                    'markWatched()'
+                                )}
+                            </Button>
+                        )}
+
                         {onDelete && (
-                            <div className='flex justify-center'>
-                                <button
-                                    type='button'
-                                    onClick={async () => {
-                                        if (!video.id) return
-                                        setLoadingDelete(true)
-                                        try {
-                                            await onDelete(video.id)
-                                        } finally {
-                                            setLoadingDelete(false)
-                                        }
-                                    }}
-                                    disabled={loadingDelete}
-                                    className='w-full h-8 min-h-[44px] text-xs px-2 bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
-                                    title='delete()'
-                                    aria-label='Delete video'
+                            <Button
+                                variant='destructive'
+                                size='sm'
+                                className='w-full text-xs'
+                                onClick={async () => {
+                                    if (!video.id) return
+                                    setLoadingDelete(true)
+                                    try {
+                                        await onDelete(video.id)
+                                    } finally {
+                                        setLoadingDelete(false)
+                                    }
+                                }}
+                                disabled={loadingDelete}
+                                title='delete()'
+                                aria-label='Delete video'
+                            >
+                                {loadingDelete ? (
+                                    <Loader2 className='w-4 h-4 animate-spin' />
+                                ) : (
+                                    'delete()'
+                                )}
+                            </Button>
+                        )}
+
+                        {/* Expand/Collapse Toggle for Secondary Actions */}
+                        {hasSecondaryActions && (
+                            <>
+                                <Button
+                                    variant='ghost'
+                                    size='sm'
+                                    className='w-full text-xs'
+                                    onClick={() =>
+                                        setActionsExpanded(!actionsExpanded)
+                                    }
+                                    aria-expanded={actionsExpanded}
+                                    aria-label={
+                                        actionsExpanded
+                                            ? 'Show less actions'
+                                            : 'Show more actions'
+                                    }
                                 >
-                                    {loadingDelete ? (
-                                        <Loader2 className='w-4 h-4 animate-spin' />
-                                    ) : (
-                                        'delete()'
-                                    )}
-                                </button>
-                            </div>
+                                    {actionsExpanded ? 'less()' : 'more()'}
+                                    <ChevronDown
+                                        className={cn(
+                                            'w-4 h-4 transition-transform duration-200',
+                                            actionsExpanded && 'rotate-180',
+                                        )}
+                                    />
+                                </Button>
+
+                                {/* Secondary Actions - Expandable */}
+                                {actionsExpanded && (
+                                    <div className='flex flex-col gap-2 animate-in slide-in-from-top-2 duration-200'>
+                                        <Button
+                                            variant='ghost'
+                                            size='sm'
+                                            className='w-full text-xs'
+                                            onClick={() =>
+                                                navigator.clipboard.writeText(
+                                                    video.url,
+                                                )
+                                            }
+                                            title='copyUrl()'
+                                            aria-label='Copy video URL'
+                                        >
+                                            <Copy className='w-3 h-3' />
+                                            copyUrl()
+                                        </Button>
+
+                                        {onEdit && (
+                                            <Button
+                                                variant='ghost'
+                                                size='sm'
+                                                className='w-full text-xs'
+                                                onClick={() => onEdit(video)}
+                                                title='edit()'
+                                                aria-label='Edit video'
+                                            >
+                                                <Pencil className='w-3 h-3' />
+                                                edit()
+                                            </Button>
+                                        )}
+
+                                        {onConvertToSeries && (
+                                            <Button
+                                                variant='ghost'
+                                                size='sm'
+                                                className='w-full text-xs'
+                                                onClick={() =>
+                                                    onConvertToSeries(video)
+                                                }
+                                                title='toSeries()'
+                                                aria-label='Convert to series'
+                                            >
+                                                <RefreshCw className='w-3 h-3' />
+                                                toSeries()
+                                            </Button>
+                                        )}
+
+                                        {onConvertToPlaylist &&
+                                            isPlaylistUrl && (
+                                                <Button
+                                                    variant='ghost'
+                                                    size='sm'
+                                                    className='w-full text-xs'
+                                                    onClick={() =>
+                                                        onConvertToPlaylist(
+                                                            video,
+                                                        )
+                                                    }
+                                                    title='toPlaylist()'
+                                                    aria-label='Convert to playlist'
+                                                >
+                                                    <ListMusic className='w-3 h-3' />
+                                                    toPlaylist()
+                                                </Button>
+                                            )}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
