@@ -1,7 +1,7 @@
 import { and, eq, lte } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { playlists, videos } from '@/lib/db/schema'
+import { videos } from '@/lib/db/schema'
 
 interface RouteParams {
     params: Promise<{ id: string; videoId: string }>
@@ -9,13 +9,13 @@ interface RouteParams {
 
 // POST /api/playlists/[id]/videos/[videoId]/watched
 // Mark a video as watched and cascade to all earlier videos in the playlist
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(_request: NextRequest, { params }: RouteParams) {
     try {
         const { id, videoId } = await params
         const playlistId = parseInt(id, 10)
         const targetVideoId = parseInt(videoId, 10)
 
-        if (isNaN(playlistId) || isNaN(targetVideoId)) {
+        if (Number.isNaN(playlistId) || Number.isNaN(targetVideoId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid playlist or video ID' },
                 { status: 400 },
@@ -92,13 +92,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/playlists/[id]/videos/[videoId]/watched
 // Mark a video as unwatched (does not cascade)
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     try {
         const { id, videoId } = await params
         const playlistId = parseInt(id, 10)
         const targetVideoId = parseInt(videoId, 10)
 
-        if (isNaN(playlistId) || isNaN(targetVideoId)) {
+        if (Number.isNaN(playlistId) || Number.isNaN(targetVideoId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid playlist or video ID' },
                 { status: 400 },

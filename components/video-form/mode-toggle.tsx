@@ -52,6 +52,19 @@ export function ModeToggle({
             >
                 Series
             </button>
+            <button
+                type='button'
+                onClick={() => onChange('playlist')}
+                disabled={disabled}
+                className={cn(
+                    'px-4 py-1.5 text-sm font-medium rounded-md transition-all',
+                    mode === 'playlist'
+                        ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
+                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200',
+                )}
+            >
+                Playlist
+            </button>
         </div>
     )
 }

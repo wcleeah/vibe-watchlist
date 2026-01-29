@@ -9,9 +9,9 @@ export interface Video {
     thumbnailUrl: string | null
     isWatched: boolean | null
     // Playlist-related fields
-    playlistId?: number | null
-    playlistIndex?: number | null
-    youtubeVideoId?: string | null
+    playlistId: number | null
+    playlistIndex: number | null
+    youtubeVideoId: string | null
     createdAt: Date | null
     updatedAt: Date | null
 }

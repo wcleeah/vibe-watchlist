@@ -9,12 +9,12 @@ interface RouteParams {
 }
 
 // POST /api/playlists/[id]/sync - Re-sync playlist from YouTube
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(_request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params
         const playlistId = parseInt(id, 10)
 
-        if (isNaN(playlistId)) {
+        if (Number.isNaN(playlistId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid playlist ID' },
                 { status: 400 },

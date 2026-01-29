@@ -8,12 +8,12 @@ interface RouteParams {
 }
 
 // GET /api/playlists/[id] - Get single playlist with all videos
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params
         const playlistId = parseInt(id, 10)
 
-        if (isNaN(playlistId)) {
+        if (Number.isNaN(playlistId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid playlist ID' },
                 { status: 400 },
@@ -96,12 +96,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // DELETE /api/playlists/[id] - Delete playlist and all its videos
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params
         const playlistId = parseInt(id, 10)
 
-        if (isNaN(playlistId)) {
+        if (Number.isNaN(playlistId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid playlist ID' },
                 { status: 400 },

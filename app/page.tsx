@@ -12,6 +12,7 @@ import { useAIMetadataFetching } from '@/hooks/use-ai-metadata-fetching'
 import { useUrlValidation } from '@/hooks/use-url-validation'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import { type VideoFormData, videoSchema } from '@/types/form'
+import type { ContentMode } from '@/types/series'
 
 export default function Home() {
     // Initialize RHF form
@@ -35,6 +36,12 @@ export default function Home() {
     >([])
     const [platformDiscoveryProcessed, setPlatformDiscoveryProcessed] =
         useState(false)
+
+    // Determine default mode based on URL type
+    const defaultMode: ContentMode = urlValidation.urlValidationResult
+        ?.isPlaylist
+        ? 'playlist'
+        : 'video'
 
     const isReadyForForm =
         urlValidation.urlValidationResult?.validated &&
@@ -227,6 +234,7 @@ export default function Home() {
                                             }}
                                             aiMetadataError={aiMetadata.error}
                                             onReset={() => reset(true)}
+                                            defaultMode={defaultMode}
                                         />
                                     </div>
                                     <div>
