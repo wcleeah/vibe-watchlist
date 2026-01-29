@@ -146,7 +146,7 @@ export function PlaylistItemsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className='max-w-4xl max-h-[90vh] overflow-hidden flex flex-col'>
+            <DialogContent className='sm:max-w-6xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col'>
                 <DialogHeader>
                     <DialogTitle className='font-mono'>
                         {playlist?.title || 'Playlist Items'}
@@ -248,7 +248,7 @@ function PlaylistItemRow({
             {/* Title */}
             <div className='flex-1 min-w-0'>
                 <p
-                    className={`text-sm font-medium truncate ${
+                    className={`text-sm font-medium line-clamp-2 ${
                         video.isWatched
                             ? 'text-gray-500 dark:text-gray-400'
                             : 'text-gray-900 dark:text-gray-100'
