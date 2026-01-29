@@ -319,32 +319,6 @@ export function VideoCard({
                             </Button>
                         )}
 
-                        {onDelete && (
-                            <Button
-                                variant='destructive'
-                                size='sm'
-                                className='w-full text-xs'
-                                onClick={async () => {
-                                    if (!video.id) return
-                                    setLoadingDelete(true)
-                                    try {
-                                        await onDelete(video.id)
-                                    } finally {
-                                        setLoadingDelete(false)
-                                    }
-                                }}
-                                disabled={loadingDelete}
-                                title='delete()'
-                                aria-label='Delete video'
-                            >
-                                {loadingDelete ? (
-                                    <Loader2 className='w-4 h-4 animate-spin' />
-                                ) : (
-                                    'delete()'
-                                )}
-                            </Button>
-                        )}
-
                         {/* Expand/Collapse Toggle for Secondary Actions */}
                         {hasSecondaryActions && (
                             <>
@@ -441,6 +415,32 @@ export function VideoCard({
                                     </div>
                                 )}
                             </>
+                        )}
+
+                        {onDelete && (
+                            <Button
+                                variant='destructive'
+                                size='sm'
+                                className='w-full text-xs'
+                                onClick={async () => {
+                                    if (!video.id) return
+                                    setLoadingDelete(true)
+                                    try {
+                                        await onDelete(video.id)
+                                    } finally {
+                                        setLoadingDelete(false)
+                                    }
+                                }}
+                                disabled={loadingDelete}
+                                title='delete()'
+                                aria-label='Delete video'
+                            >
+                                {loadingDelete ? (
+                                    <Loader2 className='w-4 h-4 animate-spin' />
+                                ) : (
+                                    'delete()'
+                                )}
+                            </Button>
                         )}
                     </div>
                 )}
