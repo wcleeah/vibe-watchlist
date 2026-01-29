@@ -63,6 +63,28 @@ export const aiMetadataCache = pgTable(
     (table) => [unique('ai_metadata_cache_url_unique').on(table.url)],
 )
 
+// Playlists table for YouTube playlists
+export const playlists = pgTable(
+    'playlists',
+    {
+        id: serial('id').primaryKey(),
+        youtubePlaylistId: text('youtube_playlist_id').notNull(),
+        title: text(),
+        description: text(),
+        thumbnailUrl: text('thumbnail_url'),
+        channelTitle: text('channel_title'),
+        itemCount: integer('item_count').default(0),
+        lastSyncedAt: timestamp('last_synced_at'),
+        createdAt: timestamp('created_at').defaultNow(),
+        updatedAt: timestamp('updated_at').defaultNow(),
+    },
+    (table) => [
+        unique('playlists_youtube_playlist_id_unique').on(
+            table.youtubePlaylistId,
+        ),
+    ],
+)
+
 // Tags (referenced by videoTags)
 export const tags = pgTable(
     'tags',
@@ -85,6 +107,10 @@ export const videos = pgTable(
         platform: text().notNull(),
         thumbnailUrl: text('thumbnail_url'),
         isWatched: boolean('is_watched').default(false),
+        // Playlist-related fields
+        playlistId: integer('playlist_id'), // FK to playlists.id (null = standalone video)
+        playlistIndex: integer('playlist_index'), // Position in playlist (0-based)
+        youtubeVideoId: text('youtube_video_id'), // Extracted YouTube video ID
         createdAt: timestamp('created_at').defaultNow(),
         updatedAt: timestamp('updated_at').defaultNow(),
     },
@@ -94,6 +120,12 @@ export const videos = pgTable(
             foreignColumns: [platformConfigs.platformId],
             name: 'videos_platform_fkey',
         }).onDelete('restrict'),
+        foreignKey({
+            columns: [table.playlistId],
+            foreignColumns: [playlists.id],
+            name: 'videos_playlist_fkey',
+        }).onDelete('cascade'),
+        index('videos_playlist_id_idx').on(table.playlistId),
     ],
 )
 
@@ -206,8 +238,16 @@ export const apiUsageStats = pgTable(
 )
 
 // Relations
-export const videosRelations = relations(videos, ({ many }) => ({
+export const playlistsRelations = relations(playlists, ({ many }) => ({
+    videos: many(videos),
+}))
+
+export const videosRelations = relations(videos, ({ one, many }) => ({
     videoTags: many(videoTags),
+    playlist: one(playlists, {
+        fields: [videos.playlistId],
+        references: [playlists.id],
+    }),
 }))
 
 export const tagsRelations = relations(tags, ({ many }) => ({
@@ -260,3 +300,5 @@ export type Series = typeof series.$inferSelect
 export type NewSeries = typeof series.$inferInsert
 export type SeriesTag = typeof seriesTags.$inferSelect
 export type NewSeriesTag = typeof seriesTags.$inferInsert
+export type Playlist = typeof playlists.$inferSelect
+export type NewPlaylist = typeof playlists.$inferInsert

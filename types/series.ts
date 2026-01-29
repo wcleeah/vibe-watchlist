@@ -27,7 +27,7 @@ export interface CustomSchedule {
 export type ScheduleValue = DailySchedule | WeeklySchedule | CustomSchedule
 
 // Content mode for the add form
-export type ContentMode = 'video' | 'series'
+export type ContentMode = 'video' | 'series' | 'playlist'
 
 // Series with typed schedule value
 export interface Series

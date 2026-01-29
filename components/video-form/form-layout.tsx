@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import { SeriesService } from '@/lib/services/series-service'
 import type { VideoFormData, VideoSuggestions } from '@/types/form'
+import type { PlaylistImportPreview } from '@/types/playlist'
 import type { ContentMode, ScheduleType, ScheduleValue } from '@/types/series'
 import type { Tag } from '@/types/tag'
 import { DatePickerField } from './date-picker-field'
@@ -26,6 +28,7 @@ interface FormLayoutProps {
     onReset: () => void
     defaultMode?: ContentMode
     onSeriesCreated?: () => void
+    onPlaylistImported?: () => void
 }
 
 export function FormLayout({
@@ -36,6 +39,7 @@ export function FormLayout({
     onReset,
     defaultMode = 'video',
     onSeriesCreated,
+    onPlaylistImported,
 }: FormLayoutProps) {
     const { setValue, getValues, watch } = useFormContext<VideoFormData>()
     const [selectedSuggestion, setSelectedSuggestion] = useState<
@@ -59,6 +63,13 @@ export function FormLayout({
     const [saveAsDefault, setSaveAsDefault] = useState(false)
     const [seriesError, setSeriesError] = useState<string | null>(null)
     const [isSubmittingSeries, setIsSubmittingSeries] = useState(false)
+
+    // Playlist mode state
+    const [playlistPreview, setPlaylistPreview] =
+        useState<PlaylistImportPreview | null>(null)
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false)
+    const [isImportingPlaylist, setIsImportingPlaylist] = useState(false)
+    const [playlistError, setPlaylistError] = useState<string | null>(null)
 
     // Update mode when defaultMode changes
     useEffect(() => {
@@ -278,23 +289,139 @@ export function FormLayout({
         }
     }
 
+    // Playlist preview handler
+    const handlePlaylistPreview = useCallback(async () => {
+        const formData = getValues()
+        if (!formData.url) {
+            setPlaylistError('Please enter a playlist URL')
+            return
+        }
+
+        setPlaylistError(null)
+        setIsLoadingPreview(true)
+
+        try {
+            const response = await fetch('/api/playlists/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: formData.url }),
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.error || 'Failed to fetch playlist info')
+            }
+
+            const data = await response.json()
+            setPlaylistPreview(data.preview)
+        } catch (error) {
+            console.error('Failed to preview playlist:', error)
+            setPlaylistError(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to fetch playlist info',
+            )
+        } finally {
+            setIsLoadingPreview(false)
+        }
+    }, [getValues])
+
+    // Auto-fetch playlist preview when in playlist mode
+    useEffect(() => {
+        if (
+            defaultMode === 'playlist' &&
+            !playlistPreview &&
+            !isLoadingPreview
+        ) {
+            const url = getValues('url')
+            if (url) {
+                handlePlaylistPreview()
+            }
+        }
+    }, [
+        defaultMode,
+        playlistPreview,
+        isLoadingPreview,
+        getValues,
+        handlePlaylistPreview,
+    ])
+
+    // Playlist import handler
+    const handlePlaylistImport = async () => {
+        const formData = getValues()
+        if (!formData.url) {
+            setPlaylistError('Please enter a playlist URL')
+            return
+        }
+
+        setPlaylistError(null)
+        setIsImportingPlaylist(true)
+
+        try {
+            const response = await fetch('/api/playlists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: formData.url }),
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.error || 'Failed to import playlist')
+            }
+
+            toast.success('Playlist imported successfully!')
+            setPlaylistPreview(null)
+            onPlaylistImported?.()
+            onReset()
+        } catch (error) {
+            console.error('Failed to import playlist:', error)
+            setPlaylistError(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to import playlist',
+            )
+        } finally {
+            setIsImportingPlaylist(false)
+        }
+    }
+
+    // Cancel playlist preview
+    const handleCancelPlaylistPreview = () => {
+        setPlaylistPreview(null)
+        setPlaylistError(null)
+    }
+
     return (
         <div className={`space-y-6`}>
             <div className='text-center mb-4'>
                 <h2 className='text-xl font-semibold'>
-                    Add {mode === 'video' ? 'Video' : 'Series'}
+                    Add{' '}
+                    {mode === 'video'
+                        ? 'Video'
+                        : mode === 'series'
+                          ? 'Series'
+                          : 'Playlist'}
                 </h2>
             </div>
 
-            {/* Mode Toggle - Video/Series */}
+            {/* Mode Toggle - Video/Series/Playlist */}
             <ModeToggle
                 mode={mode}
-                onChange={setMode}
-                disabled={isSubmitting || isSubmittingSeries}
+                onChange={(newMode) => {
+                    setMode(newMode)
+                    // Reset playlist preview when switching modes
+                    if (newMode !== 'playlist') {
+                        setPlaylistPreview(null)
+                        setPlaylistError(null)
+                    }
+                }}
+                disabled={
+                    isSubmitting || isSubmittingSeries || isImportingPlaylist
+                }
             />
 
-            {/* Platform Suggestions */}
-            {suggestions.platform.length > 0 && (
+            {/* Platform Suggestions - Only for video/series modes */}
+            {mode !== 'playlist' && suggestions.platform.length > 0 && (
                 <PlatformSuggestions
                     suggestions={suggestions.platform}
                     onAccept={acceptPlatformSuggestion}
@@ -305,22 +432,69 @@ export function FormLayout({
                 />
             )}
 
-            <MetadataSelector
-                suggestions={suggestions.ai}
-                selectedIndex={selectedSuggestion}
-                onSelect={(index) => {
-                    setSelectedSuggestion(index)
-                    const suggestion = suggestions.ai[index]
-                    setValue('title', suggestion.title)
-                    setValue('thumbnailUrl', suggestion.thumbnailUrl || '')
-                    const platform: string = getValues('platform')
-                    if (platform === 'unknown') {
-                        setValue('platform', suggestion.platform || '')
-                    }
-                }}
-                error={aiMetadataError || undefined}
-                disabled={isSubmitting || isSubmittingSeries}
-            />
+            {/* Metadata Selector - Only for video/series modes */}
+            {mode !== 'playlist' && (
+                <MetadataSelector
+                    suggestions={suggestions.ai}
+                    selectedIndex={selectedSuggestion}
+                    onSelect={(index) => {
+                        setSelectedSuggestion(index)
+                        const suggestion = suggestions.ai[index]
+                        setValue('title', suggestion.title)
+                        setValue('thumbnailUrl', suggestion.thumbnailUrl || '')
+                        const platform: string = getValues('platform')
+                        if (platform === 'unknown') {
+                            setValue('platform', suggestion.platform || '')
+                        }
+                    }}
+                    error={aiMetadataError || undefined}
+                    disabled={isSubmitting || isSubmittingSeries}
+                />
+            )}
+
+            {/* Playlist Preview - Only shown in playlist mode */}
+            {mode === 'playlist' && (
+                <div className='space-y-4'>
+                    {playlistPreview ? (
+                        <div className='p-4 bg-muted/50 rounded-lg space-y-4'>
+                            <h3 className='font-medium'>Playlist Preview</h3>
+                            <div className='flex gap-4'>
+                                {playlistPreview.thumbnailUrl && (
+                                    <img
+                                        src={playlistPreview.thumbnailUrl}
+                                        alt={playlistPreview.title}
+                                        className='w-32 h-20 object-cover rounded'
+                                    />
+                                )}
+                                <div className='flex-1 min-w-0'>
+                                    <p className='font-semibold truncate'>
+                                        {playlistPreview.title}
+                                    </p>
+                                    <p className='text-sm text-muted-foreground'>
+                                        {playlistPreview.channelTitle}
+                                    </p>
+                                    <p className='text-sm text-muted-foreground'>
+                                        {playlistPreview.itemCount} videos
+                                    </p>
+                                </div>
+                            </div>
+                            {playlistPreview.description && (
+                                <p className='text-sm text-muted-foreground line-clamp-2'>
+                                    {playlistPreview.description}
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        <div className='p-4 bg-muted/50 rounded-lg'>
+                            <p className='text-sm text-muted-foreground text-center'>
+                                Enter a YouTube playlist URL above and click
+                                &quot;Preview&quot; to see playlist details
+                                before importing.
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Schedule Fields - Only shown in Series mode */}
             {mode === 'series' && (
@@ -374,26 +548,41 @@ export function FormLayout({
                 </div>
             )}
 
-            <TagInput
-                value={tagInput}
-                onChange={(tag) => setTagInput(tag)}
-                onTagAdd={addTag}
-                onTagRemove={removeTag}
-                selectedTags={selectedTags}
-                suggestions={filteredTags}
-                showSuggestions={true}
-                onSelectSuggestion={selectSuggestedTag}
-                isLoading={isLoadingTags || isSubmitting || isSubmittingSeries}
-                error={tagError}
-            />
+            {/* Tags - Only for video/series modes */}
+            {mode !== 'playlist' && (
+                <TagInput
+                    value={tagInput}
+                    onChange={(tag) => setTagInput(tag)}
+                    onTagAdd={addTag}
+                    onTagRemove={removeTag}
+                    selectedTags={selectedTags}
+                    suggestions={filteredTags}
+                    showSuggestions={true}
+                    onSelectSuggestion={selectSuggestedTag}
+                    isLoading={
+                        isLoadingTags || isSubmitting || isSubmittingSeries
+                    }
+                    error={tagError}
+                />
+            )}
 
+            {/* Action Buttons */}
             <div className='flex gap-2'>
                 <Button
                     type='button'
                     variant='secondary'
                     className='flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
-                    onClick={onReset}
-                    disabled={isSubmitting || isSubmittingSeries}
+                    onClick={() => {
+                        if (mode === 'playlist') {
+                            handleCancelPlaylistPreview()
+                        }
+                        onReset()
+                    }}
+                    disabled={
+                        isSubmitting ||
+                        isSubmittingSeries ||
+                        isImportingPlaylist
+                    }
                 >
                     Reset
                 </Button>
@@ -403,7 +592,7 @@ export function FormLayout({
                         disabled={isSubmitting || isSubmittingSeries}
                         className='flex-1'
                     />
-                ) : (
+                ) : mode === 'series' ? (
                     <Button
                         type='button'
                         onClick={handleSeriesSubmit}
@@ -412,8 +601,30 @@ export function FormLayout({
                     >
                         {isSubmittingSeries ? 'Adding...' : 'Add Series'}
                     </Button>
+                ) : playlistPreview ? (
+                    <Button
+                        type='button'
+                        onClick={handlePlaylistImport}
+                        disabled={isImportingPlaylist}
+                        className='flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
+                    >
+                        {isImportingPlaylist
+                            ? 'Importing...'
+                            : `Import ${playlistPreview.itemCount} Videos`}
+                    </Button>
+                ) : (
+                    <Button
+                        type='button'
+                        onClick={handlePlaylistPreview}
+                        disabled={isLoadingPreview}
+                        className='flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
+                    >
+                        {isLoadingPreview ? 'Loading...' : 'Preview Playlist'}
+                    </Button>
                 )}
             </div>
+
+            {/* Error Messages */}
             {submitError && mode === 'video' && (
                 <p className='text-sm text-destructive text-center'>
                     {submitError}
@@ -422,6 +633,11 @@ export function FormLayout({
             {seriesError && mode === 'series' && (
                 <p className='text-sm text-destructive text-center'>
                     {seriesError}
+                </p>
+            )}
+            {playlistError && mode === 'playlist' && (
+                <p className='text-sm text-destructive text-center'>
+                    {playlistError}
                 </p>
             )}
         </div>

@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { tags, videos, videoTags } from '@/lib/db/schema'
@@ -19,8 +19,16 @@ export async function GET(request: NextRequest) {
         const sortOrder = searchParams.get('sortOrder') || 'desc' // asc, desc
         const limit = parseInt(searchParams.get('limit') || '50', 10)
         const offset = parseInt(searchParams.get('offset') || '0', 10)
+        const includePlaylistVideos =
+            searchParams.get('includePlaylistVideos') === 'true'
 
         const whereConditions = []
+
+        // By default, exclude playlist videos from the main list
+        // They should only be viewed via the playlist endpoints
+        if (!includePlaylistVideos) {
+            whereConditions.push(isNull(videos.playlistId))
+        }
 
         if (watched !== null) {
             whereConditions.push(eq(videos.isWatched, watched === 'true'))

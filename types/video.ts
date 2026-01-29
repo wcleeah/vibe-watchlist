@@ -8,6 +8,10 @@ export interface Video {
     platform: VideoPlatform
     thumbnailUrl: string | null
     isWatched: boolean | null
+    // Playlist-related fields
+    playlistId: number | null
+    playlistIndex: number | null
+    youtubeVideoId: string | null
     createdAt: Date | null
     updatedAt: Date | null
 }
@@ -29,5 +33,7 @@ export interface ParsedUrl {
     url: string
     platform: VideoPlatform
     videoId?: string
+    playlistId?: string
+    isPlaylist: boolean
     isValid: boolean
 }

@@ -5,6 +5,7 @@ export interface ParsedUrl {
     platform: VideoPlatform
     videoId?: string
     playlistId?: string
+    isPlaylist: boolean // true if this is a playlist URL
     isValid: boolean
     error?: string
 }
@@ -22,7 +23,7 @@ export function parseVideoUrlWithPlatforms(
     }>,
 ): ParsedUrl {
     if (!url || typeof url !== 'string') {
-        return { url, platform: 'unknown', isValid: false }
+        return { url, platform: 'unknown', isPlaylist: false, isValid: false }
     }
 
     try {
@@ -32,7 +33,6 @@ export function parseVideoUrlWithPlatforms(
         for (const platform of platforms) {
             if (!platform.enabled || !platform.patterns) continue
 
-            console.log(url)
             // Check if hostname matches any of the platform's patterns
             const matchesPattern = platform.patterns.some((pattern: string) =>
                 urlObj.href.includes(pattern.toLowerCase()),
@@ -42,10 +42,25 @@ export function parseVideoUrlWithPlatforms(
                 // Extract video ID based on platform
                 const videoId = extractVideoId(urlObj, platform.platformId)
 
+                // Extract playlist ID for YouTube
+                const playlistId =
+                    platform.platformId === 'youtube'
+                        ? extractYouTubePlaylistId(urlObj)
+                        : undefined
+
+                // Determine if this is primarily a playlist URL
+                // A URL is considered a playlist if it has a playlist ID but no video ID,
+                // OR if it's a dedicated playlist URL (youtube.com/playlist)
+                const isPlaylistUrl =
+                    urlObj.pathname.includes('/playlist') ||
+                    (playlistId && !videoId)
+
                 return {
                     url,
                     platform: platform.platformId,
                     videoId,
+                    playlistId: playlistId || undefined,
+                    isPlaylist: Boolean(isPlaylistUrl),
                     isValid: true,
                 }
             }
@@ -55,12 +70,14 @@ export function parseVideoUrlWithPlatforms(
         return {
             url,
             platform: 'unknown',
+            isPlaylist: false,
             isValid: true,
         }
     } catch {
         return {
             url,
             platform: 'unknown',
+            isPlaylist: false,
             isValid: false,
             error: 'Invalid URL',
         }
@@ -105,9 +122,11 @@ function extractYouTubeId(urlObj: URL): string | null {
     return null
 }
 
-function _extractYouTubePlaylistId(urlObj: URL): string | null {
+function extractYouTubePlaylistId(urlObj: URL): string | null {
     const playlistId = urlObj.searchParams.get('list')
-    if (playlistId?.startsWith('PL') && playlistId.length > 2) {
+    // Common playlist ID prefixes: PL (user), UU (uploads), FL (favorites),
+    // LL (liked), RD (radio/mix), OL (other)
+    if (playlistId && playlistId.length > 2) {
         return playlistId
     }
     return null
