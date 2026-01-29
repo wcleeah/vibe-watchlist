@@ -57,7 +57,7 @@ const titleSuggestionsSchema = {
 
 import { APIUsageService } from './api-usage-service'
 
-const MODEL_NAME = 'z-ai/glm-4.5-air:free'
+const MODEL_NAME = 'arcee-ai/trinity-large-preview:free'
 
 function extractMessages(body: unknown): string {
     const b = body as { messages?: Array<{ role: string; content: string }> }
@@ -243,6 +243,7 @@ export class AIService {
             }
 
             const startTime = Date.now()
+            console.log("hehe")
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
