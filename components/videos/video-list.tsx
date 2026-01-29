@@ -14,6 +14,8 @@ interface VideoListProps {
     onDelete?: (id: number) => Promise<void>
     onEdit?: (video: VideoWithTags) => void
     onConvertToSeries?: (video: VideoWithTags) => void
+    onConvertToPlaylist?: (video: VideoWithTags) => void
+    playlistUrlVideoIds?: Set<number>
 }
 
 export function VideoList({
@@ -22,6 +24,8 @@ export function VideoList({
     onDelete,
     onEdit,
     onConvertToSeries,
+    onConvertToPlaylist,
+    playlistUrlVideoIds,
 }: VideoListProps) {
     if (videos.length === 0) {
         return (
@@ -32,7 +36,9 @@ export function VideoList({
                         fill='none'
                         viewBox='0 0 24 24'
                         stroke='currentColor'
+                        aria-hidden='true'
                     >
+                        <title>Video icon</title>
                         <path
                             strokeLinecap='round'
                             strokeLinejoin='round'
@@ -53,22 +59,32 @@ export function VideoList({
 
     return (
         <div className='overflow-hidden'>
-            {videos.map((video) => (
-                <div key={video.id} className='py-3'>
-                    <VideoCard
-                        video={video}
-                        showActions={true}
-                        onMarkWatched={onMarkWatched}
-                        onDelete={onDelete}
-                        onEdit={onEdit ? () => onEdit(video) : undefined}
-                        onConvertToSeries={
-                            onConvertToSeries
-                                ? () => onConvertToSeries(video)
-                                : undefined
-                        }
-                    />
-                </div>
-            ))}
+            {videos.map((video) => {
+                const isPlaylistUrl =
+                    playlistUrlVideoIds?.has(video.id) ?? false
+                return (
+                    <div key={video.id} className='py-3'>
+                        <VideoCard
+                            video={video}
+                            showActions={true}
+                            onMarkWatched={onMarkWatched}
+                            onDelete={onDelete}
+                            onEdit={onEdit ? () => onEdit(video) : undefined}
+                            onConvertToSeries={
+                                onConvertToSeries
+                                    ? () => onConvertToSeries(video)
+                                    : undefined
+                            }
+                            onConvertToPlaylist={
+                                onConvertToPlaylist
+                                    ? () => onConvertToPlaylist(video)
+                                    : undefined
+                            }
+                            isPlaylistUrl={isPlaylistUrl}
+                        />
+                    </div>
+                )
+            })}
         </div>
     )
 }
