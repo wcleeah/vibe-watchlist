@@ -41,6 +41,7 @@ export function PlaylistList({
         <MediaList
             items={playlists}
             renderCard={renderCard}
+            keyExtractor={(playlist) => playlist.id}
             loading={loading}
             emptyState={{
                 title: emptyState?.title || 'No playlists found',

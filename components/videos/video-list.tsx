@@ -69,6 +69,7 @@ export function VideoList({
         <MediaList
             items={videos}
             renderCard={renderCard}
+            keyExtractor={(video) => video.id}
             loading={loading}
             emptyState={{
                 title: emptyState?.title || 'No videos found',

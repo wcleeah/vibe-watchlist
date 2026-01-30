@@ -4,10 +4,12 @@ import { Inbox } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-interface MediaListProps<T> {
+export interface MediaListProps<T> {
     items: T[]
     renderCard: (item: T) => React.ReactNode
+    keyExtractor?: (item: T, index: number) => string | number
     loading?: boolean
+    loadingSkeletonCount?: number
     emptyState?: {
         title: string
         description: string
@@ -19,7 +21,9 @@ interface MediaListProps<T> {
 export function MediaList<T>({
     items,
     renderCard,
+    keyExtractor,
     loading = false,
+    loadingSkeletonCount = 3,
     emptyState,
     className,
 }: MediaListProps<T>) {
@@ -27,7 +31,7 @@ export function MediaList<T>({
     if (loading) {
         return (
             <div className={cn('space-y-6', className)}>
-                {[...Array(3)].map((_, i) => (
+                {[...Array(loadingSkeletonCount)].map((_, i) => (
                     <div key={i} className='animate-pulse'>
                         <div className='bg-gray-200 dark:bg-gray-800 rounded-lg h-[240px]' />
                     </div>
@@ -58,7 +62,9 @@ export function MediaList<T>({
     return (
         <div className={cn('space-y-6', className)}>
             {items.map((item, index) => (
-                <div key={index}>{renderCard(item)}</div>
+                <div key={keyExtractor ? keyExtractor(item, index) : index}>
+                    {renderCard(item)}
+                </div>
             ))}
         </div>
     )

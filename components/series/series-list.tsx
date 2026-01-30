@@ -50,6 +50,7 @@ export function SeriesList({
         <MediaList
             items={series}
             renderCard={renderCard}
+            keyExtractor={(s) => s.id}
             loading={loading}
             emptyState={{
                 title: emptyState?.title || 'No series found',

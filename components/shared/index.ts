@@ -22,7 +22,7 @@ export {
     type MediaMetadataItem,
     type StatusBadgeConfig,
 } from './media-card'
-export { MediaList } from './media-list'
+export { MediaList, type MediaListProps } from './media-list'
 export { ProgressBar } from './progress-bar'
 export { type TabConfig, TabSwitcher } from './tab-switcher'
 // Basic components
