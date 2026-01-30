@@ -218,11 +218,11 @@ export function SeriesEditModal({
                 tagIds: data.tagIds,
                 isActive: data.isActive,
                 totalEpisodes:
-                    totalEpisodes !== null && !isNaN(totalEpisodes)
+                    totalEpisodes !== null && !Number.isNaN(totalEpisodes)
                         ? totalEpisodes
                         : undefined,
                 watchedEpisodes:
-                    watchedEpisodes !== null && !isNaN(watchedEpisodes)
+                    watchedEpisodes !== null && !Number.isNaN(watchedEpisodes)
                         ? watchedEpisodes
                         : undefined,
             })
