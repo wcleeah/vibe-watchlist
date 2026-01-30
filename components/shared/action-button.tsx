@@ -6,7 +6,13 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-export type ActionVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
+export type ActionVariant =
+    | 'primary'
+    | 'secondary'
+    | 'danger'
+    | 'ghost'
+    | 'info'
+    | 'success'
 export type ActionSize = 'sm' | 'md'
 
 export interface ActionButtonProps {
@@ -29,6 +35,15 @@ const variantMap: Record<
     secondary: 'outline',
     danger: 'destructive',
     ghost: 'ghost',
+    info: 'outline',
+    success: 'outline',
+}
+
+// Custom color classes for info and success variants
+const variantColorClasses: Partial<Record<ActionVariant, string>> = {
+    info: 'border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950',
+    success:
+        'border-green-500 text-green-600 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-green-950',
 }
 
 export function ActionButton({
@@ -44,6 +59,7 @@ export function ActionButton({
 }: ActionButtonProps) {
     const buttonVariant = variantMap[variant]
     const sizeClass = size === 'sm' ? 'h-8 text-xs' : 'h-10 text-sm'
+    const colorClass = variantColorClasses[variant] || ''
 
     const content = loading ? (
         <Loader2 className='w-4 h-4 animate-spin' />
@@ -59,7 +75,12 @@ export function ActionButton({
             <Button
                 variant={buttonVariant}
                 size='sm'
-                className={cn('w-full font-medium', sizeClass, className)}
+                className={cn(
+                    'w-full font-medium',
+                    sizeClass,
+                    colorClass,
+                    className,
+                )}
                 disabled={disabled || loading}
                 asChild
             >
@@ -74,7 +95,12 @@ export function ActionButton({
         <Button
             variant={buttonVariant}
             size='sm'
-            className={cn('w-full font-medium', sizeClass, className)}
+            className={cn(
+                'w-full font-medium',
+                sizeClass,
+                colorClass,
+                className,
+            )}
             onClick={onClick}
             disabled={disabled || loading}
         >
