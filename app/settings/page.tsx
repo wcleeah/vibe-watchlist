@@ -18,6 +18,23 @@ import { PlatformTester } from '@/components/settings/platforms/platform-tester'
 import { TagsManager } from '@/components/settings/tags-manager'
 import { Button } from '@/components/ui/button'
 
+// Platform config type matching the PlatformList callback
+interface PlatformSettingsConfig {
+    id: string
+    platformId: string
+    name: string
+    displayName: string
+    patterns: string[]
+    extractor: string
+    color: string
+    icon: string
+    enabled: boolean
+    isPreset: boolean
+    confidenceScore: number
+    createdAt: string
+    updatedAt: string
+}
+
 type TabId = 'cache' | 'platforms' | 'tags'
 
 const tabs = [
@@ -29,7 +46,8 @@ const tabs = [
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState<TabId>('cache')
     const [platformFormOpen, setPlatformFormOpen] = useState(false)
-    const [editingPlatform, setEditingPlatform] = useState<any>(null)
+    const [editingPlatform, setEditingPlatform] =
+        useState<PlatformSettingsConfig | null>(null)
     const [refreshing, setRefreshing] = useState(false)
     const [cacheRefreshKey, setCacheRefreshKey] = useState(0)
 
@@ -46,7 +64,7 @@ export default function SettingsPage() {
         setCacheRefreshKey((prev) => prev + 1)
     }
 
-    const handlePlatformEdit = (platform: any) => {
+    const handlePlatformEdit = (platform: PlatformSettingsConfig) => {
         setEditingPlatform(platform)
         setPlatformFormOpen(true)
     }

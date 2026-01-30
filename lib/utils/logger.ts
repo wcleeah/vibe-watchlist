@@ -1,7 +1,7 @@
 export function logWithTimestamp(
     level: 'log' | 'error' | 'warn',
     message: string,
-    ...args: any[]
+    ...args: unknown[]
 ) {
     const timestamp = new Date().toISOString()
     const logMessage = `[${timestamp}] ${message}`
@@ -20,10 +20,10 @@ export function logWithTimestamp(
 }
 
 export const logger = {
-    log: (message: string, ...args: any[]) =>
+    log: (message: string, ...args: unknown[]) =>
         logWithTimestamp('log', message, ...args),
-    error: (message: string, ...args: any[]) =>
+    error: (message: string, ...args: unknown[]) =>
         logWithTimestamp('error', message, ...args),
-    warn: (message: string, ...args: any[]) =>
+    warn: (message: string, ...args: unknown[]) =>
         logWithTimestamp('warn', message, ...args),
 }

@@ -25,7 +25,7 @@ export interface CustomSchedule {
 }
 
 // Empty schedule for backlog series
-export type NoSchedule = {}
+export type NoSchedule = Record<string, never>
 
 export type ScheduleValue =
     | DailySchedule
