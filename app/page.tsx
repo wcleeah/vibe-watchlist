@@ -3,14 +3,14 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { UrlInputSection } from '@/components/url-input-section'
 import { FormLayout } from '@/components/video-form'
-import { PreviewCard } from '@/components/video-preview/preview-card'
+import { FormPreview } from '@/components/video-form/form-preview'
 import { useAIMetadataFetching } from '@/hooks/use-ai-metadata-fetching'
+import { usePlatformDiscovery } from '@/hooks/use-platform-discovery'
 import { useUrlValidation } from '@/hooks/use-url-validation'
-import type { PlatformSuggestion } from '@/lib/services/ai-service'
+import { useVideoSubmission } from '@/hooks/use-video-submission'
 import { type VideoFormData, videoSchema } from '@/types/form'
 import type { ContentMode } from '@/types/series'
 
@@ -26,16 +26,22 @@ export default function Home() {
     })
     const { setValue } = form
 
+    // Hooks
     const urlValidation = useUrlValidation()
     const aiMetadata = useAIMetadataFetching(urlValidation.urlValidationResult)
+    const platformDiscovery = usePlatformDiscovery(
+        urlValidation.urlValidationResult,
+    )
+    const submission = useVideoSubmission(
+        form,
+        urlValidation.urlValidationResult,
+        {
+            onSuccess: () => handleReset(),
+        },
+    )
+
+    // UI state
     const [mode, setMode] = useState<'input' | 'form'>('input')
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const [submitError, setSubmitError] = useState<string | null>(null)
-    const [platformSuggestions, setPlatformSuggestions] = useState<
-        PlatformSuggestion[]
-    >([])
-    const [platformDiscoveryProcessed, setPlatformDiscoveryProcessed] =
-        useState(false)
 
     // Determine default mode based on URL type
     const defaultMode: ContentMode = urlValidation.urlValidationResult
@@ -43,13 +49,15 @@ export default function Home() {
         ? 'playlist'
         : 'video'
 
+    // Ready check
     const isReadyForForm =
         urlValidation.urlValidationResult?.validated &&
         urlValidation.urlValidationResult.isValid &&
         aiMetadata.fetchDone &&
         (urlValidation.urlValidationResult.platform !== 'unknown' ||
-            platformDiscoveryProcessed)
+            platformDiscovery.isProcessed)
 
+    // Sync URL to form
     useEffect(() => {
         if (
             urlValidation.urlValidationResult?.isValid &&
@@ -59,56 +67,7 @@ export default function Home() {
         }
     }, [urlValidation.urlValidationResult, setValue])
 
-    useEffect(() => {
-        const parsed = urlValidation.urlValidationResult
-        if (
-            !parsed ||
-            !parsed.validated ||
-            !parsed.isValid ||
-            parsed.platform !== 'unknown'
-        )
-            return
-
-        fetch('/api/platforms/discover', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: parsed.url }),
-        })
-            .then((response) => {
-                if (!response.ok)
-                    throw new Error(`API request failed: ${response.status}`)
-                return response.json()
-            })
-            .then((data) => {
-                const suggestion: PlatformSuggestion = data.suggestion
-                if (suggestion.confidence > 0.3) {
-                    setPlatformSuggestions([suggestion])
-                }
-            })
-            .catch((error) => {
-                console.error('Platform detection error:', error)
-            })
-            .finally(() => {
-                setPlatformDiscoveryProcessed(true)
-            })
-    }, [urlValidation.urlValidationResult])
-
-    useEffect(() => {
-        if (isReadyForForm && mode === 'input') {
-            setMode('form')
-        }
-    }, [isReadyForForm, mode])
-
-    useEffect(() => {
-        if (
-            !urlValidation ||
-            !urlValidation.urlValidationResult?.isValid ||
-            !urlValidation.urlValidationResult?.validated
-        ) {
-            setMode('input')
-        }
-    }, [urlValidation.urlValidationResult, urlValidation])
-
+    // Auto-populate form with AI suggestions
     useEffect(() => {
         if (aiMetadata.fetchDone && aiMetadata.suggestions.length > 0) {
             const suggestion = aiMetadata.suggestions[0]
@@ -118,7 +77,25 @@ export default function Home() {
         }
     }, [aiMetadata.fetchDone, aiMetadata.suggestions, setValue])
 
-    const reset = async (clearCache: boolean = false) => {
+    // Transition to form mode when ready
+    useEffect(() => {
+        if (isReadyForForm && mode === 'input') {
+            setMode('form')
+        }
+    }, [isReadyForForm, mode])
+
+    // Reset to input mode when URL becomes invalid
+    useEffect(() => {
+        if (
+            !urlValidation.urlValidationResult?.isValid ||
+            !urlValidation.urlValidationResult?.validated
+        ) {
+            setMode('input')
+        }
+    }, [urlValidation.urlValidationResult])
+
+    // Reset handler
+    const handleReset = async (clearCache: boolean = false) => {
         const currentUrl = urlValidation.urlValidationResult?.url
 
         if (clearCache && currentUrl) {
@@ -126,65 +103,18 @@ export default function Home() {
                 fetch(`/api/cache?url=${encodeURIComponent(currentUrl)}`, {
                     method: 'DELETE',
                 })
-            } catch (e) {
+            } catch {
                 // Failed to clear cache - not critical
             }
         }
 
-        // Reset platform discovery state
-        setPlatformSuggestions([])
-        setPlatformDiscoveryProcessed(false)
-
         urlValidation.unsetUrl()
+        platformDiscovery.dismiss()
+        submission.resetError()
         form.reset()
     }
 
-    // Handler to dismiss platform suggestions (called when user accepts/rejects)
-    const handlePlatformSuggestionsDismiss = () => {
-        setPlatformSuggestions([])
-    }
-
-    const onSubmit = async (data: VideoFormData) => {
-        if (!urlValidation.urlValidationResult?.isValid) return
-
-        setIsSubmitting(true)
-        setSubmitError(null)
-
-        try {
-            const videoData = {
-                url: data.url,
-                title: data.title,
-                platform: data.platform,
-                thumbnailUrl: data.thumbnailUrl || null,
-                tagIds: data.tags,
-            }
-
-            const response = await fetch('/api/videos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(videoData),
-            })
-
-            if (!response.ok) {
-                if (response.status === 409) {
-                    const errorData = await response.json()
-                    setSubmitError(errorData.error || 'Video already exists')
-                } else {
-                    setSubmitError('Failed to add video')
-                }
-            } else {
-                reset(false) // Reset URL and global state
-                form.reset() // Reset form
-                toast.success('Video added successfully!')
-            }
-        } catch (error) {
-            console.error('Error adding video:', error)
-            setSubmitError('Failed to add video')
-        } finally {
-            setIsSubmitting(false)
-        }
-    }
-
+    // Loading state
     if (
         urlValidation.validating ||
         (!isReadyForForm && urlValidation.urlValidationResult?.isValid)
@@ -205,7 +135,7 @@ export default function Home() {
 
     return (
         <FormProvider {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <form onSubmit={form.handleSubmit(submission.submit)}>
                 <div className='bg-background text-foreground'>
                     <NavigationTabs />
 
@@ -218,29 +148,33 @@ export default function Home() {
                                     urlValidation.urlValidationResult?.isValid
                                 }
                                 error={urlValidation.urlValidationResult?.error}
-                                disabled={isSubmitting}
+                                disabled={submission.isSubmitting}
                             />
                         ) : (
                             <div className='w-full max-w-7xl'>
                                 <div className='grid grid-cols-1 lg:grid-cols-2 gap-8 items-center'>
                                     <div>
                                         <FormLayout
-                                            isSubmitting={isSubmitting}
-                                            submitError={submitError}
-                                            suggestions={{
-                                                ai: aiMetadata.suggestions,
-                                                platform: platformSuggestions,
-                                            }}
+                                            isSubmitting={
+                                                submission.isSubmitting
+                                            }
+                                            submitError={submission.error}
+                                            aiSuggestions={
+                                                aiMetadata.suggestions
+                                            }
+                                            platformSuggestions={
+                                                platformDiscovery.suggestions
+                                            }
                                             aiMetadataError={aiMetadata.error}
-                                            onReset={() => reset(true)}
+                                            onReset={() => handleReset(true)}
                                             onPlatformSuggestionsDismiss={
-                                                handlePlatformSuggestionsDismiss
+                                                platformDiscovery.dismiss
                                             }
                                             defaultMode={defaultMode}
                                         />
                                     </div>
                                     <div>
-                                        <PreviewCard />
+                                        <FormPreview />
                                     </div>
                                 </div>
                             </div>
