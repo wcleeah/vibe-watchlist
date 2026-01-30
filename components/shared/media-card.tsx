@@ -50,6 +50,8 @@ interface MediaCardProps<T> {
     error?: string | null
     className?: string
     children?: React.ReactNode
+    /** If true, hide action column entirely (preview mode) */
+    hideActions?: boolean
 }
 
 const colorClasses: Record<string, string> = {
@@ -109,12 +111,19 @@ export function MediaCard<T>({
     error,
     className,
     children,
+    hideActions = false,
 }: MediaCardProps<T>) {
     const [actionsExpanded, setActionsExpanded] = useState(false)
 
     const hasSecondaryActions =
         secondaryActions &&
         secondaryActions.filter((a) => a.condition !== false).length > 0
+
+    // Determine if we should show action column
+    const showActionColumn =
+        !hideActions &&
+        (primaryActions.filter((a) => a.condition !== false).length > 0 ||
+            hasSecondaryActions)
 
     const handleCopyUrl = () => {
         navigator.clipboard.writeText(url)
@@ -145,7 +154,13 @@ export function MediaCard<T>({
                 className,
             )}
         >
-            <div className='grid grid-cols-1 md:grid-cols-[8fr_2fr] min-h-[240px]'>
+            <div
+                className={cn(
+                    'min-h-[240px]',
+                    showActionColumn &&
+                        'grid grid-cols-1 md:grid-cols-[8fr_2fr]',
+                )}
+            >
                 {/* Content Column */}
                 <div className='px-4 pt-4 pb-4 space-y-1 max-w-full overflow-hidden'>
                     {/* Title + Status Badge */}
@@ -254,86 +269,91 @@ export function MediaCard<T>({
                     </div>
                 </div>
 
-                {/* Action Column */}
-                <div className='px-4 py-4 flex flex-col md:border-l border-black dark:border-white justify-center gap-2'>
-                    {/* Primary Actions */}
-                    {primaryActions
-                        .filter((action) => action.condition !== false)
-                        .map((action) => (
-                            <ActionButton
-                                key={action.id}
-                                label={action.label}
-                                onClick={action.onClick}
-                                href={action.href}
-                                variant={action.variant || 'primary'}
-                                icon={action.icon}
-                                loading={action.loading}
-                            />
-                        ))}
+                {/* Action Column - Only show if we have actions */}
+                {showActionColumn && (
+                    <div className='px-4 py-4 flex flex-col md:border-l border-black dark:border-white justify-center gap-2'>
+                        {/* Primary Actions */}
+                        {primaryActions
+                            .filter((action) => action.condition !== false)
+                            .map((action) => (
+                                <ActionButton
+                                    key={action.id}
+                                    label={action.label}
+                                    onClick={action.onClick}
+                                    href={action.href}
+                                    variant={action.variant || 'primary'}
+                                    icon={action.icon}
+                                    loading={action.loading}
+                                />
+                            ))}
 
-                    {/* Expand/Collapse Toggle for Secondary Actions */}
-                    {hasSecondaryActions && (
-                        <>
+                        {/* Expand/Collapse Toggle for Secondary Actions */}
+                        {hasSecondaryActions && (
+                            <>
+                                <ActionButton
+                                    label={
+                                        actionsExpanded ? 'less()' : 'more()'
+                                    }
+                                    onClick={() =>
+                                        setActionsExpanded(!actionsExpanded)
+                                    }
+                                    variant='ghost'
+                                    icon={
+                                        <ChevronDown
+                                            className={cn(
+                                                'w-4 h-4 transition-transform duration-200',
+                                                actionsExpanded && 'rotate-180',
+                                            )}
+                                        />
+                                    }
+                                />
+
+                                {/* Secondary Actions - Expandable */}
+                                {actionsExpanded && (
+                                    <div className='flex flex-col gap-2 animate-in slide-in-from-top-2 duration-200'>
+                                        {/* Copy URL - always included in secondary */}
+                                        <ActionButton
+                                            label='copyUrl()'
+                                            onClick={handleCopyUrl}
+                                            variant='ghost'
+                                            icon={<Copy className='w-3 h-3' />}
+                                        />
+
+                                        {secondaryActions
+                                            .filter(
+                                                (action) =>
+                                                    action.condition !== false,
+                                            )
+                                            .map((action) => (
+                                                <ActionButton
+                                                    key={action.id}
+                                                    label={action.label}
+                                                    onClick={action.onClick}
+                                                    href={action.href}
+                                                    variant={
+                                                        action.variant ||
+                                                        'ghost'
+                                                    }
+                                                    icon={action.icon}
+                                                    loading={action.loading}
+                                                />
+                                            ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* If no secondary actions but we want copyUrl, show it directly */}
+                        {!hasSecondaryActions && (
                             <ActionButton
-                                label={actionsExpanded ? 'less()' : 'more()'}
-                                onClick={() =>
-                                    setActionsExpanded(!actionsExpanded)
-                                }
+                                label='copyUrl()'
+                                onClick={handleCopyUrl}
                                 variant='ghost'
-                                icon={
-                                    <ChevronDown
-                                        className={cn(
-                                            'w-4 h-4 transition-transform duration-200',
-                                            actionsExpanded && 'rotate-180',
-                                        )}
-                                    />
-                                }
+                                icon={<Copy className='w-3 h-3' />}
                             />
-
-                            {/* Secondary Actions - Expandable */}
-                            {actionsExpanded && (
-                                <div className='flex flex-col gap-2 animate-in slide-in-from-top-2 duration-200'>
-                                    {/* Copy URL - always included in secondary */}
-                                    <ActionButton
-                                        label='copyUrl()'
-                                        onClick={handleCopyUrl}
-                                        variant='ghost'
-                                        icon={<Copy className='w-3 h-3' />}
-                                    />
-
-                                    {secondaryActions
-                                        .filter(
-                                            (action) =>
-                                                action.condition !== false,
-                                        )
-                                        .map((action) => (
-                                            <ActionButton
-                                                key={action.id}
-                                                label={action.label}
-                                                onClick={action.onClick}
-                                                href={action.href}
-                                                variant={
-                                                    action.variant || 'ghost'
-                                                }
-                                                icon={action.icon}
-                                                loading={action.loading}
-                                            />
-                                        ))}
-                                </div>
-                            )}
-                        </>
-                    )}
-
-                    {/* If no secondary actions but we want copyUrl, show it directly */}
-                    {!hasSecondaryActions && (
-                        <ActionButton
-                            label='copyUrl()'
-                            onClick={handleCopyUrl}
-                            variant='ghost'
-                            icon={<Copy className='w-3 h-3' />}
-                        />
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     )
