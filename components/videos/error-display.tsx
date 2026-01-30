@@ -4,12 +4,7 @@ import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { ErrorDisplayProps } from './types'
 
-export function ErrorDisplay({
-    error,
-    onRetry,
-    onToggleManual,
-    className,
-}: ErrorDisplayProps) {
+export function ErrorDisplay({ error, onRetry, className }: ErrorDisplayProps) {
     return (
         <div
             className={`text-center py-8 space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 ${className}`}
@@ -22,15 +17,6 @@ export function ErrorDisplay({
                     <Button onClick={onRetry} variant='outline' size='sm'>
                         <RefreshCw className='w-4 h-4 mr-2' />
                         Try Again
-                    </Button>
-                )}
-                {onToggleManual && (
-                    <Button
-                        onClick={onToggleManual}
-                        variant='outline'
-                        size='sm'
-                    >
-                        Enter Manually
                     </Button>
                 )}
             </div>

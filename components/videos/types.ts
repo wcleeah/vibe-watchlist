@@ -26,12 +26,8 @@ export interface PreviewCardProps {
     onConvertToSeries?: (video: VideoData) => void
     onConvertToPlaylist?: (video: VideoData) => void
     isPlaylistUrl?: boolean
-    onTitleChange?: (title: string) => void
-    onThumbnailUrlChange?: (url: string) => void
-    onToggleManual?: () => void
     className?: string
     showBackground?: boolean
-    editable?: boolean
 }
 
 export interface LoadingSkeletonProps {
@@ -41,6 +37,5 @@ export interface LoadingSkeletonProps {
 export interface ErrorDisplayProps {
     error: string
     onRetry?: () => void
-    onToggleManual?: () => void
     className?: string
 }

@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils'
 
 import { ErrorDisplay } from './error-display'
 import type { PreviewCardProps } from './types'
-import { VideoCardEditable } from './video-card-editable'
 
 /**
  * VideoCard component - displays a video with actions
@@ -23,26 +22,11 @@ export function VideoCard({
     onConvertToSeries,
     onConvertToPlaylist,
     isPlaylistUrl = false,
-    onThumbnailUrlChange,
-    onTitleChange,
-    onToggleManual: onToggleManualProp,
     className,
     showBackground = true,
-    editable = false,
 }: PreviewCardProps) {
     const [loadingMarkWatched, setLoadingMarkWatched] = useState(false)
     const [loadingDelete, setLoadingDelete] = useState(false)
-    const [manualMode, setManualMode] = useState(false)
-
-    const toggleManual = () => {
-        // If externally controlled via editable prop, just call the callback
-        if (onToggleManualProp) {
-            onToggleManualProp()
-        } else {
-            // Otherwise, toggle local state
-            setManualMode(!manualMode)
-        }
-    }
 
     // Error state
     if (video.error) {
@@ -53,25 +37,8 @@ export function VideoCard({
                     className,
                 )}
             >
-                <ErrorDisplay
-                    error={video.error}
-                    onToggleManual={toggleManual}
-                />
+                <ErrorDisplay error={video.error} />
             </div>
-        )
-    }
-
-    // Editable/Manual mode - used for add video form
-    if (manualMode || editable) {
-        return (
-            <VideoCardEditable
-                video={video}
-                onTitleChange={onTitleChange}
-                onThumbnailUrlChange={onThumbnailUrlChange}
-                onToggleManual={toggleManual}
-                className={className}
-                showBackground={showBackground}
-            />
         )
     }
 
