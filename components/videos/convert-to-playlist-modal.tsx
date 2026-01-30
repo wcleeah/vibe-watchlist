@@ -141,7 +141,7 @@ export function ConvertToPlaylistModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className='max-w-lg'>
+            <DialogContent className='max-w-lg max-h-[90vh] overflow-y-auto'>
                 <DialogHeader>
                     <DialogTitle className='flex items-center gap-2'>
                         <ListMusic className='w-5 h-5' />
@@ -171,7 +171,7 @@ export function ConvertToPlaylistModal({
                                 </div>
                             )}
                             <div className='flex-1 min-w-0'>
-                                <h4 className='font-medium truncate'>
+                                <h4 className='font-medium line-clamp-2 break-words'>
                                     {video.title || 'Untitled Video'}
                                 </h4>
                                 <p className='text-sm text-muted-foreground'>
@@ -226,7 +226,7 @@ export function ConvertToPlaylistModal({
                                     </div>
                                 )}
                                 <div className='flex-1 min-w-0'>
-                                    <h4 className='font-medium truncate'>
+                                    <h4 className='font-medium line-clamp-2 break-words'>
                                         {preview.title}
                                     </h4>
                                     {preview.channelTitle && (

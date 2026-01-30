@@ -39,7 +39,7 @@ export interface AIMetadataConfig {
 export interface MetadataCacheEntry {
     id: number
     url: string
-    searchResults: any[]
+    searchResults: GoogleSearchResult[]
     extractedMetadata: HtmlMetadata
     aiAnalysis: MetadataSuggestion[]
     confidenceScore: number

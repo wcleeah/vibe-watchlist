@@ -63,7 +63,10 @@ export async function GET(request: NextRequest) {
         }
 
         // Build dynamic order by clause
-        let orderByColumn: any
+        let orderByColumn:
+            | typeof videos.updatedAt
+            | typeof videos.title
+            | typeof videos.createdAt
         switch (sortBy) {
             case 'updatedAt':
                 orderByColumn = videos.updatedAt
@@ -250,9 +253,9 @@ export async function POST(request: NextRequest) {
         // Use the final metadata (client + server fallback)
         const finalPlatform = platform || parsedUrl.platform
 
-        let newVideo: any
+        let newVideo: typeof videos.$inferSelect
         try {
-            newVideo = await db
+            const [inserted] = await db
                 .insert(videos)
                 .values({
                     url,
@@ -261,6 +264,7 @@ export async function POST(request: NextRequest) {
                     thumbnailUrl: finalThumbnailUrl,
                 })
                 .returning()
+            newVideo = inserted
         } catch (error: unknown) {
             // Handle duplicate URL error (check both direct error and cause)
             const err = error as {
@@ -292,7 +296,7 @@ export async function POST(request: NextRequest) {
         }
 
         const videoWithTags = {
-            ...newVideo[0],
+            ...newVideo,
             tags: [] as Array<{
                 id: number
                 name: string
@@ -322,7 +326,7 @@ export async function POST(request: NextRequest) {
 
             // Create video-tag associations
             const videoTagInserts = validTags.map((tag) => ({
-                videoId: newVideo[0].id,
+                videoId: newVideo.id,
                 tagId: tag.id,
             }))
 

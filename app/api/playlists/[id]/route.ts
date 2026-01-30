@@ -1,7 +1,13 @@
 import { asc, eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { playlists, tags, videos, videoTags } from '@/lib/db/schema'
+import {
+    playlists,
+    playlistTags,
+    tags,
+    videos,
+    videoTags,
+} from '@/lib/db/schema'
 
 interface RouteParams {
     params: Promise<{ id: string }>
@@ -33,6 +39,17 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
                 { status: 404 },
             )
         }
+
+        // Get playlist tags
+        const playlistTagResults = await db
+            .select({
+                id: tags.id,
+                name: tags.name,
+                color: tags.color,
+            })
+            .from(playlistTags)
+            .innerJoin(tags, eq(playlistTags.tagId, tags.id))
+            .where(eq(playlistTags.playlistId, playlistId))
 
         // Get all videos in the playlist with tags
         const playlistVideos = await db
@@ -81,6 +98,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
             success: true,
             playlist: {
                 ...playlist,
+                tags: playlistTagResults,
                 videos: videosWithTags,
                 watchedCount,
                 unwatchedCount,
@@ -90,6 +108,122 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         console.error('Error fetching playlist:', error)
         return NextResponse.json(
             { success: false, error: 'Failed to fetch playlist' },
+            { status: 500 },
+        )
+    }
+}
+
+// PATCH /api/playlists/[id] - Update playlist (tags, title, etc.)
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+    try {
+        const { id } = await params
+        const playlistId = parseInt(id, 10)
+
+        if (Number.isNaN(playlistId)) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid playlist ID' },
+                { status: 400 },
+            )
+        }
+
+        // Check if playlist exists
+        const [playlist] = await db
+            .select()
+            .from(playlists)
+            .where(eq(playlists.id, playlistId))
+            .limit(1)
+
+        if (!playlist) {
+            return NextResponse.json(
+                { success: false, error: 'Playlist not found' },
+                { status: 404 },
+            )
+        }
+
+        const body = await request.json()
+        const { tagIds, title } = body
+
+        // Update title if provided
+        if (title !== undefined) {
+            await db
+                .update(playlists)
+                .set({ title, updatedAt: new Date() })
+                .where(eq(playlists.id, playlistId))
+        }
+
+        // Update tags if provided
+        if (tagIds !== undefined && Array.isArray(tagIds)) {
+            // Validate all tag IDs exist
+            if (tagIds.length > 0) {
+                // Get all valid tags
+                const allValidTags = await Promise.all(
+                    tagIds.map((tagId) =>
+                        db
+                            .select()
+                            .from(tags)
+                            .where(eq(tags.id, tagId as number))
+                            .limit(1),
+                    ),
+                )
+
+                const existingTagIds = allValidTags
+                    .map((result) => result[0]?.id)
+                    .filter((id) => id !== undefined)
+
+                if (existingTagIds.length !== tagIds.length) {
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: 'One or more tag IDs do not exist',
+                        },
+                        { status: 400 },
+                    )
+                }
+            }
+
+            // Remove existing playlist tags
+            await db
+                .delete(playlistTags)
+                .where(eq(playlistTags.playlistId, playlistId))
+
+            // Add new playlist tags
+            if (tagIds.length > 0) {
+                const playlistTagInserts = tagIds.map((tagId) => ({
+                    playlistId,
+                    tagId: tagId as number,
+                }))
+                await db.insert(playlistTags).values(playlistTagInserts)
+            }
+        }
+
+        // Get updated playlist with tags
+        const [updatedPlaylist] = await db
+            .select()
+            .from(playlists)
+            .where(eq(playlists.id, playlistId))
+            .limit(1)
+
+        const updatedTags = await db
+            .select({
+                id: tags.id,
+                name: tags.name,
+                color: tags.color,
+            })
+            .from(playlistTags)
+            .innerJoin(tags, eq(playlistTags.tagId, tags.id))
+            .where(eq(playlistTags.playlistId, playlistId))
+
+        return NextResponse.json({
+            success: true,
+            playlist: {
+                ...updatedPlaylist,
+                tags: updatedTags,
+            },
+        })
+    } catch (error) {
+        console.error('Error updating playlist:', error)
+        return NextResponse.json(
+            { success: false, error: 'Failed to update playlist' },
             { status: 500 },
         )
     }

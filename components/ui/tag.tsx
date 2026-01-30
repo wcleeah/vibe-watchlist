@@ -42,12 +42,14 @@ export function Tag({
             }}
         >
             {name.includes('<mark>') ? (
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: Safe - only used for search highlight <mark> tags
                 <span dangerouslySetInnerHTML={{ __html: name }} />
             ) : (
                 <span>{name}</span>
             )}
             {onRemove && (
                 <button
+                    type='button'
                     onClick={handleRemove}
                     className='ml-1 hover:bg-black/10 rounded-full p-0.5 transition-colors'
                     aria-label={`Remove ${name.replace(/<[^>]*>/g, '')} tag`}

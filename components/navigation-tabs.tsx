@@ -3,7 +3,6 @@
 import {
     BarChart3,
     CalendarDays,
-    CheckCircle,
     ListMusic,
     ListVideo,
     Menu,
@@ -28,7 +27,6 @@ export function NavigationTabs() {
         { href: '/list', label: 'My List', icon: ListVideo },
         { href: '/series', label: 'Series', icon: CalendarDays },
         { href: '/playlists', label: 'Playlists', icon: ListMusic },
-        { href: '/watched', label: 'Watched', icon: CheckCircle },
         { href: '/analytics', label: 'Analytics', icon: BarChart3 },
         { href: '/settings', label: 'Settings', icon: Settings },
     ]

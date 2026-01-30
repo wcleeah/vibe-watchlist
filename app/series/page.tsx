@@ -4,30 +4,33 @@ import {
     Archive,
     CalendarDays,
     CheckCircle2,
-    Filter,
     Gamepad2,
     Globe,
     type LucideIcon,
-    Search,
-    Tag,
     Tv,
-    X,
     Youtube,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { SeriesEditModal } from '@/components/series/series-edit-modal'
 import { SeriesList } from '@/components/series/series-list'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import {
+    ErrorDisplay,
+    FilterBar,
+    type PlatformOption,
+    type SortOption,
+    type StatusOption,
+    TabSwitcher,
+    type TagOption,
+} from '@/components/shared'
 import { useSeries } from '@/hooks/use-series'
 import type { SeriesFilters, SeriesWithTags } from '@/types/series'
 import { isBacklogSeries } from '@/types/series'
 
 // Helper function to get icon component from string
-const getIconComponent = (iconName: string) => {
+const getIconComponent = (iconName: string): LucideIcon => {
     const iconMap: Record<string, LucideIcon> = {
         youtube: Youtube,
         tv: Tv,
@@ -41,15 +44,40 @@ const getIconComponent = (iconName: string) => {
 type TabType = 'active' | 'watched'
 type StatusFilter = 'all' | 'behind' | 'caught-up' | 'backlog'
 
+const SORT_OPTIONS: SortOption[] = [
+    { value: 'missedPeriods-desc', label: 'Most Behind' },
+    { value: 'missedPeriods-asc', label: 'Least Behind' },
+    { value: 'createdAt-desc', label: 'Newest First' },
+    { value: 'createdAt-asc', label: 'Oldest First' },
+    { value: 'title-asc', label: 'Title A-Z' },
+    { value: 'title-desc', label: 'Title Z-A' },
+]
+
 export default function SeriesPage() {
-    const [activeTab, setActiveTab] = useState<TabType>('active')
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const initialTab =
+        searchParams.get('tab') === 'watched' ? 'watched' : 'active'
+
+    // Tab state
+    const [activeTab, setActiveTab] = useState<TabType>(initialTab)
+
+    // Filter state
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
     const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
-    const [allTags, setAllTags] = useState<
-        { id: number; name: string; color?: string }[]
-    >([])
+    const [sortValue, setSortValue] = useState('missedPeriods-desc')
+
+    // Platform and tag data
+    const [platforms, setPlatforms] = useState<PlatformOption[]>([])
+    const [allTags, setAllTags] = useState<TagOption[]>([])
+
+    // Edit modal state
+    const [editModalOpen, setEditModalOpen] = useState(false)
+    const [editingSeries, setEditingSeries] = useState<SeriesWithTags | null>(
+        null,
+    )
 
     // Build filters for active series (not watched)
     const activeFilters: SeriesFilters = useMemo(
@@ -81,6 +109,9 @@ export default function SeriesPage() {
     const activeSeries = useSeries({ filters: activeFilters })
     const watchedSeries = useSeries({ filters: watchedFilters })
 
+    // Get current data based on active tab
+    const currentHook = activeTab === 'active' ? activeSeries : watchedSeries
+
     // Fetch available tags
     useEffect(() => {
         const fetchTags = async () => {
@@ -97,13 +128,38 @@ export default function SeriesPage() {
         fetchTags()
     }, [])
 
-    // Get current data based on active tab
-    const currentHook = activeTab === 'active' ? activeSeries : watchedSeries
-    const { series: currentSeries, loading, error, refetch } = currentHook
+    // Load platforms dynamically
+    useEffect(() => {
+        const loadPlatforms = async () => {
+            try {
+                const response = await fetch('/api/platforms')
+                if (response.ok) {
+                    const data = await response.json()
+                    const platformData: PlatformOption[] = data.data.map(
+                        (p: {
+                            platformId: string
+                            displayName: string
+                            icon?: string
+                            color?: string
+                        }) => ({
+                            key: p.platformId,
+                            label: p.displayName,
+                            icon: getIconComponent(p.icon || 'Video'),
+                            color: p.color || '#6b7280',
+                        }),
+                    )
+                    setPlatforms(platformData)
+                }
+            } catch (error) {
+                console.error('Failed to load platforms:', error)
+            }
+        }
+        loadPlatforms()
+    }, [])
 
     // Client-side filtering for multiple platforms, tags, and backlog status
     const filteredSeries = useMemo(() => {
-        return currentSeries.filter((s: SeriesWithTags) => {
+        return currentHook.series.filter((s: SeriesWithTags) => {
             // Filter by multiple platforms if more than one selected
             const matchesPlatform =
                 selectedPlatforms.length <= 1 ||
@@ -122,71 +178,7 @@ export default function SeriesPage() {
 
             return matchesPlatform && matchesTags && matchesBacklog
         })
-    }, [currentSeries, selectedPlatforms, selectedTagIds, statusFilter])
-
-    const handlePlatformFilter = (platform: string) => {
-        setSelectedPlatforms((prev) =>
-            prev.includes(platform)
-                ? prev.filter((p) => p !== platform)
-                : [...prev, platform],
-        )
-    }
-
-    const handleTagFilter = (tagId: number) => {
-        setSelectedTagIds((prev) =>
-            prev.includes(tagId)
-                ? prev.filter((id) => id !== tagId)
-                : [...prev, tagId],
-        )
-    }
-
-    const [platforms, setPlatforms] = useState<
-        Array<{
-            key: string
-            label: string
-            icon: LucideIcon
-            color: string
-        }>
-    >([])
-
-    // Edit modal state
-    const [editModalOpen, setEditModalOpen] = useState(false)
-    const [editingSeries, setEditingSeries] = useState<SeriesWithTags | null>(
-        null,
-    )
-
-    const handleEditSeries = (series: SeriesWithTags) => {
-        setEditingSeries(series)
-        setEditModalOpen(true)
-    }
-
-    const handleEditSuccess = () => {
-        activeSeries.refetch()
-        watchedSeries.refetch()
-    }
-
-    // Load platforms dynamically
-    useEffect(() => {
-        const loadPlatforms = async () => {
-            try {
-                const response = await fetch('/api/platforms')
-                if (response.ok) {
-                    const data = await response.json()
-                    const platformData = data.data.map((p: any) => ({
-                        key: p.platformId,
-                        label: p.displayName,
-                        icon: getIconComponent(p.icon || 'Video'),
-                        color: p.color || '#6b7280',
-                    }))
-                    setPlatforms(platformData)
-                }
-            } catch (error) {
-                console.error('Failed to load platforms:', error)
-                setPlatforms([])
-            }
-        }
-        loadPlatforms()
-    }, [])
+    }, [currentHook.series, selectedPlatforms, selectedTagIds, statusFilter])
 
     // Count series by status (for active series only)
     const statusCounts = useMemo(() => {
@@ -196,8 +188,8 @@ export default function SeriesPage() {
             'caught-up': 0,
             backlog: 0,
         }
-        activeSeries.series.forEach((s: SeriesWithTags) => {
-            if (!s.isActive) return
+        for (const s of activeSeries.series) {
+            if (!s.isActive) continue
             if (isBacklogSeries(s)) {
                 counts.backlog++
             } else if (s.missedPeriods > 0) {
@@ -205,13 +197,102 @@ export default function SeriesPage() {
             } else {
                 counts['caught-up']++
             }
-        })
+        }
         return counts
     }, [activeSeries.series])
+
+    // Build status options for FilterBar (only shown on active tab)
+    const statusOptions: StatusOption[] = useMemo(
+        () => [
+            { key: 'all', label: 'All', count: statusCounts.all },
+            { key: 'behind', label: 'Behind', count: statusCounts.behind },
+            {
+                key: 'caught-up',
+                label: 'Caught Up',
+                count: statusCounts['caught-up'],
+            },
+            {
+                key: 'backlog',
+                label: 'Backlog',
+                count: statusCounts.backlog,
+                icon: <Archive className='w-3 h-3 mr-1' />,
+            },
+        ],
+        [statusCounts],
+    )
+
+    // Handlers
+    const handlePlatformToggle = (platform: string) => {
+        setSelectedPlatforms((prev) =>
+            prev.includes(platform)
+                ? prev.filter((p) => p !== platform)
+                : [...prev, platform],
+        )
+    }
+
+    const handleTagToggle = (tagId: number) => {
+        setSelectedTagIds((prev) =>
+            prev.includes(tagId)
+                ? prev.filter((id) => id !== tagId)
+                : [...prev, tagId],
+        )
+    }
+
+    const handleClearAll = () => {
+        setSearchQuery('')
+        setSelectedPlatforms([])
+        setSelectedTagIds([])
+        setStatusFilter('all')
+    }
+
+    // Handle tab change - updates state and URL
+    const handleTabChange = useCallback(
+        (tab: string) => {
+            setActiveTab(tab as TabType)
+            const params = new URLSearchParams(searchParams.toString())
+            if (tab === 'active') {
+                params.delete('tab')
+            } else {
+                params.set('tab', tab)
+            }
+            const queryString = params.toString()
+            router.push(`/series${queryString ? `?${queryString}` : ''}`, {
+                scroll: false,
+            })
+        },
+        [router, searchParams],
+    )
+
+    const handleEditSeries = (series: SeriesWithTags) => {
+        setEditingSeries(series)
+        setEditModalOpen(true)
+    }
+
+    const handleRefresh = useCallback(() => {
+        activeSeries.refetch()
+        watchedSeries.refetch()
+    }, [activeSeries, watchedSeries])
+
+    // Tab configuration
+    const tabs = [
+        {
+            id: 'active',
+            label: 'Active',
+            icon: <CalendarDays className='w-4 h-4' />,
+            count: activeSeries.series.length,
+        },
+        {
+            id: 'watched',
+            label: 'Watched',
+            icon: <CheckCircle2 className='w-4 h-4' />,
+            count: watchedSeries.series.length,
+        },
+    ]
 
     return (
         <div className='min-h-screen bg-background text-foreground'>
             <NavigationTabs />
+
             <main className='container mx-auto px-4 pt-32 pb-12 max-w-6xl'>
                 {/* Header */}
                 <div className='mb-8'>
@@ -231,190 +312,51 @@ export default function SeriesPage() {
                 </div>
 
                 {/* Error display */}
-                {error && (
-                    <div className='mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg'>
-                        <p className='text-red-600 dark:text-red-400'>
-                            {error}
-                        </p>
-                        <Button
-                            variant='outline'
-                            size='sm'
-                            onClick={refetch}
-                            className='mt-2'
-                        >
-                            Retry
-                        </Button>
-                    </div>
+                {currentHook.error && (
+                    <ErrorDisplay
+                        error={currentHook.error}
+                        onRetry={currentHook.refetch}
+                        className='mb-4'
+                    />
                 )}
 
-                {/* Search and Filters */}
-                <div className='mb-8 space-y-4'>
-                    {/* Search */}
-                    <div className='relative'>
-                        <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4' />
-                        <Input
-                            type='text'
-                            placeholder='Search series...'
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className='pl-10'
-                        />
-                    </div>
+                {/* Tabs */}
+                <TabSwitcher
+                    tabs={tabs}
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                    className='mb-6'
+                />
 
-                    {/* Status Filter - only show on Active tab */}
-                    {activeTab === 'active' && (
-                        <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center'>
-                            <div className='flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
-                                <CalendarDays className='w-4 h-4' />
-                                Status:
-                            </div>
-                            <div className='flex flex-wrap gap-2'>
-                                <Button
-                                    variant={
-                                        statusFilter === 'all'
-                                            ? 'default'
-                                            : 'outline'
-                                    }
-                                    size='sm'
-                                    onClick={() => setStatusFilter('all')}
-                                    className='h-8'
-                                >
-                                    All ({statusCounts.all})
-                                </Button>
-                                <Button
-                                    variant={
-                                        statusFilter === 'behind'
-                                            ? 'default'
-                                            : 'outline'
-                                    }
-                                    size='sm'
-                                    onClick={() => setStatusFilter('behind')}
-                                    className='h-8'
-                                >
-                                    Behind ({statusCounts.behind})
-                                </Button>
-                                <Button
-                                    variant={
-                                        statusFilter === 'caught-up'
-                                            ? 'default'
-                                            : 'outline'
-                                    }
-                                    size='sm'
-                                    onClick={() => setStatusFilter('caught-up')}
-                                    className='h-8'
-                                >
-                                    Caught Up ({statusCounts['caught-up']})
-                                </Button>
-                                <Button
-                                    variant={
-                                        statusFilter === 'backlog'
-                                            ? 'default'
-                                            : 'outline'
-                                    }
-                                    size='sm'
-                                    onClick={() => setStatusFilter('backlog')}
-                                    className='h-8'
-                                >
-                                    <Archive className='w-3 h-3 mr-1' />
-                                    Backlog ({statusCounts.backlog})
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Platform Filters */}
-                    {platforms.length > 0 && (
-                        <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center'>
-                            <div className='flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
-                                <Filter className='w-4 h-4' />
-                                Platforms:
-                            </div>
-                            <div className='flex flex-wrap gap-2'>
-                                {platforms.map(
-                                    ({ key, label, icon: Icon, color }) => (
-                                        <Button
-                                            key={key}
-                                            variant={
-                                                selectedPlatforms.includes(key)
-                                                    ? 'default'
-                                                    : 'outline'
-                                            }
-                                            size='sm'
-                                            onClick={() =>
-                                                handlePlatformFilter(key)
-                                            }
-                                            className={`h-8 ${selectedPlatforms.includes(key) ? 'bg-gray-100 dark:bg-gray-800' : color}`}
-                                        >
-                                            <Icon className='w-3 h-3 mr-1' />
-                                            {label}
-                                        </Button>
-                                    ),
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Tag Filters */}
-                    {allTags.length > 0 && (
-                        <div className='flex flex-wrap gap-2 items-center'>
-                            <div className='flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
-                                <Tag className='w-4 h-4' />
-                                Tags:
-                            </div>
-                            {allTags.map((tag) => (
-                                <Badge
-                                    key={tag.id}
-                                    variant='outline'
-                                    className='cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1'
-                                    onClick={() => handleTagFilter(tag.id)}
-                                    style={
-                                        selectedTagIds.includes(tag.id)
-                                            ? {}
-                                            : {
-                                                  borderColor:
-                                                      tag.color || '#6b7280',
-                                                  color: tag.color || '#6b7280',
-                                              }
-                                    }
-                                >
-                                    {selectedTagIds.includes(tag.id) && (
-                                        <X className='w-3 h-3' />
-                                    )}
-                                    #{tag.name}
-                                </Badge>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Active/Watched Tabs */}
-                <div className='mb-6 flex gap-2'>
-                    <Button
-                        variant={activeTab === 'active' ? 'default' : 'outline'}
-                        size='sm'
-                        onClick={() => setActiveTab('active')}
-                        className='h-9'
-                    >
-                        <CalendarDays className='w-4 h-4 mr-2' />
-                        Active ({activeSeries.series.length})
-                    </Button>
-                    <Button
-                        variant={
-                            activeTab === 'watched' ? 'default' : 'outline'
-                        }
-                        size='sm'
-                        onClick={() => setActiveTab('watched')}
-                        className='h-9'
-                    >
-                        <CheckCircle2 className='w-4 h-4 mr-2' />
-                        Watched ({watchedSeries.series.length})
-                    </Button>
-                </div>
+                {/* Filter Bar */}
+                <FilterBar
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    searchPlaceholder='Search series...'
+                    platforms={platforms}
+                    selectedPlatforms={selectedPlatforms}
+                    onPlatformToggle={handlePlatformToggle}
+                    tags={allTags}
+                    selectedTagIds={selectedTagIds}
+                    onTagToggle={handleTagToggle}
+                    statusOptions={activeTab === 'active' ? statusOptions : []}
+                    selectedStatus={statusFilter}
+                    onStatusChange={(status) =>
+                        setStatusFilter(status as StatusFilter)
+                    }
+                    statusLabel='Status'
+                    statusIcon={<CalendarDays className='w-4 h-4' />}
+                    sortOptions={SORT_OPTIONS}
+                    sortValue={sortValue}
+                    onSortChange={setSortValue}
+                    onClearAll={handleClearAll}
+                    className='mb-6'
+                />
 
                 {/* Series List */}
                 <SeriesList
                     series={filteredSeries}
-                    loading={loading}
+                    loading={currentHook.loading}
                     onCatchUp={activeSeries.catchUp}
                     onMarkWatched={activeSeries.markWatched}
                     onUnmarkWatched={watchedSeries.unmarkWatched}
@@ -432,7 +374,7 @@ export default function SeriesPage() {
                     series={editingSeries}
                     open={editModalOpen}
                     onOpenChange={setEditModalOpen}
-                    onSuccess={handleEditSuccess}
+                    onSuccess={handleRefresh}
                 />
             </main>
         </div>

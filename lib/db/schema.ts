@@ -73,7 +73,9 @@ export const playlists = pgTable(
         description: text(),
         thumbnailUrl: text('thumbnail_url'),
         channelTitle: text('channel_title'),
+        platform: text().notNull().default('youtube'),
         itemCount: integer('item_count').default(0),
+        isWatched: boolean('is_watched').default(false),
         lastSyncedAt: timestamp('last_synced_at'),
         createdAt: timestamp('created_at').defaultNow(),
         updatedAt: timestamp('updated_at').defaultNow(),
@@ -82,6 +84,11 @@ export const playlists = pgTable(
         unique('playlists_youtube_playlist_id_unique').on(
             table.youtubePlaylistId,
         ),
+        foreignKey({
+            columns: [table.platform],
+            foreignColumns: [platformConfigs.platformId],
+            name: 'playlists_platform_fkey',
+        }).onDelete('restrict'),
     ],
 )
 
@@ -209,6 +216,28 @@ export const seriesTags = pgTable(
     ],
 )
 
+// Playlist tags junction table
+export const playlistTags = pgTable(
+    'playlist_tags',
+    {
+        id: serial('id').primaryKey(),
+        playlistId: integer('playlist_id').notNull(),
+        tagId: integer('tag_id').notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.playlistId],
+            foreignColumns: [playlists.id],
+            name: 'playlist_tags_playlist_id_playlists_id_fk',
+        }).onDelete('cascade'),
+        foreignKey({
+            columns: [table.tagId],
+            foreignColumns: [tags.id],
+            name: 'playlist_tags_tag_id_tags_id_fk',
+        }).onDelete('cascade'),
+    ],
+)
+
 export const userConfig = pgTable(
     'user_config',
     {
@@ -244,6 +273,7 @@ export const apiUsageStats = pgTable(
 // Relations
 export const playlistsRelations = relations(playlists, ({ many }) => ({
     videos: many(videos),
+    playlistTags: many(playlistTags),
 }))
 
 export const videosRelations = relations(videos, ({ one, many }) => ({
@@ -257,6 +287,7 @@ export const videosRelations = relations(videos, ({ one, many }) => ({
 export const tagsRelations = relations(tags, ({ many }) => ({
     videoTags: many(videoTags),
     seriesTags: many(seriesTags),
+    playlistTags: many(playlistTags),
 }))
 
 export const videoTagsRelations = relations(videoTags, ({ one }) => ({
@@ -285,6 +316,17 @@ export const seriesTagsRelations = relations(seriesTags, ({ one }) => ({
     }),
 }))
 
+export const playlistTagsRelations = relations(playlistTags, ({ one }) => ({
+    playlist: one(playlists, {
+        fields: [playlistTags.playlistId],
+        references: [playlists.id],
+    }),
+    tag: one(tags, {
+        fields: [playlistTags.tagId],
+        references: [tags.id],
+    }),
+}))
+
 export type Video = typeof videos.$inferSelect
 export type NewVideo = typeof videos.$inferInsert
 export type Tag = typeof tags.$inferSelect
@@ -306,3 +348,5 @@ export type SeriesTag = typeof seriesTags.$inferSelect
 export type NewSeriesTag = typeof seriesTags.$inferInsert
 export type Playlist = typeof playlists.$inferSelect
 export type NewPlaylist = typeof playlists.$inferInsert
+export type PlaylistTag = typeof playlistTags.$inferSelect
+export type NewPlaylistTag = typeof playlistTags.$inferInsert

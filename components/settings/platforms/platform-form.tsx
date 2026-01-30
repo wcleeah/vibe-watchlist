@@ -176,7 +176,8 @@ export function PlatformForm({
 
     return (
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
-            {/* Backdrop */}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: Modal backdrop click-to-close is standard UX pattern */}
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: Keyboard close handled at modal level */}
             <div
                 className='absolute inset-0 bg-black bg-opacity-50'
                 onClick={onClose}
@@ -189,6 +190,7 @@ export function PlatformForm({
                         {platform ? 'Edit Platform' : 'Add New Platform'}
                     </h2>
                     <button
+                        type='button'
                         onClick={onClose}
                         className='text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                     >

@@ -1,7 +1,8 @@
 import type { Series as DbSeries, Tag } from '@/lib/db/schema'
 
 // Schedule types - 'none' is for backlog series without a schedule
-export type ScheduleType = 'daily' | 'weekly' | 'custom' | 'none'
+// 'dates' allows specifying multiple absolute dates with episode counts
+export type ScheduleType = 'daily' | 'weekly' | 'custom' | 'dates' | 'none'
 
 export type DayOfWeek =
     | 'monday'
@@ -24,13 +25,25 @@ export interface CustomSchedule {
     interval: number
 }
 
+// Schedule entry for specific date with episode count
+export interface DateScheduleEntry {
+    date: string // ISO date string (YYYY-MM-DD)
+    episodes: number // Number of episodes releasing on this date
+}
+
+// Schedule with multiple specific dates
+export interface DatesSchedule {
+    entries: DateScheduleEntry[]
+}
+
 // Empty schedule for backlog series
-export type NoSchedule = {}
+export type NoSchedule = Record<string, never>
 
 export type ScheduleValue =
     | DailySchedule
     | WeeklySchedule
     | CustomSchedule
+    | DatesSchedule
     | NoSchedule
 
 // Content mode for the add form
@@ -128,8 +141,13 @@ export function isNoSchedule(value: ScheduleValue): value is NoSchedule {
     return (
         !('interval' in value) &&
         !('days' in value) &&
+        !('entries' in value) &&
         Object.keys(value).length === 0
     )
+}
+
+export function isDatesSchedule(value: ScheduleValue): value is DatesSchedule {
+    return 'entries' in value
 }
 
 // Check if a series is a backlog series (no schedule)
@@ -199,6 +217,8 @@ export function getDefaultScheduleValue(type: ScheduleType): ScheduleValue {
             return { days: ['friday'] }
         case 'custom':
             return { interval: 7 }
+        case 'dates':
+            return { entries: [] }
         case 'none':
             return {}
     }
