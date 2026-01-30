@@ -258,6 +258,7 @@ export function MediaCard<T>({
                                             current={progressCurrent}
                                             total={progressTotal}
                                             showLabel={true}
+                                            label={progressLabel}
                                         />
                                     </div>
                                 )}

@@ -170,7 +170,7 @@ export function FilterBar({
                         Platforms:
                     </div>
                     <div className='flex flex-wrap gap-2'>
-                        {platforms.map(({ key, label, icon: Icon, color }) => (
+                        {platforms.map(({ key, label, icon: Icon }) => (
                             <Button
                                 key={key}
                                 variant={

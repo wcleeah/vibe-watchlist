@@ -6,6 +6,7 @@ interface ProgressBarProps {
     current: number
     total: number
     showLabel?: boolean
+    label?: string
     className?: string
 }
 
@@ -13,6 +14,7 @@ export function ProgressBar({
     current,
     total,
     showLabel = true,
+    label,
     className,
 }: ProgressBarProps) {
     const percentage = total > 0 ? Math.round((current / total) * 100) : 0
@@ -27,7 +29,7 @@ export function ProgressBar({
             </div>
             {showLabel && (
                 <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-                    {current} / {total} watched ({percentage}%)
+                    {label || `${current} / ${total} watched (${percentage}%)`}
                 </p>
             )}
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarDays, Check, Pencil, Plus, RotateCcw } from 'lucide-react'
+import { Check, Pencil, Plus, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
 import {
@@ -10,7 +10,6 @@ import {
     type StatusBadgeConfig,
 } from '@/components/shared'
 import { ScheduleService } from '@/lib/services/schedule-service'
-import { cn } from '@/lib/utils'
 import type {
     ScheduleType,
     ScheduleValue,
