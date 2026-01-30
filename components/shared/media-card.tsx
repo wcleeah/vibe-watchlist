@@ -144,7 +144,7 @@ export function MediaCard<T>({
             >
                 <div className='p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded'>
                     <div className='font-mono text-sm text-red-600 dark:text-red-400'>
-                        &quot;ERROR&quot;: &quot;{error}&quot;
+                        "ERROR": "{error}"
                     </div>
                 </div>
             </div>
@@ -213,7 +213,7 @@ export function MediaCard<T>({
                                         {metadata.map((item, index) => (
                                             <div key={item.key}>
                                                 <span className='text-purple-600 dark:text-purple-400'>
-                                                    &quot;{item.key}&quot;
+                                                    "{item.key}"
                                                 </span>
                                                 :{' '}
                                                 <span
@@ -236,7 +236,7 @@ export function MediaCard<T>({
                                         {tags && tags.length > 0 && (
                                             <div>
                                                 <span className='text-purple-600 dark:text-purple-400'>
-                                                    &quot;TAGS&quot;
+                                                    "TAGS"
                                                 </span>
                                                 :{' '}
                                                 <span className='text-yellow-600 dark:text-yellow-400'>

@@ -60,7 +60,7 @@ export function EditableMediaCard({
     return (
         <div
             className={cn(
-                'bg-white dark:bg-black rounded-lg border border-black dark:border-white min-h-[240px]',
+                'bg-white dark:bg-black rounded-lg min-h-[240px]',
                 className,
             )}
         >
@@ -203,7 +203,7 @@ export function EditableMediaCard({
                                     {metadata.map((item, index) => (
                                         <div key={item.key}>
                                             <span className='text-purple-600 dark:text-purple-400'>
-                                                &quot;{item.key}&quot;
+                                                "{item.key}"
                                             </span>
                                             :{' '}
                                             <span
@@ -214,7 +214,7 @@ export function EditableMediaCard({
                                                 }
                                             >
                                                 {typeof item.value === 'string'
-                                                    ? `&quot;${item.value}&quot;`
+                                                    ? `"${item.value}"`
                                                     : item.value}
                                             </span>
                                             {index < metadata.length - 1 && ','}
@@ -223,16 +223,13 @@ export function EditableMediaCard({
                                     {tags && tags.length > 0 && (
                                         <div>
                                             <span className='text-purple-600 dark:text-purple-400'>
-                                                &quot;TAGS&quot;
+                                                "TAGS"
                                             </span>
                                             :{' '}
                                             <span className='text-yellow-600 dark:text-yellow-400'>
                                                 [
                                                 {tags
-                                                    .map(
-                                                        (t) =>
-                                                            `&quot;${t.name}&quot;`,
-                                                    )
+                                                    .map((t) => `"${t.name}"`)
                                                     .join(', ')}
                                                 ]
                                             </span>

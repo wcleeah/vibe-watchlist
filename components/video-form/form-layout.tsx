@@ -21,6 +21,7 @@ interface FormLayoutProps {
     onReset: () => void
     onPlatformSuggestionsDismiss?: () => void
     defaultMode?: ContentMode
+    isPlaylist?: boolean
     onSeriesCreated?: () => void
     onPlaylistImported?: () => void
 }
@@ -34,6 +35,7 @@ export function FormLayout({
     onReset,
     onPlatformSuggestionsDismiss,
     defaultMode = 'video',
+    isPlaylist = false,
     onSeriesCreated,
     onPlaylistImported,
 }: FormLayoutProps) {
@@ -91,6 +93,7 @@ export function FormLayout({
                 mode={mode}
                 onChange={setMode}
                 disabled={isSubmitting}
+                disablePlaylist={!isPlaylist}
             />
 
             {/* Platform Suggestions - Only for video/series modes */}

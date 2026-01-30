@@ -7,6 +7,7 @@ interface ModeToggleProps {
     mode: ContentMode
     onChange: (mode: ContentMode) => void
     disabled?: boolean
+    disablePlaylist?: boolean
     className?: string
 }
 
@@ -14,6 +15,7 @@ export function ModeToggle({
     mode,
     onChange,
     disabled = false,
+    disablePlaylist = false,
     className,
 }: ModeToggleProps) {
     return (
@@ -53,12 +55,13 @@ export function ModeToggle({
             <button
                 type='button'
                 onClick={() => onChange('playlist')}
-                disabled={disabled}
+                disabled={disabled || disablePlaylist}
                 className={cn(
                     'px-4 py-1.5 text-sm font-medium rounded-md transition-all',
                     mode === 'playlist'
                         ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
                         : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200',
+                    disablePlaylist && 'opacity-50 cursor-not-allowed',
                 )}
             >
                 Playlist

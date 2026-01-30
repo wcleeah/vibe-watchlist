@@ -171,6 +171,11 @@ export default function Home() {
                                                 platformDiscovery.dismiss
                                             }
                                             defaultMode={defaultMode}
+                                            isPlaylist={
+                                                urlValidation
+                                                    .urlValidationResult
+                                                    ?.isPlaylist
+                                            }
                                         />
                                     </div>
                                     <div>
