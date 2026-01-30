@@ -127,7 +127,7 @@ export default function Home() {
                     method: 'DELETE',
                 })
             } catch (e) {
-                console.error('Failed to clear cache:', e)
+                // Failed to clear cache - not critical
             }
         }
 
@@ -165,12 +165,6 @@ export default function Home() {
                 body: JSON.stringify(videoData),
             })
 
-            console.log(
-                '📥 API Response:',
-                response.status,
-                response.statusText,
-            )
-
             if (!response.ok) {
                 if (response.status === 409) {
                     const errorData = await response.json()
@@ -190,10 +184,6 @@ export default function Home() {
             setIsSubmitting(false)
         }
     }
-
-    useEffect(() => {
-        console.log(form.formState.errors)
-    }, [form.formState.errors])
 
     if (
         urlValidation.validating ||

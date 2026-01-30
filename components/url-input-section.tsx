@@ -31,7 +31,7 @@ export function UrlInputSection({
 
             {/* URL Input */}
             <UrlInput
-                value={undefined}
+                value={value}
                 onChange={onChange}
                 placeholder='https://youtube.com/watch?v=...'
                 isValid={isValid}

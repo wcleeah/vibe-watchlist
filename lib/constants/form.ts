@@ -1,0 +1,3 @@
+export const PLATFORM_CONFIDENCE_THRESHOLD = 0.3
+export const MAX_TAG_SUGGESTIONS = 5
+export const URL_DEBOUNCE_MS = 300
