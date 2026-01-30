@@ -67,6 +67,7 @@ export interface PlaylistListApiResponse {
 export interface PlaylistFilters {
     status?: 'all' | 'has-unwatched' | 'completed'
     search?: string
+    isCompleted?: boolean
 }
 
 // Playlist import preview (before confirming import)

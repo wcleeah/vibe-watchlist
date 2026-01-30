@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const status = searchParams.get('status') // 'all' | 'has-unwatched' | 'completed'
         const search = searchParams.get('search')
+        const isCompleted = searchParams.get('isCompleted')
 
         // Get all playlists with aggregated video stats
         const result = await db
@@ -50,7 +51,22 @@ export async function GET(request: NextRequest) {
             )
         }
 
-        // Filter by status
+        // Filter by isCompleted (new filter for tabs)
+        if (isCompleted !== null) {
+            if (isCompleted === 'true') {
+                // Completed = all videos watched (unwatched = 0)
+                filteredResult = filteredResult.filter(
+                    (p) => p.unwatchedCount === 0 && (p.itemCount ?? 0) > 0,
+                )
+            } else if (isCompleted === 'false') {
+                // Active = has unwatched videos
+                filteredResult = filteredResult.filter(
+                    (p) => p.unwatchedCount > 0 || (p.itemCount ?? 0) === 0,
+                )
+            }
+        }
+
+        // Filter by status (legacy filter, still supported)
         if (status === 'has-unwatched') {
             filteredResult = filteredResult.filter((p) => p.unwatchedCount > 0)
         } else if (status === 'completed') {

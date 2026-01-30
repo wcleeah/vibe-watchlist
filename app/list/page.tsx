@@ -1,164 +1,189 @@
 'use client'
 
 import {
-    Filter,
+    CheckCircle2,
     Gamepad2,
     Globe,
+    ListVideo,
     type LucideIcon,
-    Search,
     Tv,
-    X,
     Youtube,
 } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
+
 import { NavigationTabs } from '@/components/navigation-tabs'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import {
+    ErrorDisplay,
+    FilterBar,
+    type PlatformOption,
+    type SortOption,
+    TabSwitcher,
+    type TagOption,
+} from '@/components/shared'
 import { VideoEditModal } from '@/components/video-form/video-edit-modal'
 import { ConvertToPlaylistModal } from '@/components/videos/convert-to-playlist-modal'
 import { ConvertToSeriesModal } from '@/components/videos/convert-to-series-modal'
 import { VideoList } from '@/components/videos/video-list'
-import type { Video } from '@/lib/db/schema'
+import { useVideos } from '@/hooks/use-videos'
+import type { VideoFilters, VideoWithTags } from '@/types/video'
 
 // Helper function to get icon component from string
-const getIconComponent = (iconName: string) => {
+const getIconComponent = (iconName: string): LucideIcon => {
     const iconMap: Record<string, LucideIcon> = {
         youtube: Youtube,
         tv: Tv,
         gamepad2: Gamepad2,
         globe: Globe,
-        video: Globe, // fallback
+        video: Globe,
     }
     return iconMap[iconName.toLowerCase()] || Globe
 }
 
-interface Tag {
-    id: number
-    name: string
-    color?: string | null
-}
+type TabType = 'active' | 'watched'
 
-interface VideoWithTags extends Video {
-    tags?: Tag[]
-}
+const SORT_OPTIONS: SortOption[] = [
+    { value: 'createdAt-desc', label: 'Newest First' },
+    { value: 'createdAt-asc', label: 'Oldest First' },
+    { value: 'updatedAt-desc', label: 'Recently Updated' },
+    { value: 'title-asc', label: 'Title A-Z' },
+    { value: 'title-desc', label: 'Title Z-A' },
+]
 
 export default function ListPage() {
-    const [videos, setVideos] = useState<VideoWithTags[]>([])
-    const [loading, setLoading] = useState(true)
-    const [allTags, setAllTags] = useState<Tag[]>([])
-    const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
+    const searchParams = useSearchParams()
+    const initialTab =
+        searchParams.get('tab') === 'watched' ? 'watched' : 'active'
 
-    // New filtering state
+    // Tab state
+    const [activeTab, setActiveTab] = useState<TabType>(initialTab)
+
+    // Filter state
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
-    const [sortBy, setSortBy] = useState<'createdAt' | 'updatedAt' | 'title'>(
-        'createdAt',
-    )
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+    const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
+    const [sortValue, setSortValue] = useState('createdAt-desc')
 
-    // Bulk operations state
-    const [selectedVideoIds, setSelectedVideoIds] = useState<number[]>([])
-    const [bulkMode, setBulkMode] = useState(false)
-    const [bulkLoading, setBulkLoading] = useState(false)
-
-    // Edit modal state
+    // Modal state
     const [editVideo, setEditVideo] = useState<VideoWithTags | null>(null)
     const [editModalOpen, setEditModalOpen] = useState(false)
-
-    // Convert to series modal state
     const [convertVideo, setConvertVideo] = useState<VideoWithTags | null>(null)
     const [convertModalOpen, setConvertModalOpen] = useState(false)
-
-    // Convert to playlist modal state
     const [convertPlaylistVideo, setConvertPlaylistVideo] =
         useState<VideoWithTags | null>(null)
     const [convertPlaylistModalOpen, setConvertPlaylistModalOpen] =
         useState(false)
 
-    // Platform state
-    const [platforms, setPlatforms] = useState<
-        Array<{
-            key: string
-            label: string
-            icon: LucideIcon
-            color: string
-        }>
-    >([])
+    // Platform and tag data
+    const [platforms, setPlatforms] = useState<PlatformOption[]>([])
+    const [allTags, setAllTags] = useState<TagOption[]>([])
 
-    const fetchVideos = useCallback(async () => {
-        try {
-            const params = new URLSearchParams()
-            params.set('watched', 'false')
+    // Parse sort value
+    const [sortBy, sortOrder] = sortValue.split('-') as [
+        'createdAt' | 'updatedAt' | 'title',
+        'asc' | 'desc',
+    ]
 
-            // Add search query
-            if (searchQuery.trim()) {
-                params.set('search', searchQuery.trim())
-            }
+    // Build filters for active videos
+    const activeFilters: VideoFilters = useMemo(
+        () => ({
+            isWatched: false,
+            search: searchQuery || undefined,
+            platforms:
+                selectedPlatforms.length > 0 ? selectedPlatforms : undefined,
+            tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+            sortBy,
+            sortOrder,
+        }),
+        [searchQuery, selectedPlatforms, selectedTagIds, sortBy, sortOrder],
+    )
 
-            // Add platform filters
-            if (selectedPlatforms.length > 0) {
-                params.set('platforms', selectedPlatforms.join(','))
-            }
+    // Build filters for watched videos
+    const watchedFilters: VideoFilters = useMemo(
+        () => ({
+            isWatched: true,
+            search: searchQuery || undefined,
+            platforms:
+                selectedPlatforms.length > 0 ? selectedPlatforms : undefined,
+            tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+            sortBy,
+            sortOrder,
+        }),
+        [searchQuery, selectedPlatforms, selectedTagIds, sortBy, sortOrder],
+    )
 
-            // Add sorting
-            params.set('sortBy', sortBy)
-            params.set('sortOrder', sortOrder)
+    // Data hooks for both tabs
+    const activeVideos = useVideos({ filters: activeFilters })
+    const watchedVideos = useVideos({ filters: watchedFilters })
 
-            const response = await fetch(`/api/videos?${params.toString()}`)
-            if (response.ok) {
-                const data = await response.json()
-                setVideos(data)
-            }
-        } catch (error) {
-            console.error('Failed to fetch videos:', error)
-        } finally {
-            setLoading(false)
-        }
-    }, [searchQuery, selectedPlatforms, sortBy, sortOrder])
+    // Current hook based on active tab
+    const currentHook = activeTab === 'active' ? activeVideos : watchedVideos
 
-    const fetchTags = useCallback(async () => {
-        try {
-            const response = await fetch('/api/tags')
-            if (response.ok) {
-                const tags = await response.json()
-                setAllTags(tags)
-            }
-        } catch (error) {
-            console.error('Failed to fetch tags:', error)
-        }
-    }, [])
-
-    useEffect(() => {
-        fetchVideos()
-        fetchTags()
-    }, [fetchVideos, fetchTags])
-
-    // Load platforms dynamically
+    // Load platforms
     useEffect(() => {
         const loadPlatforms = async () => {
             try {
                 const response = await fetch('/api/platforms')
                 if (response.ok) {
                     const data = await response.json()
-                    const platformData = data.data.map((p: any) => ({
-                        key: p.platformId,
-                        label: p.displayName,
-                        icon: getIconComponent(p.icon || 'Video'),
-                        color: p.color || '#6b7280',
-                    }))
+                    const platformData: PlatformOption[] = data.data.map(
+                        (p: {
+                            platformId: string
+                            displayName: string
+                            icon?: string
+                            color?: string
+                        }) => ({
+                            key: p.platformId,
+                            label: p.displayName,
+                            icon: getIconComponent(p.icon || 'Video'),
+                            color: p.color || '#6b7280',
+                        }),
+                    )
                     setPlatforms(platformData)
                 }
             } catch (error) {
                 console.error('Failed to load platforms:', error)
-                setPlatforms([])
             }
         }
         loadPlatforms()
     }, [])
 
-    const handleTagFilter = (tagId: number) => {
+    // Load tags
+    useEffect(() => {
+        const fetchTags = async () => {
+            try {
+                const response = await fetch('/api/tags')
+                if (response.ok) {
+                    const tags = await response.json()
+                    setAllTags(tags)
+                }
+            } catch (error) {
+                console.error('Failed to fetch tags:', error)
+            }
+        }
+        fetchTags()
+    }, [])
+
+    // Client-side tag filtering
+    const filteredVideos = useMemo(() => {
+        if (selectedTagIds.length === 0) {
+            return currentHook.videos
+        }
+        return currentHook.videos.filter((video) =>
+            video.tags?.some((tag) => selectedTagIds.includes(tag.id)),
+        )
+    }, [currentHook.videos, selectedTagIds])
+
+    // Handlers
+    const handlePlatformToggle = (platform: string) => {
+        setSelectedPlatforms((prev) =>
+            prev.includes(platform)
+                ? prev.filter((p) => p !== platform)
+                : [...prev, platform],
+        )
+    }
+
+    const handleTagToggle = (tagId: number) => {
         setSelectedTagIds((prev) =>
             prev.includes(tagId)
                 ? prev.filter((id) => id !== tagId)
@@ -166,130 +191,10 @@ export default function ListPage() {
         )
     }
 
-    const clearTagFilters = () => {
+    const handleClearAll = () => {
+        setSearchQuery('')
+        setSelectedPlatforms([])
         setSelectedTagIds([])
-    }
-
-    const filteredVideos =
-        selectedTagIds.length > 0
-            ? videos.filter((video) =>
-                  video.tags?.some((tag) => selectedTagIds.includes(tag.id)),
-              )
-            : videos
-
-    // Bulk operations functions
-    const handleSelectionChange = (videoId: number, selected: boolean) => {
-        setSelectedVideoIds((prev) =>
-            selected ? [...prev, videoId] : prev.filter((id) => id !== videoId),
-        )
-    }
-
-    const handleSelectAll = () => {
-        setSelectedVideoIds(filteredVideos.map((video) => video.id))
-    }
-
-    const handleSelectNone = () => {
-        setSelectedVideoIds([])
-    }
-
-    const handleBulkMarkWatched = async () => {
-        if (selectedVideoIds.length === 0) return
-
-        setBulkLoading(true)
-        try {
-            const response = await fetch('/api/videos/bulk', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    operation: 'markWatched',
-                    videoIds: selectedVideoIds,
-                }),
-            })
-
-            if (response.ok) {
-                // Refresh videos and clear selection
-                await fetchVideos()
-                setSelectedVideoIds([])
-                toast.success(
-                    `Marked ${selectedVideoIds.length} videos as watched ✅`,
-                )
-            }
-        } catch (error) {
-            console.error('Error bulk marking as watched:', error)
-        } finally {
-            setBulkLoading(false)
-        }
-    }
-
-    const handleBulkDelete = async () => {
-        if (selectedVideoIds.length === 0) return
-
-        if (
-            !confirm(
-                `Delete ${selectedVideoIds.length} selected videos? This action cannot be undone.`,
-            )
-        ) {
-            return
-        }
-
-        setBulkLoading(true)
-        try {
-            const response = await fetch('/api/videos/bulk', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    operation: 'delete',
-                    videoIds: selectedVideoIds,
-                }),
-            })
-
-            if (response.ok) {
-                // Refresh videos and clear selection
-                await fetchVideos()
-                setSelectedVideoIds([])
-                toast.success(
-                    `Deleted ${selectedVideoIds.length} videos successfully 🗑️`,
-                )
-            }
-        } catch (error) {
-            console.error('Error bulk deleting videos:', error)
-        } finally {
-            setBulkLoading(false)
-        }
-    }
-
-    const handleMarkWatched = async (id: number) => {
-        try {
-            const response = await fetch(`/api/videos/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ isWatched: true }),
-            })
-
-            if (response.ok) {
-                setVideos(videos.filter((video) => video.id !== id))
-                toast.success('Video marked as watched ✅')
-            }
-        } catch (error) {
-            console.error('Error marking video as watched:', error)
-        }
-    }
-
-    const handleDelete = async (id: number) => {
-        try {
-            const response = await fetch(`/api/videos/${id}`, {
-                method: 'DELETE',
-            })
-
-            if (response.ok) {
-                setVideos(videos.filter((video) => video.id !== id))
-                toast.success('Video deleted successfully 🗑️')
-            }
-        } catch (error) {
-            console.error('Error deleting video:', error)
-        }
     }
 
     const handleEdit = (video: VideoWithTags) => {
@@ -307,11 +212,15 @@ export default function ListPage() {
         setConvertPlaylistModalOpen(true)
     }
 
+    const handleRefresh = useCallback(() => {
+        activeVideos.refetch()
+        watchedVideos.refetch()
+    }, [activeVideos, watchedVideos])
+
     // Compute which videos have YouTube playlist URLs
     const playlistUrlVideoIds = useMemo(() => {
         const ids = new Set<number>()
-        for (const video of videos) {
-            // Check if URL contains a YouTube playlist ID
+        for (const video of currentHook.videos) {
             try {
                 const url = new URL(video.url)
                 const hasPlaylistId = url.searchParams.has('list')
@@ -327,7 +236,23 @@ export default function ListPage() {
             }
         }
         return ids
-    }, [videos])
+    }, [currentHook.videos])
+
+    // Tab configuration
+    const tabs = [
+        {
+            id: 'active',
+            label: 'Active',
+            icon: <ListVideo className='w-4 h-4' />,
+            count: activeVideos.videos.length,
+        },
+        {
+            id: 'watched',
+            label: 'Watched',
+            icon: <CheckCircle2 className='w-4 h-4' />,
+            count: watchedVideos.videos.length,
+        },
+    ]
 
     return (
         <div className='min-h-screen bg-background text-foreground'>
@@ -336,312 +261,102 @@ export default function ListPage() {
             <main className='container mx-auto px-4 pt-32 pb-12 max-w-6xl'>
                 {/* Header */}
                 <div className='mb-8'>
-                    <div className='flex items-center justify-between mb-2'>
+                    <div className='flex items-center gap-2 mb-2'>
+                        <ListVideo className='w-8 h-8' />
                         <h1 className='text-2xl sm:text-3xl font-bold'>
                             My Watchlist
                         </h1>
                     </div>
                     <p className='text-gray-600 dark:text-gray-400'>
-                        {videos.length} unwatched videos
+                        {activeVideos.videos.length +
+                            watchedVideos.videos.length}{' '}
+                        videos total
                         {(searchQuery ||
                             selectedPlatforms.length > 0 ||
                             selectedTagIds.length > 0) &&
-                            ` • ${filteredVideos.length} shown`}
+                            ` - ${filteredVideos.length} shown`}
                     </p>
                 </div>
 
-                {/* Bulk Operations Toolbar */}
-                {bulkMode && (
-                    <div className='mb-4 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg'>
-                        <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
-                            <div className='flex items-center gap-4'>
-                                <span className='font-medium text-gray-900 dark:text-gray-100'>
-                                    {selectedVideoIds.length} of{' '}
-                                    {filteredVideos.length} videos selected
-                                </span>
-                                <div className='w-full sm:w-auto'>
-                                    <Button
-                                        variant='outline'
-                                        size='sm'
-                                        onClick={handleSelectAll}
-                                        disabled={
-                                            selectedVideoIds.length ===
-                                            filteredVideos.length
-                                        }
-                                        className='h-8'
-                                    >
-                                        selectAll()
-                                    </Button>
-                                    <Button
-                                        variant='outline'
-                                        size='sm'
-                                        onClick={handleSelectNone}
-                                        disabled={selectedVideoIds.length === 0}
-                                        className='h-8'
-                                    >
-                                        selectNone()
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className='flex gap-2'>
-                                <Button
-                                    onClick={handleBulkMarkWatched}
-                                    disabled={
-                                        selectedVideoIds.length === 0 ||
-                                        bulkLoading
-                                    }
-                                    size='sm'
-                                    className='h-8 bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                                >
-                                    {bulkLoading
-                                        ? 'processing()'
-                                        : `markWatched(${selectedVideoIds.length})`}
-                                </Button>
-                                <Button
-                                    onClick={handleBulkDelete}
-                                    disabled={
-                                        selectedVideoIds.length === 0 ||
-                                        bulkLoading
-                                    }
-                                    size='sm'
-                                    className='h-8 bg-red-500 text-white hover:bg-red-600'
-                                >
-                                    {bulkLoading
-                                        ? 'processing()'
-                                        : `delete(${selectedVideoIds.length})`}
-                                </Button>
-                                <Button
-                                    onClick={() => {
-                                        setBulkMode(false)
-                                        setSelectedVideoIds([])
-                                    }}
-                                    variant='outline'
-                                    size='sm'
-                                >
-                                    Cancel
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
+                {/* Error display */}
+                {currentHook.error && (
+                    <ErrorDisplay
+                        error={currentHook.error}
+                        onRetry={currentHook.refetch}
+                        className='mb-4'
+                    />
                 )}
 
-                {/* Toggle Bulk Mode */}
-                {!bulkMode && (
-                    <div className='mb-4'>
-                        <Button
-                            onClick={() => setBulkMode(true)}
-                            variant='outline'
-                            size='sm'
-                        >
-                            Enable Bulk Operations
-                        </Button>
-                    </div>
-                )}
+                {/* Tabs */}
+                <TabSwitcher
+                    tabs={tabs}
+                    activeTab={activeTab}
+                    onTabChange={(tab) => setActiveTab(tab as TabType)}
+                    className='mb-6'
+                />
 
-                {/* Advanced Filters */}
-                <div className='mb-6 space-y-4'>
-                    {/* Search and Sort Row */}
-                    <div className='flex flex-col sm:flex-row gap-2 sm:gap-4'>
-                        {/* Search Input */}
-                        <div className='relative flex-1'>
-                            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400' />
-                            <Input
-                                placeholder='Search videos...'
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className='pl-10'
-                            />
-                        </div>
+                {/* Filter Bar */}
+                <FilterBar
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    searchPlaceholder='Search videos...'
+                    platforms={platforms}
+                    selectedPlatforms={selectedPlatforms}
+                    onPlatformToggle={handlePlatformToggle}
+                    tags={allTags}
+                    selectedTagIds={selectedTagIds}
+                    onTagToggle={handleTagToggle}
+                    sortOptions={SORT_OPTIONS}
+                    sortValue={sortValue}
+                    onSortChange={setSortValue}
+                    onClearAll={handleClearAll}
+                    className='mb-6'
+                />
 
-                        {/* Sort Dropdown */}
-                        <div className='flex gap-2'>
-                            <select
-                                value={`${sortBy}-${sortOrder}`}
-                                onChange={(e) => {
-                                    const [field, order] = e.target.value.split(
-                                        '-',
-                                    ) as [typeof sortBy, typeof sortOrder]
-                                    setSortBy(field)
-                                    setSortOrder(order)
-                                }}
-                                className='px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 text-sm'
-                            >
-                                <option value='createdAt-desc'>
-                                    Newest First
-                                </option>
-                                <option value='createdAt-asc'>
-                                    Oldest First
-                                </option>
-                                <option value='updatedAt-desc'>
-                                    Recently Updated
-                                </option>
-                                <option value='title-asc'>Title A-Z</option>
-                                <option value='title-desc'>Title Z-A</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Platform Filters */}
-                    <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center'>
-                        <div className='flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
-                            <Filter className='w-4 h-4' />
-                            Platforms:
-                        </div>
-                        <div className='flex flex-wrap gap-2'>
-                            {platforms.map(
-                                ({ key, label, icon: Icon, color }) => (
-                                    <Button
-                                        key={key}
-                                        variant={
-                                            selectedPlatforms.includes(key)
-                                                ? 'default'
-                                                : 'outline'
-                                        }
-                                        size='sm'
-                                        onClick={() => {
-                                            setSelectedPlatforms((prev) =>
-                                                prev.includes(key)
-                                                    ? prev.filter(
-                                                          (p) => p !== key,
-                                                      )
-                                                    : [...prev, key],
-                                            )
-                                        }}
-                                        className={`h-8 ${selectedPlatforms.includes(key) ? 'bg-gray-100 dark:bg-gray-800' : color}`}
-                                    >
-                                        <Icon className='w-3 h-3 mr-1' />
-                                        {label}
-                                    </Button>
-                                ),
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Active Filters Summary */}
-                    {(searchQuery || selectedPlatforms.length > 0) && (
-                        <div className='flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400'>
-                            <span>Active filters:</span>
-                            {searchQuery && (
-                                <Badge
-                                    variant='secondary'
-                                    className='flex items-center gap-1'
-                                >
-                                    Search: &quot;{searchQuery}&quot;
-                                    <button
-                                        type='button'
-                                        onClick={() => setSearchQuery('')}
-                                        className='ml-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full p-0.5'
-                                    >
-                                        <X className='w-3 h-3' />
-                                    </button>
-                                </Badge>
-                            )}
-                            {selectedPlatforms.length > 0 && (
-                                <Badge
-                                    variant='secondary'
-                                    className='flex items-center gap-1'
-                                >
-                                    Platforms: {selectedPlatforms.join(', ')}
-                                    <button
-                                        type='button'
-                                        onClick={() => setSelectedPlatforms([])}
-                                        className='ml-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full p-0.5'
-                                    >
-                                        <X className='w-3 h-3' />
-                                    </button>
-                                </Badge>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Tag Filters */}
-                {allTags.length > 0 && (
-                    <div className='mb-6'>
-                        <div className='flex items-center gap-2 mb-3'>
-                            <h2 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
-                                Filter by tags:
-                            </h2>
-                            {selectedTagIds.length > 0 && (
-                                <Button
-                                    variant='ghost'
-                                    size='sm'
-                                    onClick={clearTagFilters}
-                                    className='h-auto p-1 text-xs'
-                                >
-                                    <X className='w-3 h-3 mr-1' />
-                                    Clear all
-                                </Button>
-                            )}
-                        </div>
-                        <div className='flex flex-wrap gap-2'>
-                            {allTags.map((tag) => (
-                                <button
-                                    key={tag.id}
-                                    type='button'
-                                    onClick={() => handleTagFilter(tag.id)}
-                                    className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
-                                        selectedTagIds.includes(tag.id)
-                                            ? 'bg-gray-200 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-gray-900 dark:text-gray-100'
-                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                    }`}
-                                    style={
-                                        selectedTagIds.includes(tag.id)
-                                            ? {}
-                                            : {
-                                                  borderColor:
-                                                      tag.color || '#6b7280',
-                                                  color: tag.color || '#6b7280',
-                                              }
-                                    }
-                                >
-                                    {tag.name}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Videos List */}
-                {loading ? (
+                {/* Video List */}
+                {currentHook.loading ? (
                     <div className='space-y-6'>
                         {[...Array(3)].map((_, i) => (
                             <div key={i} className='animate-pulse'>
-                                <div className='bg-gray-200 dark:bg-gray-800 rounded-lg h-40 mb-4'></div>
+                                <div className='bg-gray-200 dark:bg-gray-800 rounded-lg h-[240px]' />
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <>
-                        <VideoList
-                            videos={filteredVideos}
-                            onMarkWatched={handleMarkWatched}
-                            onDelete={handleDelete}
-                            onEdit={handleEdit}
-                            onConvertToSeries={handleConvertToSeries}
-                            onConvertToPlaylist={handleConvertToPlaylist}
-                            playlistUrlVideoIds={playlistUrlVideoIds}
-                        />
-                        <VideoEditModal
-                            video={editVideo}
-                            open={editModalOpen}
-                            onOpenChange={setEditModalOpen}
-                            onSuccess={fetchVideos}
-                        />
-                        <ConvertToSeriesModal
-                            video={convertVideo}
-                            open={convertModalOpen}
-                            onOpenChange={setConvertModalOpen}
-                            onSuccess={fetchVideos}
-                        />
-                        <ConvertToPlaylistModal
-                            video={convertPlaylistVideo}
-                            open={convertPlaylistModalOpen}
-                            onOpenChange={setConvertPlaylistModalOpen}
-                            onSuccess={fetchVideos}
-                        />
-                    </>
+                    <VideoList
+                        videos={filteredVideos}
+                        onMarkWatched={
+                            activeTab === 'active'
+                                ? activeVideos.markWatched
+                                : watchedVideos.markUnwatched
+                        }
+                        onDelete={currentHook.deleteVideo}
+                        onEdit={handleEdit}
+                        onConvertToSeries={handleConvertToSeries}
+                        onConvertToPlaylist={handleConvertToPlaylist}
+                        playlistUrlVideoIds={playlistUrlVideoIds}
+                    />
                 )}
+
+                {/* Modals */}
+                <VideoEditModal
+                    video={editVideo}
+                    open={editModalOpen}
+                    onOpenChange={setEditModalOpen}
+                    onSuccess={handleRefresh}
+                />
+                <ConvertToSeriesModal
+                    video={convertVideo}
+                    open={convertModalOpen}
+                    onOpenChange={setConvertModalOpen}
+                    onSuccess={handleRefresh}
+                />
+                <ConvertToPlaylistModal
+                    video={convertPlaylistVideo}
+                    open={convertPlaylistModalOpen}
+                    onOpenChange={setConvertPlaylistModalOpen}
+                    onSuccess={handleRefresh}
+                />
             </main>
         </div>
     )

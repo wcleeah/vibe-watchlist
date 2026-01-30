@@ -37,3 +37,13 @@ export interface ParsedUrl {
     isPlaylist: boolean
     isValid: boolean
 }
+
+// Filter types for listing videos
+export interface VideoFilters {
+    isWatched?: boolean
+    search?: string
+    platforms?: string[]
+    tagIds?: number[]
+    sortBy?: 'createdAt' | 'updatedAt' | 'title'
+    sortOrder?: 'asc' | 'desc'
+}
