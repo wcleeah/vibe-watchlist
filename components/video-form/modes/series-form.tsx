@@ -4,16 +4,14 @@ import { useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useTagManagement } from '@/hooks/use-tag-management'
 import { SeriesService } from '@/lib/services/series-service'
 import type { MetadataSuggestion } from '@/lib/types/ai-metadata'
 import type { VideoFormData } from '@/types/form'
 import type { ScheduleType, ScheduleValue } from '@/types/series'
-import { DatePickerField } from '../date-picker-field'
 import { MetadataSelector } from '../metadata-selector'
-import { ScheduleSelector } from '../schedule-selector'
+import { ScheduleSection } from '../schedule-section'
 import { TagInput } from '../tag-input'
 
 interface SeriesFormProps {
@@ -134,79 +132,33 @@ export function SeriesForm({
                 disabled={isSubmitting}
             />
 
-            {/* Schedule Section */}
-            <div className='space-y-4 p-4 bg-muted/50 rounded-lg'>
-                <ScheduleSelector
-                    scheduleType={scheduleType}
-                    scheduleValue={scheduleValue}
-                    onTypeChange={setScheduleType}
-                    onValueChange={setScheduleValue}
-                    onEndDateChange={setEndDate}
-                    onTotalEpisodesChange={setTotalEpisodes}
+            <ScheduleSection
+                scheduleType={scheduleType}
+                scheduleValue={scheduleValue}
+                startDate={startDate}
+                endDate={endDate}
+                totalEpisodes={totalEpisodes}
+                isSubmitting={isSubmitting}
+                onScheduleTypeChange={setScheduleType}
+                onScheduleValueChange={setScheduleValue}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                onTotalEpisodesChange={setTotalEpisodes}
+            />
+
+            <div className='flex items-center space-x-2'>
+                <Checkbox
+                    id='save-default'
+                    checked={saveAsDefault}
+                    onChange={(e) => setSaveAsDefault(e.target.checked)}
                     disabled={isSubmitting}
                 />
-
-                <div className='grid grid-cols-2 gap-4'>
-                    <DatePickerField
-                        id='start-date'
-                        label='Start Date'
-                        value={startDate}
-                        onChange={(date) =>
-                            setStartDate(
-                                date || new Date().toISOString().split('T')[0],
-                            )
-                        }
-                        required
-                        disabled={isSubmitting}
-                    />
-                    <DatePickerField
-                        id='end-date'
-                        label={
-                            scheduleType === 'dates'
-                                ? 'End Date (Auto)'
-                                : 'End Date (Optional)'
-                        }
-                        value={endDate}
-                        onChange={setEndDate}
-                        disabled={isSubmitting || scheduleType === 'dates'}
-                    />
-                </div>
-
-                <div className='space-y-1.5'>
-                    <Label htmlFor='series-total-episodes' className='text-sm'>
-                        {scheduleType === 'dates'
-                            ? 'Total Episodes (Auto)'
-                            : 'Total Episodes (Optional)'}
-                    </Label>
-                    <Input
-                        id='series-total-episodes'
-                        type='number'
-                        min='1'
-                        placeholder={
-                            scheduleType === 'dates'
-                                ? 'Calculated from dates'
-                                : 'e.g., 12 - leave empty if unknown'
-                        }
-                        value={totalEpisodes}
-                        onChange={(e) => setTotalEpisodes(e.target.value)}
-                        disabled={isSubmitting || scheduleType === 'dates'}
-                    />
-                </div>
-
-                <div className='flex items-center space-x-2'>
-                    <Checkbox
-                        id='save-default'
-                        checked={saveAsDefault}
-                        onChange={(e) => setSaveAsDefault(e.target.checked)}
-                        disabled={isSubmitting}
-                    />
-                    <Label
-                        htmlFor='save-default'
-                        className='text-sm text-muted-foreground cursor-pointer'
-                    >
-                        Save as default mode for this platform
-                    </Label>
-                </div>
+                <Label
+                    htmlFor='save-default'
+                    className='text-sm text-muted-foreground cursor-pointer'
+                >
+                    Save as default mode for this platform
+                </Label>
             </div>
 
             <TagInput

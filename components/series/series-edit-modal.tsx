@@ -17,8 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { TagList } from '@/components/ui/tag'
-import { DatePickerField } from '@/components/video-form/date-picker-field'
-import { ScheduleSelector } from '@/components/video-form/schedule-selector'
+import { ScheduleSection } from '@/components/video-form/schedule-section'
 import { SeriesService } from '@/lib/services/series-service'
 import type {
     ScheduleType,
@@ -307,51 +306,21 @@ export function SeriesEditModal({
                     </div>
 
                     {/* Schedule */}
-                    <div className='space-y-4 p-4 bg-muted/50 rounded-lg'>
-                        <h3 className='font-medium'>Schedule</h3>
-                        <ScheduleSelector
-                            scheduleType={scheduleType}
-                            scheduleValue={scheduleValue}
-                            onTypeChange={setScheduleType}
-                            onValueChange={setScheduleValue}
-                            onEndDateChange={setEndDate}
-                            onTotalEpisodesChange={(value) =>
-                                setValue('totalEpisodes', value)
-                            }
-                            disabled={isSubmitting}
-                        />
-
-                        <div className='grid grid-cols-2 gap-4'>
-                            <DatePickerField
-                                id='edit-start-date'
-                                label='Start Date'
-                                value={startDate}
-                                onChange={(date) =>
-                                    setStartDate(
-                                        date ||
-                                            new Date()
-                                                .toISOString()
-                                                .split('T')[0],
-                                    )
-                                }
-                                required
-                                disabled={isSubmitting}
-                            />
-                            <DatePickerField
-                                id='edit-end-date'
-                                label={
-                                    scheduleType === 'dates'
-                                        ? 'End Date (Auto)'
-                                        : 'End Date (Optional)'
-                                }
-                                value={endDate}
-                                onChange={setEndDate}
-                                disabled={
-                                    isSubmitting || scheduleType === 'dates'
-                                }
-                            />
-                        </div>
-                    </div>
+                    <ScheduleSection
+                        scheduleType={scheduleType}
+                        scheduleValue={scheduleValue}
+                        startDate={startDate}
+                        endDate={endDate}
+                        totalEpisodes={watch('totalEpisodes')}
+                        isSubmitting={isSubmitting}
+                        onScheduleTypeChange={setScheduleType}
+                        onScheduleValueChange={setScheduleValue}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onTotalEpisodesChange={(value) =>
+                            setValue('totalEpisodes', value)
+                        }
+                    />
 
                     {/* Active Status */}
                     <div className='flex items-center space-x-2'>
