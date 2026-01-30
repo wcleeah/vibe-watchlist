@@ -2,7 +2,10 @@
 
 import { CalendarDays } from 'lucide-react'
 
+import { MediaList } from '@/components/shared'
+
 import type { SeriesWithTags } from '@/types/series'
+
 import { SeriesCard } from './series-card'
 
 interface SeriesListProps {
@@ -14,6 +17,10 @@ interface SeriesListProps {
     onDelete?: (id: number) => Promise<void>
     onEdit?: (series: SeriesWithTags) => void
     loading?: boolean
+    emptyState?: {
+        title: string
+        description: string
+    }
 }
 
 export function SeriesList({
@@ -25,52 +32,34 @@ export function SeriesList({
     onDelete,
     onEdit,
     loading = false,
+    emptyState,
 }: SeriesListProps) {
-    if (loading) {
-        return (
-            <div className='text-center py-12'>
-                <div className='w-12 h-12 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center animate-pulse'>
-                    <CalendarDays className='w-6 h-6 text-gray-400' />
-                </div>
-                <h3 className='text-base font-medium mb-1 font-mono'>
-                    Loading series...
-                </h3>
-            </div>
-        )
-    }
-
-    if (series.length === 0) {
-        return (
-            <div className='text-center py-12'>
-                <div className='w-12 h-12 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center'>
-                    <CalendarDays className='w-6 h-6 text-gray-400' />
-                </div>
-                <h3 className='text-base font-medium mb-1 font-mono'>
-                    No series found
-                </h3>
-                <p className='text-sm text-gray-500 dark:text-gray-400 font-mono'>
-                    {'//'} Add a series from the home page to track recurring
-                    content
-                </p>
-            </div>
-        )
-    }
+    const renderCard = (s: SeriesWithTags) => (
+        <SeriesCard
+            series={s}
+            onCatchUp={onCatchUp}
+            onMarkWatched={onMarkWatched}
+            onUnmarkWatched={onUnmarkWatched}
+            onIncrementProgress={onIncrementProgress}
+            onDelete={onDelete}
+            onEdit={onEdit}
+        />
+    )
 
     return (
-        <div className='overflow-hidden'>
-            {series.map((s) => (
-                <div key={s.id} className='py-3'>
-                    <SeriesCard
-                        series={s}
-                        onCatchUp={onCatchUp}
-                        onMarkWatched={onMarkWatched}
-                        onUnmarkWatched={onUnmarkWatched}
-                        onIncrementProgress={onIncrementProgress}
-                        onDelete={onDelete}
-                        onEdit={onEdit}
-                    />
-                </div>
-            ))}
-        </div>
+        <MediaList
+            items={series}
+            renderCard={renderCard}
+            loading={loading}
+            emptyState={{
+                title: emptyState?.title || 'No series found',
+                description:
+                    emptyState?.description ||
+                    'Add a series from the home page to track recurring content',
+                icon: (
+                    <CalendarDays className='w-16 h-16 text-gray-300 dark:text-gray-700 mb-4' />
+                ),
+            }}
+        />
     )
 }
