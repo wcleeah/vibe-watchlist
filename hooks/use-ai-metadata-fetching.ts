@@ -40,6 +40,7 @@ export function useAIMetadataFetching(
             return
         }
 
+        const controller = new AbortController()
         setFetchDone(false)
         setError(null)
 
@@ -52,6 +53,7 @@ export function useAIMetadataFetching(
                 url: urlValidationResult.url,
                 platform: urlValidationResult.platform,
             }),
+            signal: controller.signal,
         })
             .then((response) => {
                 return response.json()
@@ -82,6 +84,10 @@ export function useAIMetadataFetching(
                 setFetchDone(true)
             })
             .catch((err) => {
+                if (err.name === 'AbortError') {
+                    // Request was cancelled, don't update state
+                    return
+                }
                 const errorMessage =
                     err instanceof Error
                         ? err.message
@@ -90,8 +96,10 @@ export function useAIMetadataFetching(
                 setSuggestions([])
                 setFallback(null)
                 setSelectedSuggestion(undefined)
-                console.error('AI metadata fetch failed:', err)
+                setFetchDone(true)
             })
+
+        return () => controller.abort()
     }, [urlValidationResult])
 
     return {
