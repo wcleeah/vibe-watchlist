@@ -10,8 +10,8 @@ interface RouteParams {
     params: Promise<{ id: string }>
 }
 
-// POST /api/series/[id]/mark-watched - Mark a series as watched (finished)
-// Sets isWatched: true to move series to the Watched tab
+// POST /api/series/[id]/unmark-watched - Unmark a series as watched
+// Sets isWatched: false to move series back to the Active tab
 export async function POST(_request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params
@@ -40,12 +40,11 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
 
         const now = new Date()
 
-        // Mark series as watched
+        // Unmark series as watched
         await db
             .update(series)
             .set({
-                isWatched: true,
-                lastWatchedAt: now,
+                isWatched: false,
                 updatedAt: now,
             })
             .where(eq(series.id, seriesId))
@@ -104,9 +103,9 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({ success: true, series: seriesWithTags })
     } catch (error) {
-        console.error('Error marking series as watched:', error)
+        console.error('Error unmarking series as watched:', error)
         return NextResponse.json(
-            { success: false, error: 'Failed to mark series as watched' },
+            { success: false, error: 'Failed to unmark series as watched' },
             { status: 500 },
         )
     }

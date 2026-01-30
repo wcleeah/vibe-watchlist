@@ -7,7 +7,10 @@ import { SeriesCard } from './series-card'
 
 interface SeriesListProps {
     series: SeriesWithTags[]
+    onCatchUp?: (id: number) => Promise<void>
     onMarkWatched?: (id: number) => Promise<void>
+    onUnmarkWatched?: (id: number) => Promise<void>
+    onIncrementProgress?: (id: number) => Promise<boolean>
     onDelete?: (id: number) => Promise<void>
     onEdit?: (series: SeriesWithTags) => void
     loading?: boolean
@@ -15,7 +18,10 @@ interface SeriesListProps {
 
 export function SeriesList({
     series,
+    onCatchUp,
     onMarkWatched,
+    onUnmarkWatched,
+    onIncrementProgress,
     onDelete,
     onEdit,
     loading = false,
@@ -56,7 +62,10 @@ export function SeriesList({
                 <div key={s.id} className='py-3'>
                     <SeriesCard
                         series={s}
+                        onCatchUp={onCatchUp}
                         onMarkWatched={onMarkWatched}
+                        onUnmarkWatched={onUnmarkWatched}
+                        onIncrementProgress={onIncrementProgress}
                         onDelete={onDelete}
                         onEdit={onEdit}
                     />

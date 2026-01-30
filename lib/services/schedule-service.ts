@@ -1,6 +1,7 @@
 import type {
     DailySchedule,
     DayOfWeek,
+    NoSchedule,
     ScheduleType,
     ScheduleValue,
     WeeklySchedule,
@@ -40,6 +41,11 @@ export class ScheduleService {
         fromDate: Date,
         timezone: string = 'Asia/Hong_Kong',
     ): Date {
+        // Backlog series don't have schedules - return far future date
+        if (scheduleType === 'none') {
+            return new Date('9999-12-31T23:59:59Z')
+        }
+
         // Convert to timezone-aware date
         const localDate = ScheduleService.toTimezone(fromDate, timezone)
 
@@ -70,6 +76,11 @@ export class ScheduleService {
         scheduleValue: ScheduleValue,
         timezone: string = 'Asia/Hong_Kong',
     ): number {
+        // Backlog series don't track missed periods
+        if (scheduleType === 'none') {
+            return 0
+        }
+
         const localNow = ScheduleService.toTimezone(now, timezone)
         const localNextEpisode = ScheduleService.toTimezone(
             nextEpisodeAt,
@@ -116,6 +127,8 @@ export class ScheduleService {
         scheduleValue: ScheduleValue,
     ): string {
         switch (scheduleType) {
+            case 'none':
+                return 'No schedule'
             case 'daily': {
                 const interval = (scheduleValue as DailySchedule).interval
                 if (interval === 1) {
@@ -165,6 +178,8 @@ export class ScheduleService {
                 return { days: ['friday'] }
             case 'custom':
                 return { interval: 7 }
+            case 'none':
+                return {}
         }
     }
 
@@ -176,6 +191,11 @@ export class ScheduleService {
         scheduleType: ScheduleType,
         scheduleValue: ScheduleValue,
     ): string {
+        // Backlog series don't show missed periods
+        if (scheduleType === 'none') {
+            return ''
+        }
+
         if (missedPeriods === 0) {
             return 'Caught up'
         }
@@ -225,6 +245,11 @@ export class ScheduleService {
         type: ScheduleType,
         value: unknown,
     ): ScheduleValue {
+        // 'none' type has empty schedule value
+        if (type === 'none') {
+            return {}
+        }
+
         if (!value || typeof value !== 'object') {
             return ScheduleService.getDefaultScheduleValue(type)
         }
@@ -261,6 +286,11 @@ export class ScheduleService {
         value: ScheduleValue,
     ): boolean {
         switch (type) {
+            case 'none': {
+                // Empty object is valid for 'none' type
+                const nv = value as NoSchedule
+                return typeof nv === 'object' && Object.keys(nv).length === 0
+            }
             case 'daily':
             case 'custom': {
                 const dv = value as DailySchedule

@@ -2,10 +2,13 @@
 
 import {
     CalendarDays,
+    Check,
     ExternalLink,
     FileText,
     Loader2,
     Pencil,
+    Plus,
+    RotateCcw,
     Trash2,
 } from 'lucide-react'
 import Image from 'next/image'
@@ -18,11 +21,19 @@ import type {
     ScheduleValue,
     SeriesWithTags,
 } from '@/types/series'
-import { getSeriesStatus } from '@/types/series'
+import {
+    formatProgress,
+    getSeriesStatus,
+    isBacklogSeries,
+    isSeriesComplete,
+} from '@/types/series'
 
 interface SeriesCardProps {
     series: SeriesWithTags
-    onMarkWatched?: (id: number) => Promise<void>
+    onCatchUp?: (id: number) => Promise<void> // Reset missed periods for recurring
+    onMarkWatched?: (id: number) => Promise<void> // Move to Watched tab
+    onUnmarkWatched?: (id: number) => Promise<void> // Move back to Active tab
+    onIncrementProgress?: (id: number) => Promise<boolean> // +1 episode, returns true if complete
     onDelete?: (id: number) => Promise<void>
     onEdit?: (series: SeriesWithTags) => void
     className?: string
@@ -63,6 +74,8 @@ function ThumbnailDisplay({
 
 function StatusBadge({ series }: { series: SeriesWithTags }) {
     const status = getSeriesStatus(series)
+    const isComplete = isSeriesComplete(series)
+    const progress = formatProgress(series)
 
     const statusConfig = {
         behind: {
@@ -80,14 +93,34 @@ function StatusBadge({ series }: { series: SeriesWithTags }) {
             text: 'text-gray-600 dark:text-gray-400',
             border: 'border-gray-300 dark:border-gray-600',
         },
+        backlog: {
+            bg: isComplete
+                ? 'bg-green-100 dark:bg-green-900/30'
+                : 'bg-blue-100 dark:bg-blue-900/30',
+            text: isComplete
+                ? 'text-green-700 dark:text-green-400'
+                : 'text-blue-700 dark:text-blue-400',
+            border: isComplete
+                ? 'border-green-300 dark:border-green-700'
+                : 'border-blue-300 dark:border-blue-700',
+        },
     }
 
     const config = statusConfig[status]
-    const displayText = ScheduleService.formatMissedPeriods(
-        series.missedPeriods,
-        series.scheduleType as ScheduleType,
-        series.scheduleValue as ScheduleValue,
-    )
+
+    // Determine display text based on series type
+    let displayText: string
+    if (status === 'ended') {
+        displayText = 'Ended'
+    } else if (status === 'backlog') {
+        displayText = isComplete ? 'Complete' : progress || 'Backlog'
+    } else {
+        displayText = ScheduleService.formatMissedPeriods(
+            series.missedPeriods,
+            series.scheduleType as ScheduleType,
+            series.scheduleValue as ScheduleValue,
+        )
+    }
 
     return (
         <span
@@ -98,19 +131,24 @@ function StatusBadge({ series }: { series: SeriesWithTags }) {
                 config.border,
             )}
         >
-            {status === 'ended' ? 'Ended' : displayText}
+            {displayText}
         </span>
     )
 }
 
 export function SeriesCard({
     series,
+    onCatchUp,
     onMarkWatched,
+    onUnmarkWatched,
+    onIncrementProgress,
     onDelete,
     onEdit,
     className,
 }: SeriesCardProps) {
+    const [loadingCatchUp, setLoadingCatchUp] = useState(false)
     const [loadingMarkWatched, setLoadingMarkWatched] = useState(false)
+    const [loadingIncrement, setLoadingIncrement] = useState(false)
     const [loadingDelete, setLoadingDelete] = useState(false)
 
     const scheduleDisplay = ScheduleService.formatScheduleDisplay(
@@ -119,6 +157,8 @@ export function SeriesCard({
     )
 
     const status = getSeriesStatus(series)
+    const isBacklog = isBacklogSeries(series)
+    const progress = formatProgress(series)
 
     return (
         <div
@@ -188,22 +228,44 @@ export function SeriesCard({
                                             </span>
                                             ,
                                         </div>
-                                        <div>
-                                            <span className='text-purple-600 dark:text-purple-400'>
-                                                &quot;MISSED&quot;
-                                            </span>
-                                            :{' '}
-                                            <span
-                                                className={cn(
-                                                    series.missedPeriods > 0
-                                                        ? 'text-red-600 dark:text-red-400'
-                                                        : 'text-green-600 dark:text-green-400',
-                                                )}
-                                            >
-                                                {series.missedPeriods}
-                                            </span>
-                                            ,
-                                        </div>
+                                        {/* Show MISSED only for recurring series */}
+                                        {!isBacklog && (
+                                            <div>
+                                                <span className='text-purple-600 dark:text-purple-400'>
+                                                    &quot;MISSED&quot;
+                                                </span>
+                                                :{' '}
+                                                <span
+                                                    className={cn(
+                                                        series.missedPeriods > 0
+                                                            ? 'text-red-600 dark:text-red-400'
+                                                            : 'text-green-600 dark:text-green-400',
+                                                    )}
+                                                >
+                                                    {series.missedPeriods}
+                                                </span>
+                                                ,
+                                            </div>
+                                        )}
+                                        {/* Show PROGRESS for series with episode tracking */}
+                                        {progress && (
+                                            <div>
+                                                <span className='text-purple-600 dark:text-purple-400'>
+                                                    &quot;PROGRESS&quot;
+                                                </span>
+                                                :{' '}
+                                                <span
+                                                    className={cn(
+                                                        isSeriesComplete(series)
+                                                            ? 'text-green-600 dark:text-green-400'
+                                                            : 'text-blue-600 dark:text-blue-400',
+                                                    )}
+                                                >
+                                                    &quot;{progress}&quot;
+                                                </span>
+                                                ,
+                                            </div>
+                                        )}
                                         {series.tags &&
                                             series.tags.length > 0 && (
                                                 <div>
@@ -274,8 +336,74 @@ export function SeriesCard({
                             </button>
                         )}
 
-                        {/* Mark as watched / Catch up button */}
-                        {onMarkWatched && status !== 'ended' && (
+                        {/* Increment progress button - for backlog series */}
+                        {onIncrementProgress &&
+                            isBacklog &&
+                            !series.isWatched && (
+                                <button
+                                    type='button'
+                                    onClick={async () => {
+                                        setLoadingIncrement(true)
+                                        try {
+                                            await onIncrementProgress(series.id)
+                                        } finally {
+                                            setLoadingIncrement(false)
+                                        }
+                                    }}
+                                    disabled={loadingIncrement}
+                                    className='w-full h-8 min-h-[44px] text-xs px-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
+                                    title='increment()'
+                                    aria-label='Increment episode count'
+                                >
+                                    {loadingIncrement ? (
+                                        <Loader2 className='w-4 h-4 animate-spin' />
+                                    ) : (
+                                        <>
+                                            <Plus className='w-3 h-3 mr-1' />
+                                            +1 Episode
+                                        </>
+                                    )}
+                                </button>
+                            )}
+
+                        {/* Catch up button - for recurring series with missed periods */}
+                        {onCatchUp &&
+                            !isBacklog &&
+                            status !== 'ended' &&
+                            !series.isWatched && (
+                                <button
+                                    type='button'
+                                    onClick={async () => {
+                                        setLoadingCatchUp(true)
+                                        try {
+                                            await onCatchUp(series.id)
+                                        } finally {
+                                            setLoadingCatchUp(false)
+                                        }
+                                    }}
+                                    disabled={
+                                        loadingCatchUp ||
+                                        series.missedPeriods === 0
+                                    }
+                                    className={cn(
+                                        'w-full h-8 min-h-[44px] text-xs px-2 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center',
+                                        series.missedPeriods > 0
+                                            ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                            : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed',
+                                    )}
+                                    title='catchUp()'
+                                    aria-label='Mark as caught up'
+                                >
+                                    {loadingCatchUp ? (
+                                        <Loader2 className='w-4 h-4 animate-spin' />
+                                    ) : (
+                                        'catchUp()'
+                                    )}
+                                </button>
+                            )}
+
+                        {/* Mark as watched button - move to Watched tab */}
+                        {onMarkWatched && !series.isWatched && (
                             <button
                                 type='button'
                                 onClick={async () => {
@@ -286,23 +414,46 @@ export function SeriesCard({
                                         setLoadingMarkWatched(false)
                                     }
                                 }}
-                                disabled={
-                                    loadingMarkWatched ||
-                                    series.missedPeriods === 0
-                                }
-                                className={cn(
-                                    'w-full h-8 min-h-[44px] text-xs px-2 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center',
-                                    series.missedPeriods > 0
-                                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                        : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed',
-                                )}
-                                title='catchUp()'
-                                aria-label='Mark as caught up'
+                                disabled={loadingMarkWatched}
+                                className='w-full h-8 min-h-[44px] text-xs px-2 bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
+                                title='markWatched()'
+                                aria-label='Mark series as watched'
                             >
                                 {loadingMarkWatched ? (
                                     <Loader2 className='w-4 h-4 animate-spin' />
                                 ) : (
-                                    'catchUp()'
+                                    <>
+                                        <Check className='w-3 h-3 mr-1' />
+                                        markWatched()
+                                    </>
+                                )}
+                            </button>
+                        )}
+
+                        {/* Unmark watched button - move back to Active tab */}
+                        {onUnmarkWatched && series.isWatched && (
+                            <button
+                                type='button'
+                                onClick={async () => {
+                                    setLoadingMarkWatched(true)
+                                    try {
+                                        await onUnmarkWatched(series.id)
+                                    } finally {
+                                        setLoadingMarkWatched(false)
+                                    }
+                                }}
+                                disabled={loadingMarkWatched}
+                                className='w-full h-8 min-h-[44px] text-xs px-2 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 rounded shadow-sm hover:shadow-md transition-all flex items-center justify-center'
+                                title='unmarkWatched()'
+                                aria-label='Move back to active'
+                            >
+                                {loadingMarkWatched ? (
+                                    <Loader2 className='w-4 h-4 animate-spin' />
+                                ) : (
+                                    <>
+                                        <RotateCcw className='w-3 h-3 mr-1' />
+                                        unmarkWatched()
+                                    </>
                                 )}
                             </button>
                         )}
