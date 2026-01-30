@@ -1,12 +1,12 @@
 'use client'
 
-import { CheckCircle2, ListMusic, Loader2 } from 'lucide-react'
+import { CheckCircle2, ListMusic } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 
 import { NavigationTabs } from '@/components/navigation-tabs'
-import { PlaylistCard } from '@/components/playlists/playlist-card'
 import { PlaylistItemsModal } from '@/components/playlists/playlist-items-modal'
+import { PlaylistList } from '@/components/playlists/playlist-list'
 import {
     ErrorDisplay,
     FilterBar,
@@ -206,36 +206,23 @@ export default function PlaylistsPage() {
                 />
 
                 {/* Playlist List */}
-                {currentHook.loading ? (
-                    <div className='flex items-center justify-center py-12'>
-                        <Loader2 className='w-8 h-8 animate-spin text-gray-500' />
-                    </div>
-                ) : sortedPlaylists.length === 0 ? (
-                    <div className='text-center py-12'>
-                        <p className='text-gray-500 dark:text-gray-400 mb-2'>
-                            {activeTab === 'active'
+                <PlaylistList
+                    playlists={sortedPlaylists}
+                    loading={currentHook.loading}
+                    onViewItems={handleViewItems}
+                    onSync={currentHook.sync}
+                    onDelete={currentHook.deletePlaylist}
+                    emptyState={{
+                        title:
+                            activeTab === 'active'
                                 ? 'No active playlists'
-                                : 'No completed playlists'}
-                        </p>
-                        <p className='text-sm text-gray-400 dark:text-gray-500'>
-                            {activeTab === 'active'
+                                : 'No completed playlists',
+                        description:
+                            activeTab === 'active'
                                 ? 'Import a YouTube playlist from the home page to get started'
-                                : 'Complete a playlist by watching all its videos'}
-                        </p>
-                    </div>
-                ) : (
-                    <div className='space-y-4'>
-                        {sortedPlaylists.map((playlist) => (
-                            <PlaylistCard
-                                key={playlist.id}
-                                playlist={playlist}
-                                onViewItems={handleViewItems}
-                                onSync={currentHook.sync}
-                                onDelete={currentHook.deletePlaylist}
-                            />
-                        ))}
-                    </div>
-                )}
+                                : 'Complete a playlist by watching all its videos',
+                    }}
+                />
 
                 {/* Items Modal */}
                 <PlaylistItemsModal

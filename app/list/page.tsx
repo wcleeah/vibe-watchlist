@@ -314,29 +314,30 @@ export default function ListPage() {
                 />
 
                 {/* Video List */}
-                {currentHook.loading ? (
-                    <div className='space-y-6'>
-                        {[...Array(3)].map((_, i) => (
-                            <div key={i} className='animate-pulse'>
-                                <div className='bg-gray-200 dark:bg-gray-800 rounded-lg h-[240px]' />
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <VideoList
-                        videos={filteredVideos}
-                        onMarkWatched={
+                <VideoList
+                    videos={filteredVideos}
+                    loading={currentHook.loading}
+                    onMarkWatched={
+                        activeTab === 'active'
+                            ? activeVideos.markWatched
+                            : watchedVideos.markUnwatched
+                    }
+                    onDelete={currentHook.deleteVideo}
+                    onEdit={handleEdit}
+                    onConvertToSeries={handleConvertToSeries}
+                    onConvertToPlaylist={handleConvertToPlaylist}
+                    playlistUrlVideoIds={playlistUrlVideoIds}
+                    emptyState={{
+                        title:
                             activeTab === 'active'
-                                ? activeVideos.markWatched
-                                : watchedVideos.markUnwatched
-                        }
-                        onDelete={currentHook.deleteVideo}
-                        onEdit={handleEdit}
-                        onConvertToSeries={handleConvertToSeries}
-                        onConvertToPlaylist={handleConvertToPlaylist}
-                        playlistUrlVideoIds={playlistUrlVideoIds}
-                    />
-                )}
+                                ? 'No active videos'
+                                : 'No watched videos',
+                        description:
+                            activeTab === 'active'
+                                ? 'Add videos from the home page to get started'
+                                : 'Mark videos as watched to see them here',
+                    }}
+                />
 
                 {/* Modals */}
                 <VideoEditModal
