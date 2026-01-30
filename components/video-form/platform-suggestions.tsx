@@ -1,7 +1,6 @@
 'use client'
 
 import { Check, X } from 'lucide-react'
-import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,6 +12,7 @@ interface PlatformSuggestionsProps {
     suggestions: PlatformSuggestion[]
     onAccept: (suggestion: PlatformSuggestion) => Promise<void>
     onReject: () => void
+    onDismiss?: () => void
     onPlatformCreated?: (platform: string) => void
     className?: string
 }
@@ -21,16 +21,13 @@ export function PlatformSuggestions({
     suggestions,
     onAccept,
     onReject,
+    onDismiss,
     onPlatformCreated,
     className,
 }: PlatformSuggestionsProps) {
-    const [actionExecuted, setActionExecuted] = useState(false)
     if (suggestions.length === 0) return null
 
     const suggestion = suggestions[0] // For now, show only the first/best suggestion
-    if (actionExecuted) {
-        return
-    }
 
     return (
         <Card
@@ -91,7 +88,7 @@ export function PlatformSuggestions({
                             size='sm'
                             onClick={async () => {
                                 await onAccept(suggestion)
-                                setActionExecuted(true)
+                                onDismiss?.()
                             }}
                             className='flex-1 h-8 text-xs'
                             type='button'
@@ -104,7 +101,7 @@ export function PlatformSuggestions({
                             variant='outline'
                             onClick={() => {
                                 onReject()
-                                setActionExecuted(true)
+                                onDismiss?.()
                             }}
                             className='h-8 text-xs'
                             type='button'
@@ -116,7 +113,7 @@ export function PlatformSuggestions({
                     <div className='flex justify-center'>
                         <PlatformCreator
                             onPlatformCreated={(str) => {
-                                setActionExecuted(true)
+                                onDismiss?.()
                                 if (onPlatformCreated) {
                                     onPlatformCreated(str)
                                 }

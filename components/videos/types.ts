@@ -28,6 +28,7 @@ export interface PreviewCardProps {
     isPlaylistUrl?: boolean
     onTitleChange?: (title: string) => void
     onThumbnailUrlChange?: (url: string) => void
+    onToggleManual?: () => void
     className?: string
     showBackground?: boolean
     editable?: boolean

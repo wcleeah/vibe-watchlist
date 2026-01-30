@@ -25,6 +25,7 @@ export function VideoCard({
     isPlaylistUrl = false,
     onThumbnailUrlChange,
     onTitleChange,
+    onToggleManual: onToggleManualProp,
     className,
     showBackground = true,
     editable = false,
@@ -33,7 +34,15 @@ export function VideoCard({
     const [loadingDelete, setLoadingDelete] = useState(false)
     const [manualMode, setManualMode] = useState(false)
 
-    const toggleManual = () => setManualMode(!manualMode)
+    const toggleManual = () => {
+        // If externally controlled via editable prop, just call the callback
+        if (onToggleManualProp) {
+            onToggleManualProp()
+        } else {
+            // Otherwise, toggle local state
+            setManualMode(!manualMode)
+        }
+    }
 
     // Error state
     if (video.error) {

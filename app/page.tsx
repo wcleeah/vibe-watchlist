@@ -131,8 +131,17 @@ export default function Home() {
             }
         }
 
+        // Reset platform discovery state
+        setPlatformSuggestions([])
+        setPlatformDiscoveryProcessed(false)
+
         urlValidation.unsetUrl()
         form.reset()
+    }
+
+    // Handler to dismiss platform suggestions (called when user accepts/rejects)
+    const handlePlatformSuggestionsDismiss = () => {
+        setPlatformSuggestions([])
     }
 
     const onSubmit = async (data: VideoFormData) => {
@@ -234,6 +243,9 @@ export default function Home() {
                                             }}
                                             aiMetadataError={aiMetadata.error}
                                             onReset={() => reset(true)}
+                                            onPlatformSuggestionsDismiss={
+                                                handlePlatformSuggestionsDismiss
+                                            }
                                             defaultMode={defaultMode}
                                         />
                                     </div>

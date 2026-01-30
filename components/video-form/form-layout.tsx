@@ -27,6 +27,7 @@ interface FormLayoutProps {
     suggestions?: VideoSuggestions
     aiMetadataError?: string | null
     onReset: () => void
+    onPlatformSuggestionsDismiss?: () => void
     defaultMode?: ContentMode
     onSeriesCreated?: () => void
     onPlaylistImported?: () => void
@@ -38,6 +39,7 @@ export function FormLayout({
     suggestions = { ai: [], platform: [] },
     aiMetadataError,
     onReset,
+    onPlatformSuggestionsDismiss,
     defaultMode = 'video',
     onSeriesCreated,
     onPlaylistImported,
@@ -431,6 +433,7 @@ export function FormLayout({
                     suggestions={suggestions.platform}
                     onAccept={acceptPlatformSuggestion}
                     onReject={() => setValue('platform', 'unknown')}
+                    onDismiss={onPlatformSuggestionsDismiss}
                     onPlatformCreated={(platform) =>
                         setValue('platform', platform)
                     }
