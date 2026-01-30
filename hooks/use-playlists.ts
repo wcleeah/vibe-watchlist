@@ -55,6 +55,21 @@ export function usePlaylists(
                 params.set('isCompleted', filters.isCompleted.toString())
             }
 
+            // Add platform filter
+            if (filters?.platform?.trim()) {
+                params.set('platform', filters.platform.trim())
+            }
+
+            // Add tag IDs filter
+            if (filters?.tagIds && filters.tagIds.length > 0) {
+                params.set('tagIds', filters.tagIds.join(','))
+            }
+
+            // Add channel title filter
+            if (filters?.channelTitle?.trim()) {
+                params.set('channelTitle', filters.channelTitle.trim())
+            }
+
             const response = await fetch(`/api/playlists?${params.toString()}`)
             if (response.ok) {
                 const data = await response.json()

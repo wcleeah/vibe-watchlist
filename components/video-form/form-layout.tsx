@@ -5,6 +5,7 @@ import { useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import { SeriesService } from '@/lib/services/series-service'
@@ -60,6 +61,7 @@ export function FormLayout({
         new Date().toISOString().split('T')[0],
     )
     const [endDate, setEndDate] = useState<string | undefined>(undefined)
+    const [totalEpisodes, setTotalEpisodes] = useState<string>('')
     const [saveAsDefault, setSaveAsDefault] = useState(false)
     const [seriesError, setSeriesError] = useState<string | null>(null)
     const [isSubmittingSeries, setIsSubmittingSeries] = useState(false)
@@ -257,6 +259,9 @@ export function FormLayout({
                 startDate,
                 endDate,
                 tagIds: selectedTagIds,
+                totalEpisodes: totalEpisodes
+                    ? parseInt(totalEpisodes, 10)
+                    : undefined,
             })
 
             // Save as default mode for platform if checked
@@ -504,6 +509,8 @@ export function FormLayout({
                         scheduleValue={scheduleValue}
                         onTypeChange={setScheduleType}
                         onValueChange={setScheduleValue}
+                        onEndDateChange={setEndDate}
+                        onTotalEpisodesChange={setTotalEpisodes}
                         disabled={isSubmitting || isSubmittingSeries}
                     />
 
@@ -523,10 +530,47 @@ export function FormLayout({
                         />
                         <DatePickerField
                             id='end-date'
-                            label='End Date (Optional)'
+                            label={
+                                scheduleType === 'dates'
+                                    ? 'End Date (Auto)'
+                                    : 'End Date (Optional)'
+                            }
                             value={endDate}
                             onChange={setEndDate}
-                            disabled={isSubmitting || isSubmittingSeries}
+                            disabled={
+                                isSubmitting ||
+                                isSubmittingSeries ||
+                                scheduleType === 'dates'
+                            }
+                        />
+                    </div>
+
+                    {/* Episode Count */}
+                    <div className='space-y-1.5'>
+                        <Label
+                            htmlFor='series-total-episodes'
+                            className='text-sm'
+                        >
+                            {scheduleType === 'dates'
+                                ? 'Total Episodes (Auto)'
+                                : 'Total Episodes (Optional)'}
+                        </Label>
+                        <Input
+                            id='series-total-episodes'
+                            type='number'
+                            min='1'
+                            placeholder={
+                                scheduleType === 'dates'
+                                    ? 'Calculated from dates'
+                                    : 'e.g., 12 - leave empty if unknown'
+                            }
+                            value={totalEpisodes}
+                            onChange={(e) => setTotalEpisodes(e.target.value)}
+                            disabled={
+                                isSubmitting ||
+                                isSubmittingSeries ||
+                                scheduleType === 'dates'
+                            }
                         />
                     </div>
 

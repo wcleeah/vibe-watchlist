@@ -1,7 +1,7 @@
-import { desc, eq, sql } from 'drizzle-orm'
+import { desc, eq, inArray, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { playlists, videos } from '@/lib/db/schema'
+import { playlists, playlistTags, tags, videos } from '@/lib/db/schema'
 import { PlatformDataService } from '@/lib/services/platform-data-service'
 import {
     YouTubeApiService,
@@ -16,8 +16,11 @@ export async function GET(request: NextRequest) {
         const status = searchParams.get('status') // 'all' | 'has-unwatched' | 'completed'
         const search = searchParams.get('search')
         const isCompleted = searchParams.get('isCompleted')
+        const platform = searchParams.get('platform') // single platform filter
+        const tagIdsParam = searchParams.get('tagIds') // comma-separated tag IDs
+        const channelTitle = searchParams.get('channelTitle') // channel filter
 
-        // Get all playlists with aggregated video stats
+        // Get all playlists with aggregated video stats and tags
         const result = await db
             .select({
                 id: playlists.id,
@@ -26,7 +29,9 @@ export async function GET(request: NextRequest) {
                 description: playlists.description,
                 thumbnailUrl: playlists.thumbnailUrl,
                 channelTitle: playlists.channelTitle,
+                platform: playlists.platform,
                 itemCount: playlists.itemCount,
+                isWatched: playlists.isWatched,
                 lastSyncedAt: playlists.lastSyncedAt,
                 createdAt: playlists.createdAt,
                 updatedAt: playlists.updatedAt,
@@ -38,8 +43,43 @@ export async function GET(request: NextRequest) {
             .groupBy(playlists.id)
             .orderBy(desc(playlists.createdAt))
 
-        // Apply filters
-        let filteredResult = result
+        // Get tags for all playlists
+        const playlistIds = result.map((p) => p.id)
+        const allPlaylistTags =
+            playlistIds.length > 0
+                ? await db
+                      .select({
+                          playlistId: playlistTags.playlistId,
+                          tagId: tags.id,
+                          tagName: tags.name,
+                          tagColor: tags.color,
+                      })
+                      .from(playlistTags)
+                      .innerJoin(tags, eq(playlistTags.tagId, tags.id))
+                      .where(inArray(playlistTags.playlistId, playlistIds))
+                : []
+
+        // Group tags by playlist ID
+        const tagsByPlaylist = new Map<
+            number,
+            Array<{ id: number; name: string; color: string | null }>
+        >()
+        for (const pt of allPlaylistTags) {
+            if (!tagsByPlaylist.has(pt.playlistId)) {
+                tagsByPlaylist.set(pt.playlistId, [])
+            }
+            tagsByPlaylist.get(pt.playlistId)!.push({
+                id: pt.tagId,
+                name: pt.tagName,
+                color: pt.tagColor,
+            })
+        }
+
+        // Map playlists with their tags
+        let filteredResult = result.map((p) => ({
+            ...p,
+            tags: tagsByPlaylist.get(p.id) || [],
+        }))
 
         // Filter by search term
         if (search?.trim()) {
@@ -49,6 +89,34 @@ export async function GET(request: NextRequest) {
                     p.title?.toLowerCase().includes(searchLower) ||
                     p.channelTitle?.toLowerCase().includes(searchLower),
             )
+        }
+
+        // Filter by platform
+        if (platform?.trim()) {
+            filteredResult = filteredResult.filter(
+                (p) => p.platform === platform.trim(),
+            )
+        }
+
+        // Filter by channel title
+        if (channelTitle?.trim()) {
+            const channelLower = channelTitle.toLowerCase()
+            filteredResult = filteredResult.filter((p) =>
+                p.channelTitle?.toLowerCase().includes(channelLower),
+            )
+        }
+
+        // Filter by tags
+        if (tagIdsParam?.trim()) {
+            const tagIds = tagIdsParam
+                .split(',')
+                .map((id) => parseInt(id.trim(), 10))
+                .filter((id) => !Number.isNaN(id))
+            if (tagIds.length > 0) {
+                filteredResult = filteredResult.filter((p) =>
+                    tagIds.some((tagId) => p.tags.some((t) => t.id === tagId)),
+                )
+            }
         }
 
         // Filter by isCompleted (new filter for tabs)

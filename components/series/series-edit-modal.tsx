@@ -314,6 +314,10 @@ export function SeriesEditModal({
                             scheduleValue={scheduleValue}
                             onTypeChange={setScheduleType}
                             onValueChange={setScheduleValue}
+                            onEndDateChange={setEndDate}
+                            onTotalEpisodesChange={(value) =>
+                                setValue('totalEpisodes', value)
+                            }
                             disabled={isSubmitting}
                         />
 
@@ -335,10 +339,16 @@ export function SeriesEditModal({
                             />
                             <DatePickerField
                                 id='edit-end-date'
-                                label='End Date (Optional)'
+                                label={
+                                    scheduleType === 'dates'
+                                        ? 'End Date (Auto)'
+                                        : 'End Date (Optional)'
+                                }
                                 value={endDate}
                                 onChange={setEndDate}
-                                disabled={isSubmitting}
+                                disabled={
+                                    isSubmitting || scheduleType === 'dates'
+                                }
                             />
                         </div>
                     </div>
@@ -379,15 +389,23 @@ export function SeriesEditModal({
                             </div>
                             <div className='space-y-2'>
                                 <Label htmlFor='totalEpisodes'>
-                                    Total Episodes
+                                    {scheduleType === 'dates'
+                                        ? 'Total Episodes (Auto)'
+                                        : 'Total Episodes'}
                                 </Label>
                                 <Input
                                     id='totalEpisodes'
                                     type='number'
                                     min='0'
                                     {...register('totalEpisodes')}
-                                    placeholder='Unknown'
-                                    disabled={isSubmitting}
+                                    placeholder={
+                                        scheduleType === 'dates'
+                                            ? 'Calculated from dates'
+                                            : 'Unknown'
+                                    }
+                                    disabled={
+                                        isSubmitting || scheduleType === 'dates'
+                                    }
                                 />
                             </div>
                         </div>

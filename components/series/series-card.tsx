@@ -224,27 +224,26 @@ export function SeriesCard({
         })
     }
 
-    // Delete action
-    if (onDelete) {
-        secondaryActions.push({
-            id: 'delete',
-            label: 'delete()',
-            onClick: async () => {
-                setLoadingDelete(true)
-                try {
-                    await onDelete(series.id)
-                } finally {
-                    setLoadingDelete(false)
-                }
-            },
-            variant: 'danger',
-            loading: loadingDelete,
-        })
-    }
+    // Delete action - always visible
+    const deleteAction: ActionConfig | undefined = onDelete
+        ? {
+              id: 'delete',
+              label: 'delete()',
+              onClick: async () => {
+                  setLoadingDelete(true)
+                  try {
+                      await onDelete(series.id)
+                  } finally {
+                      setLoadingDelete(false)
+                  }
+              },
+              variant: 'danger',
+              loading: loadingDelete,
+          }
+        : undefined
 
-    // Calculate progress for backlog series
+    // Calculate progress for series with known episode count
     const showProgress =
-        isBacklog &&
         series.totalEpisodes !== null &&
         series.totalEpisodes !== undefined &&
         series.totalEpisodes > 0
@@ -261,6 +260,7 @@ export function SeriesCard({
             metadata={buildMetadata(series)}
             primaryActions={primaryActions}
             secondaryActions={secondaryActions}
+            deleteAction={deleteAction}
             statusBadge={getStatusBadge(series)}
             showProgress={showProgress}
             progressCurrent={progressCurrent}

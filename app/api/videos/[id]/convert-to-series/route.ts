@@ -11,6 +11,7 @@ interface ConvertToSeriesRequest {
     scheduleValue: ScheduleValue
     startDate: string
     endDate?: string | null
+    totalEpisodes?: number | null
 }
 
 // POST /api/videos/[id]/convert-to-series - Convert a video to a series
@@ -30,12 +31,18 @@ export async function POST(
         }
 
         const body: ConvertToSeriesRequest = await request.json()
-        const { scheduleType, scheduleValue, startDate, endDate } = body
+        const {
+            scheduleType,
+            scheduleValue,
+            startDate,
+            endDate,
+            totalEpisodes,
+        } = body
 
         // Validate schedule type
         if (
             !scheduleType ||
-            !['daily', 'weekly', 'custom'].includes(scheduleType)
+            !['daily', 'weekly', 'custom', 'none'].includes(scheduleType)
         ) {
             return NextResponse.json(
                 { success: false, error: 'Valid schedule type is required' },
@@ -43,15 +50,20 @@ export async function POST(
             )
         }
 
-        // Validate schedule value
-        if (
-            !scheduleValue ||
-            !ScheduleService.isValidScheduleValue(scheduleType, scheduleValue)
-        ) {
-            return NextResponse.json(
-                { success: false, error: 'Invalid schedule value' },
-                { status: 400 },
-            )
+        // Validate schedule value (skip for 'none' type which uses empty object)
+        if (scheduleType !== 'none') {
+            if (
+                !scheduleValue ||
+                !ScheduleService.isValidScheduleValue(
+                    scheduleType,
+                    scheduleValue,
+                )
+            ) {
+                return NextResponse.json(
+                    { success: false, error: 'Invalid schedule value' },
+                    { status: 400 },
+                )
+            }
         }
 
         if (!startDate) {
@@ -126,6 +138,8 @@ export async function POST(
                 nextEpisodeAt,
                 missedPeriods: 0,
                 isActive: true,
+                totalEpisodes: totalEpisodes ?? null,
+                watchedEpisodes: 0,
             })
             .returning()
 

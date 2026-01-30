@@ -7,6 +7,7 @@ export type { Playlist as DbPlaylist } from '@/lib/db/schema'
 export interface Playlist extends DbPlaylist {
     watchedCount?: number
     unwatchedCount?: number
+    tags?: Tag[]
 }
 
 // Playlist with all associated videos
@@ -14,6 +15,7 @@ export interface PlaylistWithVideos extends Playlist {
     videos: PlaylistVideo[]
     watchedCount: number
     unwatchedCount: number
+    tags: Tag[]
 }
 
 // Playlist summary for list views
@@ -23,12 +25,15 @@ export interface PlaylistSummary {
     title: string | null
     thumbnailUrl: string | null
     channelTitle: string | null
+    platform: string
     itemCount: number
     watchedCount: number
     unwatchedCount: number
+    isWatched: boolean | null
     lastSyncedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
+    tags: Array<{ id: number; name: string; color: string | null }>
 }
 
 // Video within a playlist context
@@ -68,6 +73,9 @@ export interface PlaylistFilters {
     status?: 'all' | 'has-unwatched' | 'completed'
     search?: string
     isCompleted?: boolean
+    platform?: string
+    tagIds?: number[]
+    channelTitle?: string
 }
 
 // Playlist import preview (before confirming import)

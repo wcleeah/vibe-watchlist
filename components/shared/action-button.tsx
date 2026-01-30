@@ -41,7 +41,7 @@ const variantMap: Record<
 
 // Custom color classes for info and success variants
 const variantColorClasses: Partial<Record<ActionVariant, string>> = {
-    info: 'border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950',
+    info: 'border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950 transition-transform hover:scale-[1.02] active:scale-[0.98]',
     success:
         'border-green-500 text-green-600 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-green-950',
 }

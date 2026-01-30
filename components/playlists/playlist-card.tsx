@@ -88,18 +88,17 @@ export function PlaylistCard({
         },
     ]
 
-    // Build secondary actions
-    const secondaryActions: ActionConfig[] = [
-        {
-            id: 'delete',
-            label: 'delete()',
-            onClick: handleDelete,
-            icon: <Trash2 className='w-3 h-3' />,
-            variant: 'danger',
-            condition: !!onDelete,
-            loading: isDeleting,
-        },
-    ]
+    // Delete action - always visible
+    const deleteAction: ActionConfig | undefined = onDelete
+        ? {
+              id: 'delete',
+              label: 'delete()',
+              onClick: handleDelete,
+              icon: <Trash2 className='w-3 h-3' />,
+              variant: 'danger',
+              loading: isDeleting,
+          }
+        : undefined
 
     return (
         <MediaCard
@@ -107,9 +106,10 @@ export function PlaylistCard({
             title={playlist.title || 'Untitled Playlist'}
             thumbnailUrl={playlist.thumbnailUrl}
             url={`https://www.youtube.com/playlist?list=${playlist.youtubePlaylistId}`}
+            tags={playlist.tags}
             metadata={metadata}
             primaryActions={primaryActions}
-            secondaryActions={secondaryActions}
+            deleteAction={deleteAction}
             showProgress={true}
             progressCurrent={playlist.watchedCount}
             progressTotal={playlist.itemCount}

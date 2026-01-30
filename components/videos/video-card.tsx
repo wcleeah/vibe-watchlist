@@ -158,24 +158,24 @@ export function VideoCard({
         })
     }
 
-    // Add delete as a danger action at the end of secondary
-    if (onDelete) {
-        secondaryActions.push({
-            id: 'delete',
-            label: 'delete()',
-            onClick: async () => {
-                if (!video.id) return
-                setLoadingDelete(true)
-                try {
-                    await onDelete(video.id)
-                } finally {
-                    setLoadingDelete(false)
-                }
-            },
-            variant: 'danger',
-            loading: loadingDelete,
-        })
-    }
+    // Delete action - always visible
+    const deleteAction: ActionConfig | undefined = onDelete
+        ? {
+              id: 'delete',
+              label: 'delete()',
+              onClick: async () => {
+                  if (!video.id) return
+                  setLoadingDelete(true)
+                  try {
+                      await onDelete(video.id)
+                  } finally {
+                      setLoadingDelete(false)
+                  }
+              },
+              variant: 'danger',
+              loading: loadingDelete,
+          }
+        : undefined
 
     return (
         <MediaCard
@@ -196,6 +196,7 @@ export function VideoCard({
             ]}
             primaryActions={primaryActions}
             secondaryActions={secondaryActions}
+            deleteAction={deleteAction}
             className={className}
         />
     )

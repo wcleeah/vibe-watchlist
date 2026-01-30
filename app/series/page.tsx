@@ -10,7 +10,7 @@ import {
     Tv,
     Youtube,
 } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { NavigationTabs } from '@/components/navigation-tabs'
@@ -54,6 +54,7 @@ const SORT_OPTIONS: SortOption[] = [
 ]
 
 export default function SeriesPage() {
+    const router = useRouter()
     const searchParams = useSearchParams()
     const initialTab =
         searchParams.get('tab') === 'watched' ? 'watched' : 'active'
@@ -244,6 +245,24 @@ export default function SeriesPage() {
         setStatusFilter('all')
     }
 
+    // Handle tab change - updates state and URL
+    const handleTabChange = useCallback(
+        (tab: string) => {
+            setActiveTab(tab as TabType)
+            const params = new URLSearchParams(searchParams.toString())
+            if (tab === 'active') {
+                params.delete('tab')
+            } else {
+                params.set('tab', tab)
+            }
+            const queryString = params.toString()
+            router.push(`/series${queryString ? `?${queryString}` : ''}`, {
+                scroll: false,
+            })
+        },
+        [router, searchParams],
+    )
+
     const handleEditSeries = (series: SeriesWithTags) => {
         setEditingSeries(series)
         setEditModalOpen(true)
@@ -305,7 +324,7 @@ export default function SeriesPage() {
                 <TabSwitcher
                     tabs={tabs}
                     activeTab={activeTab}
-                    onTabChange={(tab) => setActiveTab(tab as TabType)}
+                    onTabChange={handleTabChange}
                     className='mb-6'
                 />
 

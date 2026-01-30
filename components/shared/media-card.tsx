@@ -42,6 +42,8 @@ interface MediaCardProps<T> {
     metadata: MediaMetadataItem[]
     primaryActions: ActionConfig[]
     secondaryActions?: ActionConfig[]
+    /** Delete action - always visible after more() toggle */
+    deleteAction?: ActionConfig
     showProgress?: boolean
     progressCurrent?: number
     progressTotal?: number
@@ -103,6 +105,7 @@ export function MediaCard<T>({
     metadata,
     primaryActions,
     secondaryActions,
+    deleteAction,
     showProgress,
     progressCurrent = 0,
     progressTotal = 0,
@@ -123,7 +126,8 @@ export function MediaCard<T>({
     const showActionColumn =
         !hideActions &&
         (primaryActions.filter((a) => a.condition !== false).length > 0 ||
-            hasSecondaryActions)
+            hasSecondaryActions ||
+            (deleteAction && deleteAction.condition !== false))
 
     const handleCopyUrl = () => {
         navigator.clipboard.writeText(url)
@@ -351,6 +355,17 @@ export function MediaCard<T>({
                                 onClick={handleCopyUrl}
                                 variant='ghost'
                                 icon={<Copy className='w-3 h-3' />}
+                            />
+                        )}
+
+                        {/* Delete Action - Always visible at the end */}
+                        {deleteAction && deleteAction.condition !== false && (
+                            <ActionButton
+                                label={deleteAction.label}
+                                onClick={deleteAction.onClick}
+                                variant={deleteAction.variant || 'danger'}
+                                icon={deleteAction.icon}
+                                loading={deleteAction.loading}
                             />
                         )}
                     </div>

@@ -1,5 +1,7 @@
 import type {
     DailySchedule,
+    DateScheduleEntry,
+    DatesSchedule,
     DayOfWeek,
     NoSchedule,
     ScheduleType,
@@ -61,6 +63,13 @@ export class ScheduleService {
                 const days = (scheduleValue as WeeklySchedule).days
                 return ScheduleService.getNextWeeklyDate(localDate, days)
             }
+            case 'dates': {
+                const entries = (scheduleValue as DatesSchedule).entries
+                return ScheduleService.getNextDatesScheduleDate(
+                    localDate,
+                    entries,
+                )
+            }
             default:
                 throw new Error(`Unknown schedule type: ${scheduleType}`)
         }
@@ -114,6 +123,21 @@ export class ScheduleService {
                 }
                 return count
             }
+            case 'dates': {
+                const entries = (scheduleValue as DatesSchedule).entries
+                // Count total episodes from dates that have passed
+                let count = 0
+                for (const entry of entries) {
+                    const entryDate = new Date(entry.date)
+                    if (
+                        entryDate <= localNow &&
+                        entryDate >= localNextEpisode
+                    ) {
+                        count += entry.episodes
+                    }
+                }
+                return count
+            }
             default:
                 return 0
         }
@@ -162,6 +186,17 @@ export class ScheduleService {
                 }
                 return `Every ${interval} days`
             }
+            case 'dates': {
+                const entries = (scheduleValue as DatesSchedule).entries
+                if (entries.length === 0) {
+                    return 'No dates set'
+                }
+                const totalEpisodes = entries.reduce(
+                    (sum, e) => sum + e.episodes,
+                    0,
+                )
+                return `${entries.length} dates (${totalEpisodes} episodes)`
+            }
             default:
                 return 'Unknown schedule'
         }
@@ -178,6 +213,8 @@ export class ScheduleService {
                 return { days: ['friday'] }
             case 'custom':
                 return { interval: 7 }
+            case 'dates':
+                return { entries: [] }
             case 'none':
                 return {}
         }
@@ -202,7 +239,7 @@ export class ScheduleService {
 
         // For weekly schedules, we say "episodes" since each day is an episode
         // For daily/custom, we use the period terminology
-        if (scheduleType === 'weekly') {
+        if (scheduleType === 'weekly' || scheduleType === 'dates') {
             if (missedPeriods === 1) {
                 return '1 episode behind'
             }
@@ -273,6 +310,24 @@ export class ScheduleService {
                     days: days.length > 0 ? days : (['friday'] as DayOfWeek[]),
                 }
             }
+            case 'dates': {
+                const entries = Array.isArray(obj.entries)
+                    ? obj.entries
+                          .filter(
+                              (e): e is { date: string; episodes: number } =>
+                                  typeof e === 'object' &&
+                                  e !== null &&
+                                  typeof e.date === 'string' &&
+                                  typeof e.episodes === 'number' &&
+                                  e.episodes >= 1,
+                          )
+                          .map((e) => ({
+                              date: e.date,
+                              episodes: Math.max(1, e.episodes),
+                          }))
+                    : []
+                return { entries }
+            }
             default:
                 return ScheduleService.getDefaultScheduleValue(type)
         }
@@ -308,6 +363,18 @@ export class ScheduleService {
                     wv.days.every((d) => DAY_NAMES.includes(d))
                 )
             }
+            case 'dates': {
+                const dtv = value as DatesSchedule
+                return (
+                    Array.isArray(dtv.entries) &&
+                    dtv.entries.every(
+                        (e) =>
+                            typeof e.date === 'string' &&
+                            typeof e.episodes === 'number' &&
+                            e.episodes >= 1,
+                    )
+                )
+            }
             default:
                 return false
         }
@@ -335,6 +402,31 @@ export class ScheduleService {
         const nextDate = new Date(fromDate)
         nextDate.setDate(nextDate.getDate() + daysToAdd)
         return nextDate
+    }
+
+    /**
+     * Get the next date for a dates schedule (specific release dates)
+     */
+    private static getNextDatesScheduleDate(
+        fromDate: Date,
+        entries: DateScheduleEntry[],
+    ): Date {
+        // Sort entries by date
+        const sortedEntries = [...entries].sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        )
+
+        // Find the next entry after fromDate
+        const fromTime = fromDate.getTime()
+        for (const entry of sortedEntries) {
+            const entryDate = new Date(entry.date)
+            if (entryDate.getTime() > fromTime) {
+                return entryDate
+            }
+        }
+
+        // No future dates - return far future date (series ended)
+        return new Date('9999-12-31T23:59:59Z')
     }
 
     /**

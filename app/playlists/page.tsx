@@ -1,8 +1,16 @@
 'use client'
 
-import { CheckCircle2, ListMusic } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import {
+    CheckCircle2,
+    Gamepad2,
+    Globe,
+    ListMusic,
+    type LucideIcon,
+    Tv,
+    Youtube,
+} from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { PlaylistItemsModal } from '@/components/playlists/playlist-items-modal'
@@ -10,11 +18,25 @@ import { PlaylistList } from '@/components/playlists/playlist-list'
 import {
     ErrorDisplay,
     FilterBar,
+    type PlatformOption,
     type SortOption,
     TabSwitcher,
+    type TagOption,
 } from '@/components/shared'
 import { usePlaylists } from '@/hooks/use-playlists'
 import type { PlaylistFilters, PlaylistSummary } from '@/types/playlist'
+
+// Helper function to get icon component from string
+const getIconComponent = (iconName: string): LucideIcon => {
+    const iconMap: Record<string, LucideIcon> = {
+        youtube: Youtube,
+        tv: Tv,
+        gamepad2: Gamepad2,
+        globe: Globe,
+        video: Globe,
+    }
+    return iconMap[iconName.toLowerCase()] || Globe
+}
 
 type TabType = 'active' | 'completed'
 
@@ -28,6 +50,7 @@ const SORT_OPTIONS: SortOption[] = [
 ]
 
 export default function PlaylistsPage() {
+    const router = useRouter()
     const searchParams = useSearchParams()
     const initialTab =
         searchParams.get('tab') === 'completed' ? 'completed' : 'active'
@@ -37,6 +60,8 @@ export default function PlaylistsPage() {
 
     // Filter state
     const [searchQuery, setSearchQuery] = useState('')
+    const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
+    const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
     const [sortValue, setSortValue] = useState('progress-asc')
 
     // Modal state
@@ -44,13 +69,67 @@ export default function PlaylistsPage() {
         useState<PlaylistSummary | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
 
+    // Platform and tag data
+    const [platforms, setPlatforms] = useState<PlatformOption[]>([])
+    const [allTags, setAllTags] = useState<TagOption[]>([])
+
+    // Load platforms
+    useEffect(() => {
+        const loadPlatforms = async () => {
+            try {
+                const response = await fetch('/api/platforms')
+                if (response.ok) {
+                    const data = await response.json()
+                    const platformData: PlatformOption[] = data.data.map(
+                        (p: {
+                            platformId: string
+                            displayName: string
+                            icon?: string
+                            color?: string
+                        }) => ({
+                            key: p.platformId,
+                            label: p.displayName,
+                            icon: getIconComponent(p.icon || 'Video'),
+                            color: p.color || '#6b7280',
+                        }),
+                    )
+                    setPlatforms(platformData)
+                }
+            } catch (error) {
+                console.error('Failed to load platforms:', error)
+            }
+        }
+        loadPlatforms()
+    }, [])
+
+    // Load tags
+    useEffect(() => {
+        const fetchTags = async () => {
+            try {
+                const response = await fetch('/api/tags')
+                if (response.ok) {
+                    const tags = await response.json()
+                    setAllTags(tags)
+                }
+            } catch (error) {
+                console.error('Failed to fetch tags:', error)
+            }
+        }
+        fetchTags()
+    }, [])
+
     // Build filters for active playlists (has unwatched videos)
     const activeFilters: PlaylistFilters = useMemo(
         () => ({
             search: searchQuery || undefined,
             isCompleted: false,
+            platform:
+                selectedPlatforms.length === 1
+                    ? selectedPlatforms[0]
+                    : undefined,
+            tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
         }),
-        [searchQuery],
+        [searchQuery, selectedPlatforms, selectedTagIds],
     )
 
     // Build filters for completed playlists
@@ -58,8 +137,13 @@ export default function PlaylistsPage() {
         () => ({
             search: searchQuery || undefined,
             isCompleted: true,
+            platform:
+                selectedPlatforms.length === 1
+                    ? selectedPlatforms[0]
+                    : undefined,
+            tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
         }),
-        [searchQuery],
+        [searchQuery, selectedPlatforms, selectedTagIds],
     )
 
     // Data hooks for both tabs
@@ -117,10 +201,60 @@ export default function PlaylistsPage() {
         return playlists
     }, [currentHook.playlists, sortValue])
 
+    // Client-side tag filtering (for multi-platform selection)
+    const filteredPlaylists = useMemo(() => {
+        let result = sortedPlaylists
+
+        // Filter by multiple platforms if more than one selected
+        if (selectedPlatforms.length > 1) {
+            result = result.filter((playlist) =>
+                selectedPlatforms.includes(playlist.platform),
+            )
+        }
+
+        return result
+    }, [sortedPlaylists, selectedPlatforms])
+
     // Handlers
+    const handlePlatformToggle = (platform: string) => {
+        setSelectedPlatforms((prev) =>
+            prev.includes(platform)
+                ? prev.filter((p) => p !== platform)
+                : [...prev, platform],
+        )
+    }
+
+    const handleTagToggle = (tagId: number) => {
+        setSelectedTagIds((prev) =>
+            prev.includes(tagId)
+                ? prev.filter((id) => id !== tagId)
+                : [...prev, tagId],
+        )
+    }
+
     const handleClearAll = () => {
         setSearchQuery('')
+        setSelectedPlatforms([])
+        setSelectedTagIds([])
     }
+
+    // Handle tab change - updates state and URL
+    const handleTabChange = useCallback(
+        (tab: string) => {
+            setActiveTab(tab as TabType)
+            const params = new URLSearchParams(searchParams.toString())
+            if (tab === 'active') {
+                params.delete('tab')
+            } else {
+                params.set('tab', tab)
+            }
+            const queryString = params.toString()
+            router.push(`/playlists${queryString ? `?${queryString}` : ''}`, {
+                scroll: false,
+            })
+        },
+        [router, searchParams],
+    )
 
     const handleViewItems = (playlist: PlaylistSummary) => {
         setSelectedPlaylist(playlist)
@@ -183,7 +317,7 @@ export default function PlaylistsPage() {
                 <TabSwitcher
                     tabs={tabs}
                     activeTab={activeTab}
-                    onTabChange={(tab) => setActiveTab(tab as TabType)}
+                    onTabChange={handleTabChange}
                     className='mb-6'
                 />
 
@@ -192,12 +326,12 @@ export default function PlaylistsPage() {
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
                     searchPlaceholder='Search playlists...'
-                    platforms={[]}
-                    selectedPlatforms={[]}
-                    onPlatformToggle={() => {}}
-                    tags={[]}
-                    selectedTagIds={[]}
-                    onTagToggle={() => {}}
+                    platforms={platforms}
+                    selectedPlatforms={selectedPlatforms}
+                    onPlatformToggle={handlePlatformToggle}
+                    tags={allTags}
+                    selectedTagIds={selectedTagIds}
+                    onTagToggle={handleTagToggle}
                     sortOptions={SORT_OPTIONS}
                     sortValue={sortValue}
                     onSortChange={setSortValue}
@@ -207,7 +341,7 @@ export default function PlaylistsPage() {
 
                 {/* Playlist List */}
                 <PlaylistList
-                    playlists={sortedPlaylists}
+                    playlists={filteredPlaylists}
                     loading={currentHook.loading}
                     onViewItems={handleViewItems}
                     onSync={currentHook.sync}

@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarDays, Loader2, RefreshCw } from 'lucide-react'
+import { CalendarDays, Hash, Loader2, RefreshCw } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -13,6 +13,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { DatePickerField } from '@/components/video-form/date-picker-field'
 import { ScheduleSelector } from '@/components/video-form/schedule-selector'
 import type { ScheduleType, ScheduleValue } from '@/types/series'
@@ -43,6 +45,7 @@ export function ConvertToSeriesModal({
         new Date().toISOString().split('T')[0],
     )
     const [endDate, setEndDate] = useState<string | undefined>(undefined)
+    const [totalEpisodes, setTotalEpisodes] = useState<string>('')
 
     const handleScheduleTypeChange = (type: ScheduleType) => {
         setScheduleType(type)
@@ -66,6 +69,9 @@ export function ConvertToSeriesModal({
                         scheduleValue,
                         startDate,
                         endDate: endDate || null,
+                        totalEpisodes: totalEpisodes
+                            ? parseInt(totalEpisodes, 10)
+                            : null,
                     }),
                 },
             )
@@ -121,7 +127,7 @@ export function ConvertToSeriesModal({
                                 </div>
                             )}
                             <div className='flex-1 min-w-0'>
-                                <h4 className='font-medium truncate'>
+                                <h4 className='font-medium line-clamp-2 break-words'>
                                     {video.title || 'Untitled Video'}
                                 </h4>
                                 <p className='text-sm text-muted-foreground'>
@@ -129,6 +135,48 @@ export function ConvertToSeriesModal({
                                 </p>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Episode Count */}
+                    <div className='space-y-2'>
+                        <div className='flex items-center gap-2 text-sm font-medium'>
+                            <Hash className='w-4 h-4' />
+                            {scheduleType === 'dates'
+                                ? 'Episode Count (Auto)'
+                                : 'Episode Count (Optional)'}
+                        </div>
+                        <div className='grid grid-cols-2 gap-4'>
+                            <div className='space-y-1.5'>
+                                <Label
+                                    htmlFor='total-episodes'
+                                    className='text-xs text-muted-foreground'
+                                >
+                                    Total Episodes
+                                </Label>
+                                <Input
+                                    id='total-episodes'
+                                    type='number'
+                                    min='1'
+                                    placeholder={
+                                        scheduleType === 'dates'
+                                            ? 'Calculated from dates'
+                                            : 'e.g., 12'
+                                    }
+                                    value={totalEpisodes}
+                                    onChange={(e) =>
+                                        setTotalEpisodes(e.target.value)
+                                    }
+                                    disabled={
+                                        isSubmitting || scheduleType === 'dates'
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <p className='text-xs text-muted-foreground'>
+                            {scheduleType === 'dates'
+                                ? 'Automatically calculated from the dates you add.'
+                                : 'Leave empty if unknown. You can update this later.'}
+                        </p>
                     </div>
 
                     {/* Schedule Configuration */}
@@ -143,6 +191,8 @@ export function ConvertToSeriesModal({
                             scheduleValue={scheduleValue}
                             onTypeChange={handleScheduleTypeChange}
                             onValueChange={setScheduleValue}
+                            onEndDateChange={setEndDate}
+                            onTotalEpisodesChange={setTotalEpisodes}
                             disabled={isSubmitting}
                         />
 
@@ -164,10 +214,16 @@ export function ConvertToSeriesModal({
                             />
                             <DatePickerField
                                 id='convert-end-date'
-                                label='End Date (Optional)'
+                                label={
+                                    scheduleType === 'dates'
+                                        ? 'End Date (Auto)'
+                                        : 'End Date (Optional)'
+                                }
                                 value={endDate}
                                 onChange={setEndDate}
-                                disabled={isSubmitting}
+                                disabled={
+                                    isSubmitting || scheduleType === 'dates'
+                                }
                             />
                         </div>
                     </div>
