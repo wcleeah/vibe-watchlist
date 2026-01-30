@@ -14,21 +14,39 @@ import type {
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
-        const status = searchParams.get('status') || 'all' // 'behind', 'caught-up', 'all'
+        const status = searchParams.get('status') || 'all' // 'behind', 'caught-up', 'backlog', 'all'
         const platform = searchParams.get('platform')
         const search = searchParams.get('search')
+        const isWatchedParam = searchParams.get('isWatched') // 'true' or 'false'
 
         const whereConditions = []
 
-        // Filter by status
+        // Filter by watched tab (isWatched)
+        if (isWatchedParam === 'true') {
+            whereConditions.push(eq(series.isWatched, true))
+        } else if (isWatchedParam === 'false') {
+            whereConditions.push(eq(series.isWatched, false))
+        }
+
+        // Filter by status (only applies to active/unwatched series)
         if (status === 'behind') {
             whereConditions.push(
-                and(eq(series.isActive, true), gt(series.missedPeriods, 0)),
+                and(
+                    eq(series.isActive, true),
+                    gt(series.missedPeriods, 0),
+                    sql`${series.scheduleType} != 'none'`,
+                ),
             )
         } else if (status === 'caught-up') {
             whereConditions.push(
-                and(eq(series.isActive, true), eq(series.missedPeriods, 0)),
+                and(
+                    eq(series.isActive, true),
+                    eq(series.missedPeriods, 0),
+                    sql`${series.scheduleType} != 'none'`,
+                ),
             )
+        } else if (status === 'backlog') {
+            whereConditions.push(sql`${series.scheduleType} = 'none'`)
         }
         // 'all' doesn't add any status filter
 
@@ -64,6 +82,9 @@ export async function GET(request: NextRequest) {
                 missedPeriods: series.missedPeriods,
                 nextEpisodeAt: series.nextEpisodeAt,
                 isActive: series.isActive,
+                totalEpisodes: series.totalEpisodes,
+                watchedEpisodes: series.watchedEpisodes,
+                isWatched: series.isWatched,
                 createdAt: series.createdAt,
                 updatedAt: series.updatedAt,
                 tags: sql`COALESCE(json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}, 'color', ${tags.color})) FILTER (WHERE ${tags.id} IS NOT NULL), '[]'::json)`,
@@ -130,6 +151,8 @@ export async function POST(request: NextRequest) {
             startDate,
             endDate,
             tagIds,
+            totalEpisodes,
+            watchedEpisodes,
         } = body
 
         // Validation
@@ -149,7 +172,7 @@ export async function POST(request: NextRequest) {
 
         if (
             !scheduleType ||
-            !['daily', 'weekly', 'custom'].includes(scheduleType)
+            !['daily', 'weekly', 'custom', 'none'].includes(scheduleType)
         ) {
             return NextResponse.json(
                 { success: false, error: 'Valid schedule type is required' },
@@ -157,7 +180,8 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        if (!scheduleValue) {
+        // Schedule value is required for non-backlog series
+        if (scheduleType !== 'none' && !scheduleValue) {
             return NextResponse.json(
                 { success: false, error: 'Schedule value is required' },
                 { status: 400 },
@@ -171,9 +195,14 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Validate schedule value
+        // Validate schedule value (use empty object for 'none' type)
+        const effectiveScheduleValue =
+            scheduleType === 'none' ? {} : scheduleValue
         if (
-            !ScheduleService.isValidScheduleValue(scheduleType, scheduleValue)
+            !ScheduleService.isValidScheduleValue(
+                scheduleType,
+                effectiveScheduleValue,
+            )
         ) {
             return NextResponse.json(
                 { success: false, error: 'Invalid schedule value' },
@@ -216,7 +245,7 @@ export async function POST(request: NextRequest) {
         const parsedStartDate = new Date(startDate)
         const nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
             scheduleType,
-            scheduleValue as ScheduleValue,
+            effectiveScheduleValue as ScheduleValue,
             parsedStartDate,
         )
 
@@ -230,18 +259,21 @@ export async function POST(request: NextRequest) {
                 platform,
                 thumbnailUrl: thumbnailUrl || null,
                 scheduleType,
-                scheduleValue,
+                scheduleValue: effectiveScheduleValue,
                 startDate,
                 endDate: endDate || null,
                 nextEpisodeAt,
                 missedPeriods: 0,
                 isActive: true,
+                totalEpisodes: totalEpisodes ?? null,
+                watchedEpisodes: watchedEpisodes ?? 0,
+                isWatched: false,
             })
             .returning()
 
         const seriesWithTags = {
             ...newSeries[0],
-            scheduleValue: scheduleValue as ScheduleValue,
+            scheduleValue: effectiveScheduleValue as ScheduleValue,
             tags: [] as Array<{
                 id: number
                 name: string

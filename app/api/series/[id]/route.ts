@@ -43,6 +43,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
                 missedPeriods: series.missedPeriods,
                 nextEpisodeAt: series.nextEpisodeAt,
                 isActive: series.isActive,
+                totalEpisodes: series.totalEpisodes,
+                watchedEpisodes: series.watchedEpisodes,
+                isWatched: series.isWatched,
                 createdAt: series.createdAt,
                 updatedAt: series.updatedAt,
                 tags: sql`COALESCE(json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}, 'color', ${tags.color})) FILTER (WHERE ${tags.id} IS NOT NULL), '[]'::json)`,
@@ -116,6 +119,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             endDate,
             tagIds,
             isActive,
+            totalEpisodes,
+            watchedEpisodes,
+            isWatched,
         } = body
 
         // Check if series exists
@@ -141,6 +147,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (description !== undefined) updateData.description = description
         if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl
         if (isActive !== undefined) updateData.isActive = isActive
+        if (totalEpisodes !== undefined)
+            updateData.totalEpisodes = totalEpisodes
+        if (watchedEpisodes !== undefined)
+            updateData.watchedEpisodes = watchedEpisodes
+        if (isWatched !== undefined) updateData.isWatched = isWatched
 
         // Handle schedule changes
         if (scheduleType && scheduleValue) {
@@ -246,6 +257,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 missedPeriods: series.missedPeriods,
                 nextEpisodeAt: series.nextEpisodeAt,
                 isActive: series.isActive,
+                totalEpisodes: series.totalEpisodes,
+                watchedEpisodes: series.watchedEpisodes,
+                isWatched: series.isWatched,
                 createdAt: series.createdAt,
                 updatedAt: series.updatedAt,
                 tags: sql`COALESCE(json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}, 'color', ${tags.color})) FILTER (WHERE ${tags.id} IS NOT NULL), '[]'::json)`,

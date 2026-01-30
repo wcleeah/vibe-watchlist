@@ -161,14 +161,18 @@ export const series = pgTable(
         description: text(),
         platform: text().notNull(),
         thumbnailUrl: text('thumbnail_url'),
-        scheduleType: text('schedule_type').notNull(), // 'daily' | 'weekly' | 'custom'
-        scheduleValue: jsonb('schedule_value').notNull(), // { interval: number } or { days: string[] }
+        scheduleType: text('schedule_type').notNull(), // 'daily' | 'weekly' | 'custom' | 'none'
+        scheduleValue: jsonb('schedule_value').notNull(), // { interval: number } or { days: string[] } or {}
         startDate: date('start_date').notNull(),
         endDate: date('end_date'),
         lastWatchedAt: timestamp('last_watched_at'),
         missedPeriods: integer('missed_periods').default(0).notNull(),
         nextEpisodeAt: timestamp('next_episode_at').notNull(),
         isActive: boolean('is_active').default(true).notNull(),
+        // Episode progress tracking
+        totalEpisodes: integer('total_episodes'), // nullable - not all series have known totals
+        watchedEpisodes: integer('watched_episodes').default(0).notNull(),
+        isWatched: boolean('is_watched').default(false).notNull(), // marks series as finished
         createdAt: timestamp('created_at').defaultNow(),
         updatedAt: timestamp('updated_at').defaultNow(),
     },

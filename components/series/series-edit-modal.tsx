@@ -40,6 +40,8 @@ const editSchema = z.object({
     thumbnailUrl: z.string().optional(),
     tagIds: z.array(z.number()),
     isActive: z.boolean(),
+    totalEpisodes: z.string().optional(),
+    watchedEpisodes: z.string().optional(),
 })
 
 type EditFormData = z.infer<typeof editSchema>
@@ -80,6 +82,8 @@ export function SeriesEditModal({
             thumbnailUrl: '',
             tagIds: [],
             isActive: true,
+            totalEpisodes: '',
+            watchedEpisodes: '',
         },
     })
 
@@ -97,6 +101,14 @@ export function SeriesEditModal({
                 thumbnailUrl: series.thumbnailUrl || '',
                 tagIds: series.tags?.map((t) => t.id) || [],
                 isActive: series.isActive,
+                totalEpisodes:
+                    series.totalEpisodes != null
+                        ? String(series.totalEpisodes)
+                        : '',
+                watchedEpisodes:
+                    series.watchedEpisodes != null
+                        ? String(series.watchedEpisodes)
+                        : '',
             })
             setScheduleType(series.scheduleType as ScheduleType)
             setScheduleValue(series.scheduleValue)
@@ -187,6 +199,14 @@ export function SeriesEditModal({
 
         setIsSubmitting(true)
         try {
+            // Parse episode counts from strings
+            const totalEpisodes = data.totalEpisodes
+                ? parseInt(data.totalEpisodes, 10)
+                : null
+            const watchedEpisodes = data.watchedEpisodes
+                ? parseInt(data.watchedEpisodes, 10)
+                : null
+
             await SeriesService.update(series.id, {
                 title: data.title,
                 description: data.description || undefined,
@@ -197,6 +217,14 @@ export function SeriesEditModal({
                 endDate: endDate || null,
                 tagIds: data.tagIds,
                 isActive: data.isActive,
+                totalEpisodes:
+                    totalEpisodes !== null && !isNaN(totalEpisodes)
+                        ? totalEpisodes
+                        : undefined,
+                watchedEpisodes:
+                    watchedEpisodes !== null && !isNaN(watchedEpisodes)
+                        ? watchedEpisodes
+                        : undefined,
             })
 
             toast.success('Series updated successfully')
@@ -327,6 +355,42 @@ export function SeriesEditModal({
                         <Label htmlFor='isActive' className='cursor-pointer'>
                             Active (continue tracking new episodes)
                         </Label>
+                    </div>
+
+                    {/* Episode Progress */}
+                    <div className='space-y-4 p-4 bg-muted/50 rounded-lg'>
+                        <h3 className='font-medium'>Episode Progress</h3>
+                        <p className='text-sm text-muted-foreground'>
+                            Track your progress through the series (optional)
+                        </p>
+                        <div className='grid grid-cols-2 gap-4'>
+                            <div className='space-y-2'>
+                                <Label htmlFor='watchedEpisodes'>
+                                    Watched Episodes
+                                </Label>
+                                <Input
+                                    id='watchedEpisodes'
+                                    type='number'
+                                    min='0'
+                                    {...register('watchedEpisodes')}
+                                    placeholder='0'
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                            <div className='space-y-2'>
+                                <Label htmlFor='totalEpisodes'>
+                                    Total Episodes
+                                </Label>
+                                <Input
+                                    id='totalEpisodes'
+                                    type='number'
+                                    min='0'
+                                    {...register('totalEpisodes')}
+                                    placeholder='Unknown'
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Tags */}

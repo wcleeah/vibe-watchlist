@@ -1,7 +1,9 @@
 'use client'
 
 import {
+    Archive,
     CalendarDays,
+    CheckCircle2,
     Filter,
     Gamepad2,
     Globe,
@@ -22,6 +24,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useSeries } from '@/hooks/use-series'
 import type { SeriesFilters, SeriesWithTags } from '@/types/series'
+import { isBacklogSeries } from '@/types/series'
 
 // Helper function to get icon component from string
 const getIconComponent = (iconName: string) => {
@@ -35,9 +38,11 @@ const getIconComponent = (iconName: string) => {
     return iconMap[iconName.toLowerCase()] || Globe
 }
 
-type StatusFilter = 'all' | 'behind' | 'caught-up'
+type TabType = 'active' | 'watched'
+type StatusFilter = 'all' | 'behind' | 'caught-up' | 'backlog'
 
 export default function SeriesPage() {
+    const [activeTab, setActiveTab] = useState<TabType>('active')
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
@@ -46,21 +51,35 @@ export default function SeriesPage() {
         { id: number; name: string; color?: string }[]
     >([])
 
-    // Build filters
-    const filters: SeriesFilters = useMemo(
+    // Build filters for active series (not watched)
+    const activeFilters: SeriesFilters = useMemo(
         () => ({
-            status: statusFilter === 'all' ? undefined : statusFilter,
+            status:
+                statusFilter === 'all' || statusFilter === 'backlog'
+                    ? undefined
+                    : statusFilter,
             platform:
                 selectedPlatforms.length === 1
                     ? selectedPlatforms[0]
                     : undefined,
             search: searchQuery || undefined,
+            isWatched: false,
         }),
         [statusFilter, selectedPlatforms, searchQuery],
     )
 
-    const { series, loading, error, refetch, markWatched, deleteSeries } =
-        useSeries({ filters })
+    // Build filters for watched series
+    const watchedFilters: SeriesFilters = useMemo(
+        () => ({
+            search: searchQuery || undefined,
+            isWatched: true,
+        }),
+        [searchQuery],
+    )
+
+    // Two separate hooks for active and watched series
+    const activeSeries = useSeries({ filters: activeFilters })
+    const watchedSeries = useSeries({ filters: watchedFilters })
 
     // Fetch available tags
     useEffect(() => {
@@ -78,9 +97,13 @@ export default function SeriesPage() {
         fetchTags()
     }, [])
 
-    // Client-side filtering for multiple platforms and tags (API only supports single platform filter)
+    // Get current data based on active tab
+    const currentHook = activeTab === 'active' ? activeSeries : watchedSeries
+    const { series: currentSeries, loading, error, refetch } = currentHook
+
+    // Client-side filtering for multiple platforms, tags, and backlog status
     const filteredSeries = useMemo(() => {
-        return series.filter((s) => {
+        return currentSeries.filter((s: SeriesWithTags) => {
             // Filter by multiple platforms if more than one selected
             const matchesPlatform =
                 selectedPlatforms.length <= 1 ||
@@ -89,11 +112,17 @@ export default function SeriesPage() {
             // Filter by tags
             const matchesTags =
                 selectedTagIds.length === 0 ||
-                s.tags?.some((tag) => selectedTagIds.includes(tag.id))
+                s.tags?.some((tag: { id: number }) =>
+                    selectedTagIds.includes(tag.id),
+                )
 
-            return matchesPlatform && matchesTags
+            // Filter by backlog status (only on active tab)
+            const matchesBacklog =
+                statusFilter !== 'backlog' || isBacklogSeries(s)
+
+            return matchesPlatform && matchesTags && matchesBacklog
         })
-    }, [series, selectedPlatforms, selectedTagIds])
+    }, [currentSeries, selectedPlatforms, selectedTagIds, statusFilter])
 
     const handlePlatformFilter = (platform: string) => {
         setSelectedPlatforms((prev) =>
@@ -132,7 +161,8 @@ export default function SeriesPage() {
     }
 
     const handleEditSuccess = () => {
-        refetch()
+        activeSeries.refetch()
+        watchedSeries.refetch()
     }
 
     // Load platforms dynamically
@@ -158,19 +188,26 @@ export default function SeriesPage() {
         loadPlatforms()
     }, [])
 
-    // Count series by status
+    // Count series by status (for active series only)
     const statusCounts = useMemo(() => {
-        const counts = { all: series.length, behind: 0, 'caught-up': 0 }
-        series.forEach((s) => {
+        const counts = {
+            all: activeSeries.series.length,
+            behind: 0,
+            'caught-up': 0,
+            backlog: 0,
+        }
+        activeSeries.series.forEach((s: SeriesWithTags) => {
             if (!s.isActive) return
-            if (s.missedPeriods > 0) {
+            if (isBacklogSeries(s)) {
+                counts.backlog++
+            } else if (s.missedPeriods > 0) {
                 counts.behind++
             } else {
                 counts['caught-up']++
             }
         })
         return counts
-    }, [series])
+    }, [activeSeries.series])
 
     return (
         <div className='min-h-screen bg-background text-foreground'>
@@ -185,7 +222,9 @@ export default function SeriesPage() {
                         </h1>
                     </div>
                     <p className='text-gray-600 dark:text-gray-400'>
-                        {series.length} series tracked
+                        {activeSeries.series.length +
+                            watchedSeries.series.length}{' '}
+                        series tracked
                         {statusCounts.behind > 0 &&
                             ` - ${statusCounts.behind} behind`}
                     </p>
@@ -222,51 +261,66 @@ export default function SeriesPage() {
                         />
                     </div>
 
-                    {/* Status Filter */}
-                    <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center'>
-                        <div className='flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
-                            <CalendarDays className='w-4 h-4' />
-                            Status:
+                    {/* Status Filter - only show on Active tab */}
+                    {activeTab === 'active' && (
+                        <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center'>
+                            <div className='flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
+                                <CalendarDays className='w-4 h-4' />
+                                Status:
+                            </div>
+                            <div className='flex flex-wrap gap-2'>
+                                <Button
+                                    variant={
+                                        statusFilter === 'all'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    size='sm'
+                                    onClick={() => setStatusFilter('all')}
+                                    className='h-8'
+                                >
+                                    All ({statusCounts.all})
+                                </Button>
+                                <Button
+                                    variant={
+                                        statusFilter === 'behind'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    size='sm'
+                                    onClick={() => setStatusFilter('behind')}
+                                    className='h-8'
+                                >
+                                    Behind ({statusCounts.behind})
+                                </Button>
+                                <Button
+                                    variant={
+                                        statusFilter === 'caught-up'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    size='sm'
+                                    onClick={() => setStatusFilter('caught-up')}
+                                    className='h-8'
+                                >
+                                    Caught Up ({statusCounts['caught-up']})
+                                </Button>
+                                <Button
+                                    variant={
+                                        statusFilter === 'backlog'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    size='sm'
+                                    onClick={() => setStatusFilter('backlog')}
+                                    className='h-8'
+                                >
+                                    <Archive className='w-3 h-3 mr-1' />
+                                    Backlog ({statusCounts.backlog})
+                                </Button>
+                            </div>
                         </div>
-                        <div className='flex flex-wrap gap-2'>
-                            <Button
-                                variant={
-                                    statusFilter === 'all'
-                                        ? 'default'
-                                        : 'outline'
-                                }
-                                size='sm'
-                                onClick={() => setStatusFilter('all')}
-                                className='h-8'
-                            >
-                                All ({statusCounts.all})
-                            </Button>
-                            <Button
-                                variant={
-                                    statusFilter === 'behind'
-                                        ? 'default'
-                                        : 'outline'
-                                }
-                                size='sm'
-                                onClick={() => setStatusFilter('behind')}
-                                className='h-8'
-                            >
-                                Behind ({statusCounts.behind})
-                            </Button>
-                            <Button
-                                variant={
-                                    statusFilter === 'caught-up'
-                                        ? 'default'
-                                        : 'outline'
-                                }
-                                size='sm'
-                                onClick={() => setStatusFilter('caught-up')}
-                                className='h-8'
-                            >
-                                Caught Up ({statusCounts['caught-up']})
-                            </Button>
-                        </div>
-                    </div>
+                    )}
 
                     {/* Platform Filters */}
                     {platforms.length > 0 && (
@@ -333,12 +387,43 @@ export default function SeriesPage() {
                     )}
                 </div>
 
+                {/* Active/Watched Tabs */}
+                <div className='mb-6 flex gap-2'>
+                    <Button
+                        variant={activeTab === 'active' ? 'default' : 'outline'}
+                        size='sm'
+                        onClick={() => setActiveTab('active')}
+                        className='h-9'
+                    >
+                        <CalendarDays className='w-4 h-4 mr-2' />
+                        Active ({activeSeries.series.length})
+                    </Button>
+                    <Button
+                        variant={
+                            activeTab === 'watched' ? 'default' : 'outline'
+                        }
+                        size='sm'
+                        onClick={() => setActiveTab('watched')}
+                        className='h-9'
+                    >
+                        <CheckCircle2 className='w-4 h-4 mr-2' />
+                        Watched ({watchedSeries.series.length})
+                    </Button>
+                </div>
+
                 {/* Series List */}
                 <SeriesList
                     series={filteredSeries}
                     loading={loading}
-                    onMarkWatched={markWatched}
-                    onDelete={deleteSeries}
+                    onCatchUp={activeSeries.catchUp}
+                    onMarkWatched={activeSeries.markWatched}
+                    onUnmarkWatched={watchedSeries.unmarkWatched}
+                    onIncrementProgress={activeSeries.incrementProgress}
+                    onDelete={
+                        activeTab === 'active'
+                            ? activeSeries.deleteSeries
+                            : watchedSeries.deleteSeries
+                    }
                     onEdit={handleEditSeries}
                 />
 

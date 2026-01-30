@@ -4,15 +4,15 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { series, seriesTags, tags } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
-import type { ScheduleType } from '@/types/series'
+import type { ScheduleType, UpdateProgressRequest } from '@/types/series'
 
 interface RouteParams {
     params: Promise<{ id: string }>
 }
 
-// POST /api/series/[id]/mark-watched - Mark a series as watched (finished)
-// Sets isWatched: true to move series to the Watched tab
-export async function POST(_request: NextRequest, { params }: RouteParams) {
+// POST /api/series/[id]/update-progress - Update episode progress
+// Can either set absolute watchedEpisodes or increment by a value
+export async function POST(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params
         const seriesId = parseInt(id, 10)
@@ -20,6 +20,20 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         if (Number.isNaN(seriesId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid series ID' },
+                { status: 400 },
+            )
+        }
+
+        const body: UpdateProgressRequest = await request.json()
+        const { watchedEpisodes, increment } = body
+
+        // Validate input
+        if (watchedEpisodes === undefined && increment === undefined) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'Either watchedEpisodes or increment must be provided',
+                },
                 { status: 400 },
             )
         }
@@ -38,13 +52,33 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             )
         }
 
+        const currentSeries = existingSeries[0]
         const now = new Date()
 
-        // Mark series as watched
+        // Calculate new watched episodes count
+        let newWatchedEpisodes: number
+        if (watchedEpisodes !== undefined) {
+            newWatchedEpisodes = Math.max(0, watchedEpisodes)
+        } else {
+            newWatchedEpisodes = Math.max(
+                0,
+                currentSeries.watchedEpisodes + (increment ?? 0),
+            )
+        }
+
+        // Don't exceed total episodes if set
+        if (
+            currentSeries.totalEpisodes !== null &&
+            newWatchedEpisodes > currentSeries.totalEpisodes
+        ) {
+            newWatchedEpisodes = currentSeries.totalEpisodes
+        }
+
+        // Update series
         await db
             .update(series)
             .set({
-                isWatched: true,
+                watchedEpisodes: newWatchedEpisodes,
                 lastWatchedAt: now,
                 updatedAt: now,
             })
@@ -104,9 +138,9 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({ success: true, series: seriesWithTags })
     } catch (error) {
-        console.error('Error marking series as watched:', error)
+        console.error('Error updating series progress:', error)
         return NextResponse.json(
-            { success: false, error: 'Failed to mark series as watched' },
+            { success: false, error: 'Failed to update progress' },
             { status: 500 },
         )
     }

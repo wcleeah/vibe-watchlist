@@ -1,8 +1,11 @@
 'use client'
 
+import { Archive } from 'lucide-react'
+
 import { Label } from '@/components/ui/label'
 import { ScheduleService } from '@/lib/services/schedule-service'
 import { cn } from '@/lib/utils'
+
 import type {
     DailySchedule,
     DayOfWeek,
@@ -83,11 +86,22 @@ export function ScheduleSelector({
                         'dark:border-gray-800 dark:bg-gray-950 dark:ring-offset-gray-950 dark:focus-visible:ring-gray-300',
                     )}
                 >
+                    <option value='none'>No Schedule (Backlog)</option>
                     <option value='daily'>Daily</option>
                     <option value='weekly'>Weekly</option>
                     <option value='custom'>Custom Interval</option>
                 </select>
             </div>
+
+            {scheduleType === 'none' && (
+                <div className='flex items-center gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800'>
+                    <Archive className='w-4 h-4 text-amber-600 dark:text-amber-400' />
+                    <span className='text-sm text-amber-700 dark:text-amber-300'>
+                        Backlog series have no release schedule. Track your
+                        progress manually.
+                    </span>
+                </div>
+            )}
 
             {(scheduleType === 'daily' || scheduleType === 'custom') && (
                 <div className='space-y-2'>
@@ -146,16 +160,18 @@ export function ScheduleSelector({
                 </div>
             )}
 
-            {/* Preview */}
-            <div className='text-sm text-gray-500 dark:text-gray-400'>
-                Schedule:{' '}
-                <span className='font-medium text-gray-900 dark:text-gray-100'>
-                    {ScheduleService.formatScheduleDisplay(
-                        scheduleType,
-                        scheduleValue,
-                    )}
-                </span>
-            </div>
+            {/* Preview - only show for recurring schedules */}
+            {scheduleType !== 'none' && (
+                <div className='text-sm text-gray-500 dark:text-gray-400'>
+                    Schedule:{' '}
+                    <span className='font-medium text-gray-900 dark:text-gray-100'>
+                        {ScheduleService.formatScheduleDisplay(
+                            scheduleType,
+                            scheduleValue,
+                        )}
+                    </span>
+                </div>
+            )}
         </div>
     )
 }
