@@ -71,6 +71,11 @@ export function usePlaylists(
                 params.set('channelTitle', filters.channelTitle.trim())
             }
 
+            // Add sortBy filter
+            if (filters?.sortBy) {
+                params.set('sortBy', filters.sortBy)
+            }
+
             const response = await fetch(`/api/playlists?${params.toString()}`)
             if (response.ok) {
                 const data = await response.json()

@@ -63,16 +63,23 @@ export async function GET(request: NextRequest) {
         }
 
         // Build dynamic order by clause
+        // Only use sortOrder column when no specific sort is requested (custom order)
+        const useCustomOrder = !sortBy || sortBy === 'sortOrder'
+
         let orderByColumn:
             | typeof videos.updatedAt
             | typeof videos.title
             | typeof videos.createdAt
+            | typeof videos.sortOrder
         switch (sortBy) {
             case 'updatedAt':
                 orderByColumn = videos.updatedAt
                 break
             case 'title':
                 orderByColumn = videos.title
+                break
+            case 'sortOrder':
+                orderByColumn = videos.sortOrder
                 break
             default:
                 orderByColumn = videos.createdAt
@@ -81,11 +88,10 @@ export async function GET(request: NextRequest) {
 
         const orderDirection = sortOrder === 'asc' ? sql`ASC` : sql`DESC`
 
-        // Build orderBy clause - sortOrder is primary, then the selected column
-        const orderBySql =
-            sortBy === 'title'
-                ? sql`${videos.sortOrder} ASC, ${orderByColumn} ${orderDirection}`
-                : sql`${videos.sortOrder} ASC, ${orderByColumn} ${orderDirection}`
+        // Build orderBy clause - use sortOrder only for custom order, otherwise use selected column
+        const orderBySql = useCustomOrder
+            ? sql`${videos.sortOrder} ASC, ${videos.createdAt} DESC`
+            : sql`${orderByColumn} ${orderDirection}`
 
         // Prepare query parameters
         const queryParams: Record<string, string | string[]> = {}

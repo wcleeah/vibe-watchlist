@@ -68,6 +68,11 @@ export default function PlaylistsPage() {
     // Check if custom order is selected (for drag-drop)
     const isCustomOrder = sortValue === 'custom'
 
+    // Parse sortBy for API - extract the field name (e.g., 'progress' from 'progress-asc')
+    const sortBy = isCustomOrder
+        ? 'custom'
+        : (sortValue.split('-')[0] as 'progress' | 'createdAt' | 'title')
+
     // Modal state
     const [selectedPlaylist, setSelectedPlaylist] =
         useState<PlaylistSummary | null>(null)
@@ -132,8 +137,9 @@ export default function PlaylistsPage() {
                     ? selectedPlatforms[0]
                     : undefined,
             tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+            sortBy,
         }),
-        [searchQuery, selectedPlatforms, selectedTagIds],
+        [searchQuery, selectedPlatforms, selectedTagIds, sortBy],
     )
 
     // Build filters for completed playlists
@@ -146,8 +152,9 @@ export default function PlaylistsPage() {
                     ? selectedPlatforms[0]
                     : undefined,
             tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+            sortBy,
         }),
-        [searchQuery, selectedPlatforms, selectedTagIds],
+        [searchQuery, selectedPlatforms, selectedTagIds, sortBy],
     )
 
     // Data hooks for both tabs

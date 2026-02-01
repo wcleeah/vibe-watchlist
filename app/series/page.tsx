@@ -73,6 +73,14 @@ export default function SeriesPage() {
     // Check if custom order is selected (for drag-drop)
     const isCustomOrder = sortValue === 'custom'
 
+    // Parse sort value for API
+    const [sortBy, sortOrder] = isCustomOrder
+        ? (['custom', 'desc'] as const)
+        : (sortValue.split('-') as [
+              'missedPeriods' | 'createdAt' | 'title',
+              'asc' | 'desc',
+          ])
+
     // Platform and tag data
     const [platforms, setPlatforms] = useState<PlatformOption[]>([])
     const [allTags, setAllTags] = useState<TagOption[]>([])
@@ -96,8 +104,10 @@ export default function SeriesPage() {
                     : undefined,
             search: searchQuery || undefined,
             isWatched: false,
+            sortBy,
+            sortOrder,
         }),
-        [statusFilter, selectedPlatforms, searchQuery],
+        [statusFilter, selectedPlatforms, searchQuery, sortBy, sortOrder],
     )
 
     // Build filters for watched series
@@ -105,8 +115,10 @@ export default function SeriesPage() {
         () => ({
             search: searchQuery || undefined,
             isWatched: true,
+            sortBy,
+            sortOrder,
         }),
-        [searchQuery],
+        [searchQuery, sortBy, sortOrder],
     )
 
     // Two separate hooks for active and watched series

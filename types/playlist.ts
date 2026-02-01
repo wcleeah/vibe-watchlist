@@ -77,6 +77,7 @@ export interface PlaylistFilters {
     platform?: string
     tagIds?: number[]
     channelTitle?: string
+    sortBy?: 'custom' | 'progress' | 'createdAt' | 'title'
 }
 
 // Playlist import preview (before confirming import)

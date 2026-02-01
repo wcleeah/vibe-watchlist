@@ -19,6 +19,10 @@ export async function GET(request: NextRequest) {
         const platform = searchParams.get('platform') // single platform filter
         const tagIdsParam = searchParams.get('tagIds') // comma-separated tag IDs
         const channelTitle = searchParams.get('channelTitle') // channel filter
+        const sortBy = searchParams.get('sortBy') // 'custom' or other values
+
+        // Determine order - only use sortOrder column for custom order
+        const useCustomOrder = sortBy === 'custom' || !sortBy
 
         // Get all playlists with aggregated video stats and tags
         const result = await db
@@ -35,13 +39,19 @@ export async function GET(request: NextRequest) {
                 lastSyncedAt: playlists.lastSyncedAt,
                 createdAt: playlists.createdAt,
                 updatedAt: playlists.updatedAt,
+                sortOrder: playlists.sortOrder,
                 watchedCount: sql<number>`COALESCE(SUM(CASE WHEN ${videos.isWatched} = true THEN 1 ELSE 0 END), 0)::int`,
                 unwatchedCount: sql<number>`COALESCE(SUM(CASE WHEN ${videos.isWatched} = false OR ${videos.isWatched} IS NULL THEN 1 ELSE 0 END), 0)::int`,
             })
             .from(playlists)
             .leftJoin(videos, eq(videos.playlistId, playlists.id))
             .groupBy(playlists.id)
-            .orderBy(asc(playlists.sortOrder), desc(playlists.createdAt))
+            .orderBy(
+                useCustomOrder
+                    ? asc(playlists.sortOrder)
+                    : desc(playlists.createdAt),
+                desc(playlists.createdAt),
+            )
 
         // Get tags for all playlists
         const playlistIds = result.map((p) => p.id)

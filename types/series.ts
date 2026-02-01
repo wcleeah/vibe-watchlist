@@ -118,6 +118,8 @@ export interface SeriesFilters {
     platform?: string
     search?: string
     isWatched?: boolean // Filter by watched tab
+    sortBy?: 'custom' | 'missedPeriods' | 'createdAt' | 'title'
+    sortOrder?: 'asc' | 'desc'
 }
 
 // Helper type guards

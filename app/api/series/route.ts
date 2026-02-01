@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
         const platform = searchParams.get('platform')
         const search = searchParams.get('search')
         const isWatchedParam = searchParams.get('isWatched') // 'true' or 'false'
+        const sortBy = searchParams.get('sortBy') // 'custom', 'missedPeriods', 'createdAt', 'title'
+        const sortOrder = searchParams.get('sortOrder') || 'desc' // 'asc' or 'desc'
 
         const whereConditions = []
 
@@ -99,8 +101,22 @@ export async function GET(request: NextRequest) {
             )
             .groupBy(series.id)
             .orderBy(
-                asc(series.sortOrder),
-                sql`${series.missedPeriods} DESC, ${series.nextEpisodeAt} ASC`,
+                // Use sortOrder column only for custom order, otherwise use selected column
+                sortBy === 'custom' || !sortBy
+                    ? sql`${series.sortOrder} ASC, ${series.missedPeriods} DESC, ${series.nextEpisodeAt} ASC`
+                    : sortBy === 'missedPeriods'
+                      ? sortOrder === 'asc'
+                          ? sql`${series.missedPeriods} ASC, ${series.nextEpisodeAt} DESC`
+                          : sql`${series.missedPeriods} DESC, ${series.nextEpisodeAt} ASC`
+                      : sortBy === 'title'
+                        ? sortOrder === 'asc'
+                            ? sql`${series.title} ASC`
+                            : sql`${series.title} DESC`
+                        : sortBy === 'createdAt'
+                          ? sortOrder === 'asc'
+                              ? sql`${series.createdAt} ASC`
+                              : sql`${series.createdAt} DESC`
+                          : sql`${series.sortOrder} ASC, ${series.missedPeriods} DESC`,
             )
 
         // Parse the tags and schedule value
