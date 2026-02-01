@@ -191,7 +191,13 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
             throw new Error(errorData.error || 'Failed to reorder series')
         }
 
-        // No refetch needed - SortableMediaList handles optimistic updates
+        // Update local state with new order to keep in sync
+        setSeries((prev) => {
+            const seriesMap = new Map(prev.map((s) => [s.id, s]))
+            return orderedIds
+                .map((id) => seriesMap.get(id))
+                .filter((s): s is SeriesWithTags => s !== undefined)
+        })
     }, [])
 
     useEffect(() => {

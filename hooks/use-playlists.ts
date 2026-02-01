@@ -253,7 +253,13 @@ export function usePlaylists(
             throw new Error(errorData.error || 'Failed to reorder playlists')
         }
 
-        // No refetch needed - SortableMediaList handles optimistic updates
+        // Update local state with new order to keep in sync
+        setPlaylists((prev) => {
+            const playlistMap = new Map(prev.map((p) => [p.id, p]))
+            return orderedIds
+                .map((id) => playlistMap.get(id))
+                .filter((p): p is PlaylistSummary => p !== undefined)
+        })
     }, [])
 
     useEffect(() => {

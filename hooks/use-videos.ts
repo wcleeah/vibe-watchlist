@@ -192,7 +192,13 @@ export function useVideos(options: UseVideosOptions = {}): UseVideosReturn {
             throw new Error(errorData.error || 'Failed to reorder videos')
         }
 
-        // No refetch needed - SortableMediaList handles optimistic updates
+        // Update local state with new order to keep in sync
+        setVideos((prev) => {
+            const videoMap = new Map(prev.map((v) => [v.id, v]))
+            return orderedIds
+                .map((id) => videoMap.get(id))
+                .filter((v): v is VideoWithTags => v !== undefined)
+        })
     }, [])
 
     useEffect(() => {
