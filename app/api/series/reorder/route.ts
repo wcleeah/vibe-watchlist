@@ -26,18 +26,18 @@ export async function PUT(request: NextRequest) {
         }
 
         // Update sortOrder for each series based on array position
-        // Using a transaction to ensure atomicity
-        await db.transaction(async (tx) => {
-            for (let i = 0; i < orderedIds.length; i++) {
-                await tx
+        // Using Promise.all for batch updates (neon-http doesn't support transactions)
+        await Promise.all(
+            orderedIds.map((id, index) =>
+                db
                     .update(series)
                     .set({
-                        sortOrder: i,
+                        sortOrder: index,
                         updatedAt: new Date(),
                     })
-                    .where(eq(series.id, orderedIds[i]))
-            }
-        })
+                    .where(eq(series.id, id)),
+            ),
+        )
 
         return NextResponse.json({ success: true })
     } catch (error) {
