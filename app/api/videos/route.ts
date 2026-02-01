@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         const watched = searchParams.get('watched')
         const platforms = searchParams.get('platforms') // comma-separated list
         const search = searchParams.get('search') // title search
-        const sortBy = searchParams.get('sortBy') || 'createdAt' // createdAt, updatedAt, title
+        const sortBy = searchParams.get('sortBy') // createdAt, updatedAt, title, or null for custom order
         const sortOrder = searchParams.get('sortOrder') || 'desc' // asc, desc
         const limit = parseInt(searchParams.get('limit') || '50', 10)
         const offset = parseInt(searchParams.get('offset') || '0', 10)
