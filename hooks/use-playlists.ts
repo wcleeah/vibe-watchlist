@@ -241,26 +241,20 @@ export function usePlaylists(
     )
 
     // Reorder playlists - update sortOrder in database
-    const reorderPlaylists = useCallback(
-        async (orderedIds: number[]) => {
-            const response = await fetch('/api/playlists/reorder', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderedIds }),
-            })
+    const reorderPlaylists = useCallback(async (orderedIds: number[]) => {
+        const response = await fetch('/api/playlists/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderedIds }),
+        })
 
-            if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(
-                    errorData.error || 'Failed to reorder playlists',
-                )
-            }
+        if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Failed to reorder playlists')
+        }
 
-            // Refetch to get updated order
-            await fetchPlaylists()
-        },
-        [fetchPlaylists],
-    )
+        // No refetch needed - SortableMediaList handles optimistic updates
+    }, [])
 
     useEffect(() => {
         if (autoFetch) {

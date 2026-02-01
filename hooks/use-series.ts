@@ -179,24 +179,20 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
     )
 
     // Reorder series - update sortOrder in database
-    const reorderSeries = useCallback(
-        async (orderedIds: number[]) => {
-            const response = await fetch('/api/series/reorder', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderedIds }),
-            })
+    const reorderSeries = useCallback(async (orderedIds: number[]) => {
+        const response = await fetch('/api/series/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderedIds }),
+        })
 
-            if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Failed to reorder series')
-            }
+        if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Failed to reorder series')
+        }
 
-            // Refetch to get updated order
-            await fetchSeries()
-        },
-        [fetchSeries],
-    )
+        // No refetch needed - SortableMediaList handles optimistic updates
+    }, [])
 
     useEffect(() => {
         if (autoFetch) {
