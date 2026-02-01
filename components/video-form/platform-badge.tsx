@@ -1,28 +1,14 @@
 'use client'
 
-import { Gamepad2, Globe, Play, Tv, Video, Youtube } from 'lucide-react'
 import { usePlatforms } from '@/hooks/use-platforms'
 import { cn } from '@/lib/utils'
+import { getIconComponent } from '@/lib/utils/icon-utils'
 
 interface PlatformBadgeProps {
     platform: string
     size?: 'sm' | 'md' | 'lg'
     variant?: 'filled' | 'outline' | 'ghost'
     className?: string
-}
-
-// Helper function to get icon component from string
-function getIconComponent(iconName: string) {
-    const iconMap: Record<string, any> = {
-        Youtube: Youtube,
-        Play: Play,
-        Tv: Tv,
-        Gamepad2: Gamepad2,
-        Globe: Globe,
-        Video: Video,
-        // Add more icon mappings as needed
-    }
-    return iconMap[iconName] || Globe
 }
 
 // Helper function to convert hex color to Tailwind color class
@@ -42,30 +28,34 @@ function getColorClass(hexColor: string): string {
 function getFallbackConfig(platform: string) {
     const fallbackMap: Record<
         string,
-        { icon: any; color: string; bgColor: string }
+        {
+            icon: ReturnType<typeof getIconComponent>
+            color: string
+            bgColor: string
+        }
     > = {
         youtube: {
-            icon: Youtube,
+            icon: getIconComponent('youtube'),
             color: 'text-red-600',
             bgColor: 'bg-red-50 border-red-200',
         },
         twitch: {
-            icon: Gamepad2,
+            icon: getIconComponent('gamepad2'),
             color: 'text-purple-600',
             bgColor: 'bg-purple-50 border-purple-200',
         },
         netflix: {
-            icon: Play,
+            icon: getIconComponent('play'),
             color: 'text-red-700',
             bgColor: 'bg-red-50 border-red-200',
         },
         nebula: {
-            icon: Tv,
+            icon: getIconComponent('tv'),
             color: 'text-blue-600',
             bgColor: 'bg-blue-50 border-blue-200',
         },
         unknown: {
-            icon: Globe,
+            icon: getIconComponent('globe'),
             color: 'text-gray-600',
             bgColor: 'bg-gray-50 border-gray-200',
         },
@@ -172,9 +162,8 @@ export function PlatformIcon({
     }
 
     return (
-        <Icon
-            className={cn(iconSizes[size], config.color, className)}
-            title={platform.charAt(0).toUpperCase() + platform.slice(1)}
-        />
+        <span title={platform.charAt(0).toUpperCase() + platform.slice(1)}>
+            <Icon className={cn(iconSizes[size], config.color, className)} />
+        </span>
     )
 }

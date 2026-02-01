@@ -3,10 +3,9 @@
 import { ListMusic, Pencil, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 
-import { type ActionConfig, MediaCard } from '@/components/shared'
+import { type ActionConfig, ErrorDisplay, MediaCard } from '@/components/shared'
 import { cn } from '@/lib/utils'
 
-import { ErrorDisplay } from './error-display'
 import type { PreviewCardProps } from './types'
 import { VideoCardEditable } from './video-card-editable'
 
@@ -56,6 +55,7 @@ export function VideoCard({
                 <ErrorDisplay
                     error={video.error}
                     onToggleManual={toggleManual}
+                    variant='centered'
                 />
             </div>
         )

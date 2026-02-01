@@ -1,15 +1,6 @@
 'use client'
 
-import {
-    Archive,
-    CalendarDays,
-    CheckCircle2,
-    Gamepad2,
-    Globe,
-    type LucideIcon,
-    Tv,
-    Youtube,
-} from 'lucide-react'
+import { Archive, CalendarDays, CheckCircle2 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -26,20 +17,9 @@ import {
     type TagOption,
 } from '@/components/shared'
 import { useSeries } from '@/hooks/use-series'
+import { getIconComponent } from '@/lib/utils/icon-utils'
 import type { SeriesFilters, SeriesWithTags } from '@/types/series'
 import { isBacklogSeries } from '@/types/series'
-
-// Helper function to get icon component from string
-const getIconComponent = (iconName: string): LucideIcon => {
-    const iconMap: Record<string, LucideIcon> = {
-        youtube: Youtube,
-        tv: Tv,
-        gamepad2: Gamepad2,
-        globe: Globe,
-        video: Globe,
-    }
-    return iconMap[iconName.toLowerCase()] || Globe
-}
 
 type TabType = 'active' | 'watched'
 type StatusFilter = 'all' | 'behind' | 'caught-up' | 'backlog'
