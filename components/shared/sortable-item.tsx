@@ -36,7 +36,10 @@ export function SortableItem({ id, children, disabled }: SortableItemProps) {
                 isDragging && 'opacity-50 z-50',
             )}
         >
-            {/* Drag handle - always visible */}
+            {/* Card content */}
+            <div className='flex-1 min-w-0'>{children}</div>
+
+            {/* Drag handle - on the right side */}
             <button
                 type='button'
                 {...attributes}
@@ -55,9 +58,6 @@ export function SortableItem({ id, children, disabled }: SortableItemProps) {
             >
                 <GripVertical className='w-5 h-5' />
             </button>
-
-            {/* Card content */}
-            <div className='flex-1 min-w-0'>{children}</div>
         </div>
     )
 }
