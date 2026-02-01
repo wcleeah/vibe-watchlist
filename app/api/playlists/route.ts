@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { url } = body
+        const { url, tagIds } = body
 
         if (!url || typeof url !== 'string') {
             return NextResponse.json(
@@ -276,6 +276,33 @@ export async function POST(request: NextRequest) {
             await db.insert(videos).values(videoValues)
         }
 
+        // Add tags if provided
+        if (tagIds && Array.isArray(tagIds) && tagIds.length > 0) {
+            const playlistTagInserts = tagIds
+                .filter((id): id is number => typeof id === 'number')
+                .map((tagId) => ({
+                    playlistId: newPlaylist.id,
+                    tagId,
+                }))
+            if (playlistTagInserts.length > 0) {
+                await db.insert(playlistTags).values(playlistTagInserts)
+            }
+        }
+
+        // Get the tags that were added
+        const addedTags =
+            tagIds && tagIds.length > 0
+                ? await db
+                      .select({
+                          id: tags.id,
+                          name: tags.name,
+                          color: tags.color,
+                      })
+                      .from(playlistTags)
+                      .innerJoin(tags, eq(playlistTags.tagId, tags.id))
+                      .where(eq(playlistTags.playlistId, newPlaylist.id))
+                : []
+
         return NextResponse.json(
             {
                 success: true,
@@ -283,6 +310,7 @@ export async function POST(request: NextRequest) {
                     ...newPlaylist,
                     watchedCount: 0,
                     unwatchedCount: playlistItems.length,
+                    tags: addedTags,
                 },
             },
             { status: 201 },
