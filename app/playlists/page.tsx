@@ -11,13 +11,12 @@ import { PlaylistList } from '@/components/playlists/playlist-list'
 import {
     ErrorDisplay,
     FilterBar,
-    type PlatformOption,
     type SortOption,
     TabSwitcher,
-    type TagOption,
 } from '@/components/shared'
+import { usePlatformsWithIcons } from '@/hooks/use-platforms-with-icons'
 import { usePlaylists } from '@/hooks/use-playlists'
-import { getIconComponent } from '@/lib/utils/icon-utils'
+import { useTags } from '@/hooks/use-tags'
 import type { PlaylistFilters, PlaylistSummary } from '@/types/playlist'
 
 type TabType = 'active' | 'completed'
@@ -66,53 +65,8 @@ export default function PlaylistsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
     // Platform and tag data
-    const [platforms, setPlatforms] = useState<PlatformOption[]>([])
-    const [allTags, setAllTags] = useState<TagOption[]>([])
-
-    // Load platforms
-    useEffect(() => {
-        const loadPlatforms = async () => {
-            try {
-                const response = await fetch('/api/platforms')
-                if (response.ok) {
-                    const data = await response.json()
-                    const platformData: PlatformOption[] = data.data.map(
-                        (p: {
-                            platformId: string
-                            displayName: string
-                            icon?: string
-                            color?: string
-                        }) => ({
-                            key: p.platformId,
-                            label: p.displayName,
-                            icon: getIconComponent(p.icon || 'Video'),
-                            color: p.color || '#6b7280',
-                        }),
-                    )
-                    setPlatforms(platformData)
-                }
-            } catch (error) {
-                console.error('Failed to load platforms:', error)
-            }
-        }
-        loadPlatforms()
-    }, [])
-
-    // Load tags
-    useEffect(() => {
-        const fetchTags = async () => {
-            try {
-                const response = await fetch('/api/tags')
-                if (response.ok) {
-                    const tags = await response.json()
-                    setAllTags(tags)
-                }
-            } catch (error) {
-                console.error('Failed to fetch tags:', error)
-            }
-        }
-        fetchTags()
-    }, [])
+    const { platforms } = usePlatformsWithIcons()
+    const { tags: allTags } = useTags()
 
     // Build filters for active playlists (has unwatched videos)
     const activeFilters: PlaylistFilters = useMemo(

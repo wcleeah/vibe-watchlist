@@ -8,17 +8,16 @@ import { NavigationTabs } from '@/components/navigation-tabs'
 import {
     ErrorDisplay,
     FilterBar,
-    type PlatformOption,
     type SortOption,
     TabSwitcher,
-    type TagOption,
 } from '@/components/shared'
 import { VideoEditModal } from '@/components/video-form/video-edit-modal'
 import { ConvertToPlaylistModal } from '@/components/videos/convert-to-playlist-modal'
 import { ConvertToSeriesModal } from '@/components/videos/convert-to-series-modal'
 import { VideoList } from '@/components/videos/video-list'
+import { usePlatformsWithIcons } from '@/hooks/use-platforms-with-icons'
+import { useTags } from '@/hooks/use-tags'
 import { useVideos } from '@/hooks/use-videos'
-import { getIconComponent } from '@/lib/utils/icon-utils'
 import type { VideoFilters, VideoWithTags } from '@/types/video'
 
 type TabType = 'active' | 'watched'
@@ -58,8 +57,8 @@ export default function ListPage() {
         useState(false)
 
     // Platform and tag data
-    const [platforms, setPlatforms] = useState<PlatformOption[]>([])
-    const [allTags, setAllTags] = useState<TagOption[]>([])
+    const { platforms } = usePlatformsWithIcons()
+    const { tags: allTags } = useTags()
 
     // Parse sort value (custom order uses sortOrder from DB)
     const isCustomOrder = sortValue === 'custom'
@@ -104,51 +103,6 @@ export default function ListPage() {
 
     // Current hook based on active tab
     const currentHook = activeTab === 'active' ? activeVideos : watchedVideos
-
-    // Load platforms
-    useEffect(() => {
-        const loadPlatforms = async () => {
-            try {
-                const response = await fetch('/api/platforms')
-                if (response.ok) {
-                    const data = await response.json()
-                    const platformData: PlatformOption[] = data.data.map(
-                        (p: {
-                            platformId: string
-                            displayName: string
-                            icon?: string
-                            color?: string
-                        }) => ({
-                            key: p.platformId,
-                            label: p.displayName,
-                            icon: getIconComponent(p.icon || 'Video'),
-                            color: p.color || '#6b7280',
-                        }),
-                    )
-                    setPlatforms(platformData)
-                }
-            } catch (error) {
-                console.error('Failed to load platforms:', error)
-            }
-        }
-        loadPlatforms()
-    }, [])
-
-    // Load tags
-    useEffect(() => {
-        const fetchTags = async () => {
-            try {
-                const response = await fetch('/api/tags')
-                if (response.ok) {
-                    const tags = await response.json()
-                    setAllTags(tags)
-                }
-            } catch (error) {
-                console.error('Failed to fetch tags:', error)
-            }
-        }
-        fetchTags()
-    }, [])
 
     // Client-side tag filtering
     const filteredVideos = useMemo(() => {

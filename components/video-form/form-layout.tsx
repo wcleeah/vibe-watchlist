@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useTags } from '@/hooks/use-tags'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import { SeriesService } from '@/lib/services/series-service'
 import type { VideoFormData, VideoSuggestions } from '@/types/form'
@@ -48,7 +49,7 @@ export function FormLayout({
     const [selectedSuggestion, setSelectedSuggestion] = useState<
         number | undefined
     >(0)
-    const [availableTags, setAvailableTags] = useState<Tag[]>([])
+    const { tags: availableTags, addTag: addNewTag } = useTags()
     const [tagInput, setTagInput] = useState('')
     const [isLoadingTags, setIsLoadingTags] = useState(false)
     const [tagError, setTagError] = useState<string | null>(null)
@@ -126,22 +127,6 @@ export function FormLayout({
         [availableTags, selectedTagIds],
     )
 
-    // Load available tags on mount
-    useEffect(() => {
-        const fetchTags = async () => {
-            try {
-                const response = await fetch('/api/tags')
-                if (response.ok) {
-                    const tags = await response.json()
-                    setAvailableTags(tags)
-                }
-            } catch (error) {
-                console.error('Failed to fetch tags:', error)
-            }
-        }
-        fetchTags()
-    }, [])
-
     const addTag = useCallback(
         async (tagName: string) => {
             if (!tagName) return
@@ -170,18 +155,11 @@ export function FormLayout({
                 return
             }
 
-            // Create new tag
+            // Create new tag using the hook
             setIsLoadingTags(true)
             try {
-                const response = await fetch('/api/tags', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: tagName }),
-                })
-
-                if (response.ok) {
-                    const newTag = await response.json()
-                    setAvailableTags((prev) => [...prev, newTag])
+                const newTag = await addNewTag(tagName)
+                if (newTag) {
                     setValue('tags', [...selectedTagIds, newTag.id])
                     setValue('tagStrs', [
                         ...(selectedTags
@@ -190,16 +168,6 @@ export function FormLayout({
                         newTag.name,
                     ])
                     setTagInput('')
-                } else if (response.status === 409) {
-                    // Tag already exists, fetch it
-                    const existingTag = availableTags.find(
-                        (tag) =>
-                            tag.name.toLowerCase() === tagName.toLowerCase(),
-                    )
-                    if (existingTag) {
-                        setValue('tags', [...selectedTagIds, existingTag.id])
-                    }
-                    setTagError('Tag already exists')
                 } else {
                     setTagError('Failed to create tag')
                 }
@@ -210,7 +178,7 @@ export function FormLayout({
                 setIsLoadingTags(false)
             }
         },
-        [selectedTagIds, setValue, availableTags, selectedTags],
+        [selectedTagIds, setValue, availableTags, selectedTags, addNewTag],
     )
 
     const removeTag = useCallback(

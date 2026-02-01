@@ -17,8 +17,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { TagList } from '@/components/ui/tag'
+import { useTags } from '@/hooks/use-tags'
 import type { PlaylistSummary } from '@/types/playlist'
-import type { Tag } from '@/types/tag'
 
 interface PlaylistEditModalProps {
     playlist: PlaylistSummary | null
@@ -41,7 +41,7 @@ export function PlaylistEditModal({
     onSuccess,
 }: PlaylistEditModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [availableTags, setAvailableTags] = useState<Tag[]>([])
+    const { tags: availableTags, addTag: addNewTag } = useTags()
     const [tagInput, setTagInput] = useState('')
     const [isLoadingTags, setIsLoadingTags] = useState(false)
 
@@ -76,22 +76,6 @@ export function PlaylistEditModal({
         }
     }, [playlist, open, reset])
 
-    // Fetch available tags
-    useEffect(() => {
-        const fetchTags = async () => {
-            try {
-                const response = await fetch('/api/tags')
-                if (response.ok) {
-                    const tags = await response.json()
-                    setAvailableTags(tags)
-                }
-            } catch (error) {
-                console.error('Failed to fetch tags:', error)
-            }
-        }
-        fetchTags()
-    }, [])
-
     const addTag = async (tagName: string) => {
         if (!tagName) return
 
@@ -115,15 +99,8 @@ export function PlaylistEditModal({
 
         setIsLoadingTags(true)
         try {
-            const response = await fetch('/api/tags', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: tagName }),
-            })
-
-            if (response.ok) {
-                const newTag = await response.json()
-                setAvailableTags((prev) => [...prev, newTag])
+            const newTag = await addNewTag(tagName)
+            if (newTag) {
                 setValue('tagIds', [...formTagIds, newTag.id])
                 setTagInput('')
             } else {

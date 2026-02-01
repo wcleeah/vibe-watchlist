@@ -1,99 +1,56 @@
 'use client'
 
 import { Check, Edit, Plus, Trash2, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-
-interface Tag {
-    id: number
-    name: string
-    color: string
-}
+import { useTags } from '@/hooks/use-tags'
 
 export function TagsManager() {
-    const [tags, setTags] = useState<Tag[]>([])
-    const [loading, setLoading] = useState(true)
+    const { tags, loading, addTag: addNewTag, updateTag, deleteTag } = useTags()
     const [newTagName, setNewTagName] = useState('')
     const [newTagColor, setNewTagColor] = useState('#6b7280')
     const [editingId, setEditingId] = useState<number | null>(null)
     const [editName, setEditName] = useState('')
     const [editColor, setEditColor] = useState('')
 
-    // Fetch tags
-    const fetchTags = useCallback(async () => {
-        try {
-            const response = await fetch('/api/tags')
-            if (response.ok) {
-                const data = await response.json()
-                setTags(data)
-            }
-        } catch (error) {
-            console.error('Error fetching tags:', error)
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
-    useEffect(() => {
-        fetchTags()
-    }, [fetchTags])
-
     // Add new tag
     const handleAddTag = async () => {
         if (!newTagName.trim()) return
 
-        try {
-            const response = await fetch('/api/tags', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: newTagName.trim(),
-                    color: newTagColor,
-                }),
-            })
-
-            if (response.ok) {
-                setNewTagName('')
-                setNewTagColor('#6b7280')
-                fetchTags()
-                toast.success('Tag added successfully!')
-            }
-        } catch (error) {
-            console.error('Error adding tag:', error)
+        const newTag = await addNewTag(newTagName.trim(), newTagColor)
+        if (newTag) {
+            setNewTagName('')
+            setNewTagColor('#6b7280')
+            toast.success('Tag added successfully!')
         }
     }
 
     // Start editing
-    const handleEditStart = (tag: Tag) => {
+    const handleEditStart = (tag: {
+        id: number
+        name: string
+        color?: string | null
+    }) => {
         setEditingId(tag.id)
         setEditName(tag.name)
-        setEditColor(tag.color)
+        setEditColor(tag.color || '#6b7280')
     }
 
     // Save edit
     const handleEditSave = async () => {
         if (!editName.trim() || !editingId) return
 
-        try {
-            const response = await fetch(`/api/tags/${editingId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: editName.trim(),
-                    color: editColor,
-                }),
-            })
+        const success = await updateTag(editingId, {
+            name: editName.trim(),
+            color: editColor,
+        })
 
-            if (response.ok) {
-                setEditingId(null)
-                fetchTags()
-                toast.success('Tag updated successfully!')
-            }
-        } catch (error) {
-            console.error('Error updating tag:', error)
+        if (success) {
+            setEditingId(null)
+            toast.success('Tag updated successfully!')
         }
     }
 
@@ -106,17 +63,9 @@ export function TagsManager() {
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this tag?')) return
 
-        try {
-            const response = await fetch(`/api/tags/${id}`, {
-                method: 'DELETE',
-            })
-
-            if (response.ok) {
-                fetchTags()
-                toast.success('Tag deleted successfully!')
-            }
-        } catch (error) {
-            console.error('Error deleting tag:', error)
+        const success = await deleteTag(id)
+        if (success) {
+            toast.success('Tag deleted successfully!')
         }
     }
 
@@ -239,7 +188,8 @@ export function TagsManager() {
                                         <div
                                             className='w-4 h-4 rounded'
                                             style={{
-                                                backgroundColor: tag.color,
+                                                backgroundColor:
+                                                    tag.color || '#6b7280',
                                             }}
                                         />
                                         <span className='font-medium'>
