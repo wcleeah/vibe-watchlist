@@ -367,6 +367,11 @@ export default function SeriesPage() {
                             : watchedSeries.deleteSeries
                     }
                     onEdit={handleEditSeries}
+                    onReorder={
+                        activeTab === 'active'
+                            ? activeSeries.reorderSeries
+                            : watchedSeries.reorderSeries
+                    }
                 />
 
                 {/* Edit Modal */}

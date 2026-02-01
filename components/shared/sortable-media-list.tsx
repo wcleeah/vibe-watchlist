@@ -78,7 +78,6 @@ export function SortableMediaList<T>({
             return `Picked up item at position ${position} of ${localItems.length}. Use arrow keys to move, space to drop, escape to cancel.`
         },
         onDragOver({
-            active,
             over,
         }: {
             active: { id: string | number }
@@ -94,7 +93,6 @@ export function SortableMediaList<T>({
             return 'Item is no longer over a droppable area'
         },
         onDragEnd({
-            active,
             over,
         }: {
             active: { id: string | number }

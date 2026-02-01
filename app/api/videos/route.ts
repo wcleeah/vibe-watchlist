@@ -81,6 +81,12 @@ export async function GET(request: NextRequest) {
 
         const orderDirection = sortOrder === 'asc' ? sql`ASC` : sql`DESC`
 
+        // Build orderBy clause - sortOrder is primary, then the selected column
+        const orderBySql =
+            sortBy === 'title'
+                ? sql`${videos.sortOrder} ASC, ${orderByColumn} ${orderDirection}`
+                : sql`${videos.sortOrder} ASC, ${orderByColumn} ${orderDirection}`
+
         // Prepare query parameters
         const queryParams: Record<string, string | string[]> = {}
 
@@ -124,11 +130,7 @@ export async function GET(request: NextRequest) {
                     : undefined,
             )
             .groupBy(videos.id)
-            .orderBy(
-                orderDirection === sql`ASC`
-                    ? sql`${orderByColumn} ASC`
-                    : sql`${orderByColumn} DESC`,
-            )
+            .orderBy(orderBySql)
             .limit(limit)
             .offset(offset)
 

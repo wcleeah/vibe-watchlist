@@ -346,6 +346,11 @@ export default function PlaylistsPage() {
                     onViewItems={handleViewItems}
                     onSync={currentHook.sync}
                     onDelete={currentHook.deletePlaylist}
+                    onReorder={
+                        activeTab === 'active'
+                            ? activePlaylists.reorderPlaylists
+                            : completedPlaylists.reorderPlaylists
+                    }
                     emptyState={{
                         title:
                             activeTab === 'active'

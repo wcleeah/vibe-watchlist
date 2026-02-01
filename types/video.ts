@@ -12,6 +12,7 @@ export interface Video {
     playlistId: number | null
     playlistIndex: number | null
     youtubeVideoId: string | null
+    sortOrder: number
     createdAt: Date | null
     updatedAt: Date | null
 }

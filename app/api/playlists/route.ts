@@ -1,4 +1,4 @@
-import { desc, eq, inArray, sql } from 'drizzle-orm'
+import { asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { playlists, playlistTags, tags, videos } from '@/lib/db/schema'
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
             .from(playlists)
             .leftJoin(videos, eq(videos.playlistId, playlists.id))
             .groupBy(playlists.id)
-            .orderBy(desc(playlists.createdAt))
+            .orderBy(asc(playlists.sortOrder), desc(playlists.createdAt))
 
         // Get tags for all playlists
         const playlistIds = result.map((p) => p.id)

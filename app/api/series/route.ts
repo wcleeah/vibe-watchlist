@@ -1,4 +1,4 @@
-import { and, eq, gt, ilike, inArray, or, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, ilike, inArray, or, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
             )
             .groupBy(series.id)
             .orderBy(
+                asc(series.sortOrder),
                 sql`${series.missedPeriods} DESC, ${series.nextEpisodeAt} ASC`,
             )
 

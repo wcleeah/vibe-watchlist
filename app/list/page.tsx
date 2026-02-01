@@ -346,6 +346,11 @@ export default function ListPage() {
                     onConvertToSeries={handleConvertToSeries}
                     onConvertToPlaylist={handleConvertToPlaylist}
                     playlistUrlVideoIds={playlistUrlVideoIds}
+                    onReorder={
+                        activeTab === 'active'
+                            ? activeVideos.reorderVideos
+                            : watchedVideos.reorderVideos
+                    }
                     emptyState={{
                         title:
                             activeTab === 'active'
