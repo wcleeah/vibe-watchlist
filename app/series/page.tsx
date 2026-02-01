@@ -45,6 +45,7 @@ type TabType = 'active' | 'watched'
 type StatusFilter = 'all' | 'behind' | 'caught-up' | 'backlog'
 
 const SORT_OPTIONS: SortOption[] = [
+    { value: 'custom', label: 'Custom Order' },
     { value: 'missedPeriods-desc', label: 'Most Behind' },
     { value: 'missedPeriods-asc', label: 'Least Behind' },
     { value: 'createdAt-desc', label: 'Newest First' },
@@ -67,7 +68,10 @@ export default function SeriesPage() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
     const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
-    const [sortValue, setSortValue] = useState('missedPeriods-desc')
+    const [sortValue, setSortValue] = useState('custom')
+
+    // Check if custom order is selected (for drag-drop)
+    const isCustomOrder = sortValue === 'custom'
 
     // Platform and tag data
     const [platforms, setPlatforms] = useState<PlatformOption[]>([])
@@ -368,9 +372,11 @@ export default function SeriesPage() {
                     }
                     onEdit={handleEditSeries}
                     onReorder={
-                        activeTab === 'active'
-                            ? activeSeries.reorderSeries
-                            : watchedSeries.reorderSeries
+                        isCustomOrder
+                            ? activeTab === 'active'
+                                ? activeSeries.reorderSeries
+                                : watchedSeries.reorderSeries
+                            : undefined
                     }
                 />
 
