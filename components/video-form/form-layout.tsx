@@ -368,7 +368,10 @@ export function FormLayout({
             const response = await fetch('/api/playlists', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: formData.url }),
+                body: JSON.stringify({
+                    url: formData.url,
+                    tagIds: selectedTagIds,
+                }),
             })
 
             if (!response.ok) {
@@ -595,23 +598,24 @@ export function FormLayout({
                 </div>
             )}
 
-            {/* Tags - Only for video/series modes */}
-            {mode !== 'playlist' && (
-                <TagInput
-                    value={tagInput}
-                    onChange={(tag) => setTagInput(tag)}
-                    onTagAdd={addTag}
-                    onTagRemove={removeTag}
-                    selectedTags={selectedTags}
-                    suggestions={filteredTags}
-                    showSuggestions={true}
-                    onSelectSuggestion={selectSuggestedTag}
-                    isLoading={
-                        isLoadingTags || isSubmitting || isSubmittingSeries
-                    }
-                    error={tagError}
-                />
-            )}
+            {/* Tags - For all modes */}
+            <TagInput
+                value={tagInput}
+                onChange={(tag) => setTagInput(tag)}
+                onTagAdd={addTag}
+                onTagRemove={removeTag}
+                selectedTags={selectedTags}
+                suggestions={filteredTags}
+                showSuggestions={true}
+                onSelectSuggestion={selectSuggestedTag}
+                isLoading={
+                    isLoadingTags ||
+                    isSubmitting ||
+                    isSubmittingSeries ||
+                    isImportingPlaylist
+                }
+                error={tagError}
+            />
 
             {/* Action Buttons */}
             <div className='flex gap-2'>

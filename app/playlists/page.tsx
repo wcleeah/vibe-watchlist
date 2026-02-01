@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { NavigationTabs } from '@/components/navigation-tabs'
+import { PlaylistEditModal } from '@/components/playlists/playlist-edit-modal'
 import { PlaylistItemsModal } from '@/components/playlists/playlist-items-modal'
 import { PlaylistList } from '@/components/playlists/playlist-list'
 import {
@@ -77,6 +78,11 @@ export default function PlaylistsPage() {
     const [selectedPlaylist, setSelectedPlaylist] =
         useState<PlaylistSummary | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
+
+    // Edit modal state
+    const [editingPlaylist, setEditingPlaylist] =
+        useState<PlaylistSummary | null>(null)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
     // Platform and tag data
     const [platforms, setPlatforms] = useState<PlatformOption[]>([])
@@ -278,6 +284,11 @@ export default function PlaylistsPage() {
         setIsModalOpen(true)
     }
 
+    const handleEdit = (playlist: PlaylistSummary) => {
+        setEditingPlaylist(playlist)
+        setIsEditModalOpen(true)
+    }
+
     const handleRefresh = useCallback(() => {
         activePlaylists.refetch()
         completedPlaylists.refetch()
@@ -361,6 +372,7 @@ export default function PlaylistsPage() {
                     playlists={filteredPlaylists}
                     loading={currentHook.loading}
                     onViewItems={handleViewItems}
+                    onEdit={handleEdit}
                     onSync={currentHook.sync}
                     onDelete={currentHook.deletePlaylist}
                     onReorder={
@@ -388,6 +400,14 @@ export default function PlaylistsPage() {
                     open={isModalOpen}
                     onOpenChange={setIsModalOpen}
                     onRefresh={handleRefresh}
+                />
+
+                {/* Edit Modal */}
+                <PlaylistEditModal
+                    playlist={editingPlaylist}
+                    open={isEditModalOpen}
+                    onOpenChange={setIsEditModalOpen}
+                    onSuccess={handleRefresh}
                 />
             </main>
         </div>

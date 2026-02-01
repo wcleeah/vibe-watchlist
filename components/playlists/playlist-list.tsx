@@ -12,6 +12,7 @@ interface PlaylistListProps {
     playlists: PlaylistSummary[]
     loading?: boolean
     onViewItems: (playlist: PlaylistSummary) => void
+    onEdit?: (playlist: PlaylistSummary) => void
     onSync?: (playlistId: number) => Promise<void>
     onDelete?: (playlistId: number) => Promise<void>
     onReorder?: (orderedIds: number[]) => Promise<void>
@@ -25,6 +26,7 @@ export function PlaylistList({
     playlists,
     loading = false,
     onViewItems,
+    onEdit,
     onSync,
     onDelete,
     onReorder,
@@ -34,6 +36,7 @@ export function PlaylistList({
         <PlaylistCard
             playlist={playlist}
             onViewItems={onViewItems}
+            onEdit={onEdit}
             onSync={onSync}
             onDelete={onDelete}
         />
