@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, RefreshCw, Trash2 } from 'lucide-react'
+import { ExternalLink, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import {
@@ -14,6 +14,7 @@ import type { PlaylistSummary } from '@/types/playlist'
 interface PlaylistCardProps {
     playlist: PlaylistSummary
     onViewItems: (playlist: PlaylistSummary) => void
+    onEdit?: (playlist: PlaylistSummary) => void
     onSync?: (playlistId: number) => Promise<void>
     onDelete?: (playlistId: number) => Promise<void>
 }
@@ -21,6 +22,7 @@ interface PlaylistCardProps {
 export function PlaylistCard({
     playlist,
     onViewItems,
+    onEdit,
     onSync,
     onDelete,
 }: PlaylistCardProps) {
@@ -88,6 +90,19 @@ export function PlaylistCard({
         },
     ]
 
+    // Build secondary actions (shown under more() button)
+    const secondaryActions: ActionConfig[] = []
+
+    if (onEdit) {
+        secondaryActions.push({
+            id: 'edit',
+            label: 'edit()',
+            onClick: () => onEdit(playlist),
+            variant: 'ghost',
+            icon: <Pencil className='w-3 h-3' />,
+        })
+    }
+
     // Delete action - always visible
     const deleteAction: ActionConfig | undefined = onDelete
         ? {
@@ -109,6 +124,7 @@ export function PlaylistCard({
             tags={playlist.tags}
             metadata={metadata}
             primaryActions={primaryActions}
+            secondaryActions={secondaryActions}
             deleteAction={deleteAction}
             showProgress={true}
             progressCurrent={playlist.watchedCount}
