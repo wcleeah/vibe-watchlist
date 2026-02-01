@@ -15,6 +15,7 @@ interface UseSeriesReturn {
     unmarkWatched: (id: number) => Promise<void>
     incrementProgress: (id: number) => Promise<boolean>
     deleteSeries: (id: number) => Promise<void>
+    reorderSeries: (orderedIds: number[]) => Promise<void>
 }
 
 interface UseSeriesOptions {
@@ -177,6 +178,26 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
         [fetchSeries],
     )
 
+    // Reorder series - update sortOrder in database
+    const reorderSeries = useCallback(
+        async (orderedIds: number[]) => {
+            const response = await fetch('/api/series/reorder', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderedIds }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to reorder series')
+            }
+
+            // Refetch to get updated order
+            await fetchSeries()
+        },
+        [fetchSeries],
+    )
+
     useEffect(() => {
         if (autoFetch) {
             fetchSeries()
@@ -193,5 +214,6 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
         unmarkWatched,
         incrementProgress,
         deleteSeries,
+        reorderSeries,
     }
 }

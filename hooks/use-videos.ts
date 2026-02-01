@@ -13,6 +13,7 @@ interface UseVideosReturn {
     markWatched: (id: number) => Promise<void>
     markUnwatched: (id: number) => Promise<void>
     deleteVideo: (id: number) => Promise<void>
+    reorderVideos: (orderedIds: number[]) => Promise<void>
 }
 
 interface UseVideosOptions {
@@ -178,6 +179,26 @@ export function useVideos(options: UseVideosOptions = {}): UseVideosReturn {
         [fetchVideos],
     )
 
+    // Reorder videos - update sortOrder in database
+    const reorderVideos = useCallback(
+        async (orderedIds: number[]) => {
+            const response = await fetch('/api/videos/reorder', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderedIds }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to reorder videos')
+            }
+
+            // Refetch to get updated order
+            await fetchVideos()
+        },
+        [fetchVideos],
+    )
+
     useEffect(() => {
         if (autoFetch) {
             fetchVideos()
@@ -192,5 +213,6 @@ export function useVideos(options: UseVideosOptions = {}): UseVideosReturn {
         markWatched,
         markUnwatched,
         deleteVideo,
+        reorderVideos,
     }
 }
