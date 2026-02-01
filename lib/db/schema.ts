@@ -76,6 +76,7 @@ export const playlists = pgTable(
         platform: text().notNull().default('youtube'),
         itemCount: integer('item_count').default(0),
         isWatched: boolean('is_watched').default(false),
+        sortOrder: integer('sort_order').default(0).notNull(),
         lastSyncedAt: timestamp('last_synced_at'),
         createdAt: timestamp('created_at').defaultNow(),
         updatedAt: timestamp('updated_at').defaultNow(),
@@ -118,6 +119,7 @@ export const videos = pgTable(
         playlistId: integer('playlist_id'), // FK to playlists.id (null = standalone video)
         playlistIndex: integer('playlist_index'), // Position in playlist (0-based)
         youtubeVideoId: text('youtube_video_id'), // Extracted YouTube video ID
+        sortOrder: integer('sort_order').default(0).notNull(),
         createdAt: timestamp('created_at').defaultNow(),
         updatedAt: timestamp('updated_at').defaultNow(),
     },
@@ -180,6 +182,7 @@ export const series = pgTable(
         totalEpisodes: integer('total_episodes'), // nullable - not all series have known totals
         watchedEpisodes: integer('watched_episodes').default(0).notNull(),
         isWatched: boolean('is_watched').default(false).notNull(), // marks series as finished
+        sortOrder: integer('sort_order').default(0).notNull(),
         createdAt: timestamp('created_at').defaultNow(),
         updatedAt: timestamp('updated_at').defaultNow(),
     },
