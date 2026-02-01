@@ -1,14 +1,6 @@
 'use client'
 
-import {
-    CheckCircle2,
-    Gamepad2,
-    Globe,
-    ListVideo,
-    type LucideIcon,
-    Tv,
-    Youtube,
-} from 'lucide-react'
+import { CheckCircle2, ListVideo } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -26,19 +18,8 @@ import { ConvertToPlaylistModal } from '@/components/videos/convert-to-playlist-
 import { ConvertToSeriesModal } from '@/components/videos/convert-to-series-modal'
 import { VideoList } from '@/components/videos/video-list'
 import { useVideos } from '@/hooks/use-videos'
+import { getIconComponent } from '@/lib/utils/icon-utils'
 import type { VideoFilters, VideoWithTags } from '@/types/video'
-
-// Helper function to get icon component from string
-const getIconComponent = (iconName: string): LucideIcon => {
-    const iconMap: Record<string, LucideIcon> = {
-        youtube: Youtube,
-        tv: Tv,
-        gamepad2: Gamepad2,
-        globe: Globe,
-        video: Globe,
-    }
-    return iconMap[iconName.toLowerCase()] || Globe
-}
 
 type TabType = 'active' | 'watched'
 

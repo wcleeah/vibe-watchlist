@@ -191,10 +191,6 @@ export default function Home() {
         }
     }
 
-    useEffect(() => {
-        console.log(form.formState.errors)
-    }, [form.formState.errors])
-
     if (
         urlValidation.validating ||
         (!isReadyForForm && urlValidation.urlValidationResult?.isValid)

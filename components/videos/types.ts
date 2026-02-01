@@ -37,10 +37,3 @@ export interface PreviewCardProps {
 export interface LoadingSkeletonProps {
     className?: string
 }
-
-export interface ErrorDisplayProps {
-    error: string
-    onRetry?: () => void
-    onToggleManual?: () => void
-    className?: string
-}

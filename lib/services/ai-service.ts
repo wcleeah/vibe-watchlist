@@ -243,7 +243,6 @@ export class AIService {
             }
 
             const startTime = Date.now()
-            console.log("hehe")
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {

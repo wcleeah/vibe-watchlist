@@ -1,14 +1,6 @@
 'use client'
 
-import {
-    CheckCircle2,
-    Gamepad2,
-    Globe,
-    ListMusic,
-    type LucideIcon,
-    Tv,
-    Youtube,
-} from 'lucide-react'
+import { CheckCircle2, ListMusic } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -25,19 +17,8 @@ import {
     type TagOption,
 } from '@/components/shared'
 import { usePlaylists } from '@/hooks/use-playlists'
+import { getIconComponent } from '@/lib/utils/icon-utils'
 import type { PlaylistFilters, PlaylistSummary } from '@/types/playlist'
-
-// Helper function to get icon component from string
-const getIconComponent = (iconName: string): LucideIcon => {
-    const iconMap: Record<string, LucideIcon> = {
-        youtube: Youtube,
-        tv: Tv,
-        gamepad2: Gamepad2,
-        globe: Globe,
-        video: Globe,
-    }
-    return iconMap[iconName.toLowerCase()] || Globe
-}
 
 type TabType = 'active' | 'completed'
 
