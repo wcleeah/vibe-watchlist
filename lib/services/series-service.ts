@@ -49,6 +49,12 @@ export class SeriesService {
         if (filters?.isWatched !== undefined) {
             params.set('isWatched', String(filters.isWatched))
         }
+        if (filters?.sortBy) {
+            params.set('sortBy', filters.sortBy)
+        }
+        if (filters?.sortOrder) {
+            params.set('sortOrder', filters.sortOrder)
+        }
 
         const url = params.toString()
             ? `${SeriesService.API_BASE}?${params.toString()}`

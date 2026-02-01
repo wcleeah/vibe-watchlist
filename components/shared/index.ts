@@ -24,6 +24,11 @@ export {
 } from './media-card'
 export { MediaList, type MediaListProps } from './media-list'
 export { ProgressBar } from './progress-bar'
+export { SortableItem } from './sortable-item'
+export {
+    SortableMediaList,
+    type SortableMediaListProps,
+} from './sortable-media-list'
 export { type TabConfig, TabSwitcher } from './tab-switcher'
 // Basic components
 export { ThumbnailDisplay } from './thumbnail-display'

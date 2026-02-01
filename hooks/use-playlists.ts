@@ -14,6 +14,7 @@ interface UsePlaylistsReturn {
     deletePlaylist: (id: number) => Promise<void>
     markCompleted: (id: number) => Promise<void>
     unmarkCompleted: (id: number) => Promise<void>
+    reorderPlaylists: (orderedIds: number[]) => Promise<void>
 }
 
 interface UsePlaylistsOptions {
@@ -68,6 +69,11 @@ export function usePlaylists(
             // Add channel title filter
             if (filters?.channelTitle?.trim()) {
                 params.set('channelTitle', filters.channelTitle.trim())
+            }
+
+            // Add sortBy filter
+            if (filters?.sortBy) {
+                params.set('sortBy', filters.sortBy)
             }
 
             const response = await fetch(`/api/playlists?${params.toString()}`)
@@ -239,6 +245,28 @@ export function usePlaylists(
         [fetchPlaylists],
     )
 
+    // Reorder playlists - update sortOrder in database
+    const reorderPlaylists = useCallback(async (orderedIds: number[]) => {
+        const response = await fetch('/api/playlists/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderedIds }),
+        })
+
+        if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Failed to reorder playlists')
+        }
+
+        // Update local state with new order to keep in sync
+        setPlaylists((prev) => {
+            const playlistMap = new Map(prev.map((p) => [p.id, p]))
+            return orderedIds
+                .map((id) => playlistMap.get(id))
+                .filter((p): p is PlaylistSummary => p !== undefined)
+        })
+    }, [])
+
     useEffect(() => {
         if (autoFetch) {
             fetchPlaylists()
@@ -254,5 +282,6 @@ export function usePlaylists(
         deletePlaylist,
         markCompleted,
         unmarkCompleted,
+        reorderPlaylists,
     }
 }

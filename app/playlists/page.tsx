@@ -41,6 +41,7 @@ const getIconComponent = (iconName: string): LucideIcon => {
 type TabType = 'active' | 'completed'
 
 const SORT_OPTIONS: SortOption[] = [
+    { value: 'custom', label: 'Custom Order' },
     { value: 'progress-asc', label: 'Least Progress' },
     { value: 'progress-desc', label: 'Most Progress' },
     { value: 'createdAt-desc', label: 'Newest First' },
@@ -62,7 +63,15 @@ export default function PlaylistsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
     const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
-    const [sortValue, setSortValue] = useState('progress-asc')
+    const [sortValue, setSortValue] = useState('custom')
+
+    // Check if custom order is selected (for drag-drop)
+    const isCustomOrder = sortValue === 'custom'
+
+    // Parse sortBy for API - extract the field name (e.g., 'progress' from 'progress-asc')
+    const sortBy = isCustomOrder
+        ? 'custom'
+        : (sortValue.split('-')[0] as 'progress' | 'createdAt' | 'title')
 
     // Modal state
     const [selectedPlaylist, setSelectedPlaylist] =
@@ -128,8 +137,9 @@ export default function PlaylistsPage() {
                     ? selectedPlatforms[0]
                     : undefined,
             tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+            sortBy,
         }),
-        [searchQuery, selectedPlatforms, selectedTagIds],
+        [searchQuery, selectedPlatforms, selectedTagIds, sortBy],
     )
 
     // Build filters for completed playlists
@@ -142,8 +152,9 @@ export default function PlaylistsPage() {
                     ? selectedPlatforms[0]
                     : undefined,
             tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+            sortBy,
         }),
-        [searchQuery, selectedPlatforms, selectedTagIds],
+        [searchQuery, selectedPlatforms, selectedTagIds, sortBy],
     )
 
     // Data hooks for both tabs
@@ -154,9 +165,15 @@ export default function PlaylistsPage() {
     const currentHook =
         activeTab === 'active' ? activePlaylists : completedPlaylists
 
-    // Client-side sorting
+    // Client-side sorting (skip if custom order - use DB sortOrder)
     const sortedPlaylists = useMemo(() => {
         const playlists = [...currentHook.playlists]
+
+        // Custom order uses sortOrder from the database
+        if (isCustomOrder) {
+            return playlists
+        }
+
         const [sortBy, sortOrder] = sortValue.split('-') as [
             string,
             'asc' | 'desc',
@@ -199,7 +216,7 @@ export default function PlaylistsPage() {
         })
 
         return playlists
-    }, [currentHook.playlists, sortValue])
+    }, [currentHook.playlists, sortValue, isCustomOrder])
 
     // Client-side tag filtering (for multi-platform selection)
     const filteredPlaylists = useMemo(() => {
@@ -346,6 +363,13 @@ export default function PlaylistsPage() {
                     onViewItems={handleViewItems}
                     onSync={currentHook.sync}
                     onDelete={currentHook.deletePlaylist}
+                    onReorder={
+                        isCustomOrder
+                            ? activeTab === 'active'
+                                ? activePlaylists.reorderPlaylists
+                                : completedPlaylists.reorderPlaylists
+                            : undefined
+                    }
                     emptyState={{
                         title:
                             activeTab === 'active'

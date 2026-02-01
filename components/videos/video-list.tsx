@@ -2,7 +2,7 @@
 
 import { Film } from 'lucide-react'
 
-import { MediaList } from '@/components/shared'
+import { MediaList, SortableMediaList } from '@/components/shared'
 
 import type { Video } from '@/lib/db/schema'
 import type { Tag } from '@/types/tag'
@@ -24,6 +24,7 @@ interface VideoListProps {
     onConvertToSeries?: (video: VideoWithTags) => void
     onConvertToPlaylist?: (video: VideoWithTags) => void
     playlistUrlVideoIds?: Set<number>
+    onReorder?: (orderedIds: number[]) => Promise<void>
     emptyState?: {
         title: string
         description: string
@@ -39,6 +40,7 @@ export function VideoList({
     onConvertToSeries,
     onConvertToPlaylist,
     playlistUrlVideoIds,
+    onReorder,
     emptyState,
 }: VideoListProps) {
     const renderCard = (video: VideoWithTags) => {
@@ -65,21 +67,38 @@ export function VideoList({
         )
     }
 
+    const emptyStateConfig = {
+        title: emptyState?.title || 'No videos found',
+        description:
+            emptyState?.description ||
+            'Add your first video above to get started',
+        icon: (
+            <Film className='w-16 h-16 text-gray-300 dark:text-gray-700 mb-4' />
+        ),
+    }
+
+    // If onReorder is provided, use SortableMediaList for drag-and-drop
+    if (onReorder) {
+        return (
+            <SortableMediaList
+                items={videos}
+                renderCard={renderCard}
+                keyExtractor={(video) => video.id}
+                onReorder={onReorder}
+                loading={loading}
+                emptyState={emptyStateConfig}
+            />
+        )
+    }
+
+    // Otherwise use regular MediaList (read-only mode)
     return (
         <MediaList
             items={videos}
             renderCard={renderCard}
             keyExtractor={(video) => video.id}
             loading={loading}
-            emptyState={{
-                title: emptyState?.title || 'No videos found',
-                description:
-                    emptyState?.description ||
-                    'Add your first video above to get started',
-                icon: (
-                    <Film className='w-16 h-16 text-gray-300 dark:text-gray-700 mb-4' />
-                ),
-            }}
+            emptyState={emptyStateConfig}
         />
     )
 }

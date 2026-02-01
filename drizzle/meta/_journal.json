@@ -43,6 +43,13 @@
       "when": 1767686850000,
       "tag": "0005_seed_preset_platforms",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1767750000000,
+      "tag": "0009_add_sort_order",
+      "breakpoints": true
     }
   ]
 }

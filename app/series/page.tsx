@@ -45,6 +45,7 @@ type TabType = 'active' | 'watched'
 type StatusFilter = 'all' | 'behind' | 'caught-up' | 'backlog'
 
 const SORT_OPTIONS: SortOption[] = [
+    { value: 'custom', label: 'Custom Order' },
     { value: 'missedPeriods-desc', label: 'Most Behind' },
     { value: 'missedPeriods-asc', label: 'Least Behind' },
     { value: 'createdAt-desc', label: 'Newest First' },
@@ -67,7 +68,18 @@ export default function SeriesPage() {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
     const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
-    const [sortValue, setSortValue] = useState('missedPeriods-desc')
+    const [sortValue, setSortValue] = useState('custom')
+
+    // Check if custom order is selected (for drag-drop)
+    const isCustomOrder = sortValue === 'custom'
+
+    // Parse sort value for API
+    const [sortBy, sortOrder] = isCustomOrder
+        ? (['custom', 'desc'] as const)
+        : (sortValue.split('-') as [
+              'missedPeriods' | 'createdAt' | 'title',
+              'asc' | 'desc',
+          ])
 
     // Platform and tag data
     const [platforms, setPlatforms] = useState<PlatformOption[]>([])
@@ -92,8 +104,10 @@ export default function SeriesPage() {
                     : undefined,
             search: searchQuery || undefined,
             isWatched: false,
+            sortBy,
+            sortOrder,
         }),
-        [statusFilter, selectedPlatforms, searchQuery],
+        [statusFilter, selectedPlatforms, searchQuery, sortBy, sortOrder],
     )
 
     // Build filters for watched series
@@ -101,8 +115,10 @@ export default function SeriesPage() {
         () => ({
             search: searchQuery || undefined,
             isWatched: true,
+            sortBy,
+            sortOrder,
         }),
-        [searchQuery],
+        [searchQuery, sortBy, sortOrder],
     )
 
     // Two separate hooks for active and watched series
@@ -367,6 +383,13 @@ export default function SeriesPage() {
                             : watchedSeries.deleteSeries
                     }
                     onEdit={handleEditSeries}
+                    onReorder={
+                        isCustomOrder
+                            ? activeTab === 'active'
+                                ? activeSeries.reorderSeries
+                                : watchedSeries.reorderSeries
+                            : undefined
+                    }
                 />
 
                 {/* Edit Modal */}

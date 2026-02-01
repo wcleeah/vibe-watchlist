@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         const watched = searchParams.get('watched')
         const platforms = searchParams.get('platforms') // comma-separated list
         const search = searchParams.get('search') // title search
-        const sortBy = searchParams.get('sortBy') || 'createdAt' // createdAt, updatedAt, title
+        const sortBy = searchParams.get('sortBy') // createdAt, updatedAt, title, or null for custom order
         const sortOrder = searchParams.get('sortOrder') || 'desc' // asc, desc
         const limit = parseInt(searchParams.get('limit') || '50', 10)
         const offset = parseInt(searchParams.get('offset') || '0', 10)
@@ -63,10 +63,14 @@ export async function GET(request: NextRequest) {
         }
 
         // Build dynamic order by clause
+        // Only use sortOrder column when no specific sort is requested (custom order)
+        const useCustomOrder = !sortBy || sortBy === 'sortOrder'
+
         let orderByColumn:
             | typeof videos.updatedAt
             | typeof videos.title
             | typeof videos.createdAt
+            | typeof videos.sortOrder
         switch (sortBy) {
             case 'updatedAt':
                 orderByColumn = videos.updatedAt
@@ -74,12 +78,20 @@ export async function GET(request: NextRequest) {
             case 'title':
                 orderByColumn = videos.title
                 break
+            case 'sortOrder':
+                orderByColumn = videos.sortOrder
+                break
             default:
                 orderByColumn = videos.createdAt
                 break
         }
 
         const orderDirection = sortOrder === 'asc' ? sql`ASC` : sql`DESC`
+
+        // Build orderBy clause - use sortOrder only for custom order, otherwise use selected column
+        const orderBySql = useCustomOrder
+            ? sql`${videos.sortOrder} ASC, ${videos.createdAt} DESC`
+            : sql`${orderByColumn} ${orderDirection}`
 
         // Prepare query parameters
         const queryParams: Record<string, string | string[]> = {}
@@ -124,11 +136,7 @@ export async function GET(request: NextRequest) {
                     : undefined,
             )
             .groupBy(videos.id)
-            .orderBy(
-                orderDirection === sql`ASC`
-                    ? sql`${orderByColumn} ASC`
-                    : sql`${orderByColumn} DESC`,
-            )
+            .orderBy(orderBySql)
             .limit(limit)
             .offset(offset)
 

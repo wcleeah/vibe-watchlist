@@ -43,6 +43,7 @@ const getIconComponent = (iconName: string): LucideIcon => {
 type TabType = 'active' | 'watched'
 
 const SORT_OPTIONS: SortOption[] = [
+    { value: 'custom', label: 'Custom Order' },
     { value: 'createdAt-desc', label: 'Newest First' },
     { value: 'createdAt-asc', label: 'Oldest First' },
     { value: 'updatedAt-desc', label: 'Recently Updated' },
@@ -63,7 +64,7 @@ export default function ListPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
     const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
-    const [sortValue, setSortValue] = useState('createdAt-desc')
+    const [sortValue, setSortValue] = useState('custom')
 
     // Modal state
     const [editVideo, setEditVideo] = useState<VideoWithTags | null>(null)
@@ -79,11 +80,14 @@ export default function ListPage() {
     const [platforms, setPlatforms] = useState<PlatformOption[]>([])
     const [allTags, setAllTags] = useState<TagOption[]>([])
 
-    // Parse sort value
-    const [sortBy, sortOrder] = sortValue.split('-') as [
-        'createdAt' | 'updatedAt' | 'title',
-        'asc' | 'desc',
-    ]
+    // Parse sort value (custom order uses sortOrder from DB)
+    const isCustomOrder = sortValue === 'custom'
+    const [sortBy, sortOrder] = isCustomOrder
+        ? ([undefined, undefined] as const)
+        : (sortValue.split('-') as [
+              'createdAt' | 'updatedAt' | 'title',
+              'asc' | 'desc',
+          ])
 
     // Build filters for active videos
     const activeFilters: VideoFilters = useMemo(
@@ -346,6 +350,13 @@ export default function ListPage() {
                     onConvertToSeries={handleConvertToSeries}
                     onConvertToPlaylist={handleConvertToPlaylist}
                     playlistUrlVideoIds={playlistUrlVideoIds}
+                    onReorder={
+                        isCustomOrder
+                            ? activeTab === 'active'
+                                ? activeVideos.reorderVideos
+                                : watchedVideos.reorderVideos
+                            : undefined
+                    }
                     emptyState={{
                         title:
                             activeTab === 'active'

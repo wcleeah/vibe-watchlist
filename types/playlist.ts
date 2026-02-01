@@ -30,6 +30,7 @@ export interface PlaylistSummary {
     watchedCount: number
     unwatchedCount: number
     isWatched: boolean | null
+    sortOrder: number
     lastSyncedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -76,6 +77,7 @@ export interface PlaylistFilters {
     platform?: string
     tagIds?: number[]
     channelTitle?: string
+    sortBy?: 'custom' | 'progress' | 'createdAt' | 'title'
 }
 
 // Playlist import preview (before confirming import)
