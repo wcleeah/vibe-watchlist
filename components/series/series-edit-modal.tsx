@@ -16,9 +16,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { TagList } from '@/components/ui/tag'
-import { DatePickerField } from '@/components/video-form/date-picker-field'
-import { ScheduleSelector } from '@/components/video-form/schedule-selector'
 import { useTags } from '@/hooks/use-tags'
 import { SeriesService } from '@/lib/services/series-service'
 import type {
@@ -26,6 +23,9 @@ import type {
     ScheduleValue,
     SeriesWithTags,
 } from '@/types/series'
+import { EpisodeProgressSection } from './episode-progress-section'
+import { SeriesScheduleEditSection } from './series-schedule-edit-section'
+import { TagEditSection } from './tag-edit-section'
 
 interface SeriesEditModalProps {
     series: SeriesWithTags | null
@@ -176,7 +176,6 @@ export function SeriesEditModal({
 
         setIsSubmitting(true)
         try {
-            // Parse episode counts from strings
             const totalEpisodes = data.totalEpisodes
                 ? parseInt(data.totalEpisodes, 10)
                 : null
@@ -284,51 +283,20 @@ export function SeriesEditModal({
                     </div>
 
                     {/* Schedule */}
-                    <div className='space-y-4 p-4 bg-muted/50 rounded-lg'>
-                        <h3 className='font-medium'>Schedule</h3>
-                        <ScheduleSelector
-                            scheduleType={scheduleType}
-                            scheduleValue={scheduleValue}
-                            onTypeChange={setScheduleType}
-                            onValueChange={setScheduleValue}
-                            onEndDateChange={setEndDate}
-                            onTotalEpisodesChange={(value) =>
-                                setValue('totalEpisodes', value)
-                            }
-                            disabled={isSubmitting}
-                        />
-
-                        <div className='grid grid-cols-2 gap-4'>
-                            <DatePickerField
-                                id='edit-start-date'
-                                label='Start Date'
-                                value={startDate}
-                                onChange={(date) =>
-                                    setStartDate(
-                                        date ||
-                                            new Date()
-                                                .toISOString()
-                                                .split('T')[0],
-                                    )
-                                }
-                                required
-                                disabled={isSubmitting}
-                            />
-                            <DatePickerField
-                                id='edit-end-date'
-                                label={
-                                    scheduleType === 'dates'
-                                        ? 'End Date (Auto)'
-                                        : 'End Date (Optional)'
-                                }
-                                value={endDate}
-                                onChange={setEndDate}
-                                disabled={
-                                    isSubmitting || scheduleType === 'dates'
-                                }
-                            />
-                        </div>
-                    </div>
+                    <SeriesScheduleEditSection
+                        scheduleType={scheduleType}
+                        scheduleValue={scheduleValue}
+                        startDate={startDate}
+                        endDate={endDate}
+                        disabled={isSubmitting}
+                        onScheduleTypeChange={setScheduleType}
+                        onScheduleValueChange={setScheduleValue}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onTotalEpisodesChange={(value) =>
+                            setValue('totalEpisodes', value)
+                        }
+                    />
 
                     {/* Active Status */}
                     <div className='flex items-center space-x-2'>
@@ -345,110 +313,34 @@ export function SeriesEditModal({
                     </div>
 
                     {/* Episode Progress */}
-                    <div className='space-y-4 p-4 bg-muted/50 rounded-lg'>
-                        <h3 className='font-medium'>Episode Progress</h3>
-                        <p className='text-sm text-muted-foreground'>
-                            Track your progress through the series (optional)
-                        </p>
-                        <div className='grid grid-cols-2 gap-4'>
-                            <div className='space-y-2'>
-                                <Label htmlFor='watchedEpisodes'>
-                                    Watched Episodes
-                                </Label>
-                                <Input
-                                    id='watchedEpisodes'
-                                    type='number'
-                                    min='0'
-                                    {...register('watchedEpisodes')}
-                                    placeholder='0'
-                                    disabled={isSubmitting}
-                                />
-                            </div>
-                            <div className='space-y-2'>
-                                <Label htmlFor='totalEpisodes'>
-                                    {scheduleType === 'dates'
-                                        ? 'Total Episodes (Auto)'
-                                        : 'Total Episodes'}
-                                </Label>
-                                <Input
-                                    id='totalEpisodes'
-                                    type='number'
-                                    min='0'
-                                    {...register('totalEpisodes')}
-                                    placeholder={
-                                        scheduleType === 'dates'
-                                            ? 'Calculated from dates'
-                                            : 'Unknown'
-                                    }
-                                    disabled={
-                                        isSubmitting || scheduleType === 'dates'
-                                    }
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    <EpisodeProgressSection
+                        watchedEpisodes={watch('watchedEpisodes') || ''}
+                        totalEpisodes={watch('totalEpisodes') || ''}
+                        scheduleType={scheduleType}
+                        disabled={isSubmitting}
+                        onWatchedEpisodesChange={(value) =>
+                            setValue('watchedEpisodes', value)
+                        }
+                        onTotalEpisodesChange={(value) =>
+                            setValue('totalEpisodes', value)
+                        }
+                    />
 
                     {/* Tags */}
-                    <div className='space-y-2'>
-                        <Label>Tags</Label>
-
-                        {selectedTags.length > 0 && (
-                            <TagList
-                                tags={selectedTags}
-                                onRemove={removeTag}
-                                size='sm'
-                            />
-                        )}
-
-                        <div className='flex gap-2'>
-                            <Input
-                                type='text'
-                                placeholder='Add a tag'
-                                value={tagInput}
-                                onChange={(e) => setTagInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ',') {
-                                        e.preventDefault()
-                                        addTag(tagInput.trim())
-                                    }
-                                }}
-                                disabled={isSubmitting || isLoadingTags}
-                                className='flex-1'
-                            />
-                            <Button
-                                type='button'
-                                onClick={() => addTag(tagInput.trim())}
-                                disabled={
-                                    !tagInput.trim() ||
-                                    isSubmitting ||
-                                    isLoadingTags
-                                }
-                            >
-                                Add
-                            </Button>
-                        </div>
-
-                        {filteredSuggestions.length > 0 && tagInput && (
-                            <div className='border rounded-md p-2 space-y-1'>
-                                {filteredSuggestions.map((tag) => (
-                                    <button
-                                        key={tag.id}
-                                        type='button'
-                                        onClick={() => {
-                                            setValue('tagIds', [
-                                                ...formTagIds,
-                                                tag.id,
-                                            ])
-                                            setTagInput('')
-                                        }}
-                                        className='w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm'
-                                    >
-                                        {tag.name}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                    <TagEditSection
+                        selectedTags={selectedTags}
+                        tagInput={tagInput}
+                        filteredSuggestions={filteredSuggestions}
+                        isSubmitting={isSubmitting}
+                        isLoadingTags={isLoadingTags}
+                        onTagInputChange={setTagInput}
+                        onAddTag={addTag}
+                        onRemoveTag={removeTag}
+                        onSelectSuggestion={(tagId) => {
+                            setValue('tagIds', [...formTagIds, tagId])
+                            setTagInput('')
+                        }}
+                    />
 
                     {/* Actions */}
                     <div className='flex gap-2 justify-end pt-4 border-t'>
