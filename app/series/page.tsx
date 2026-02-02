@@ -10,14 +10,13 @@ import { SeriesList } from '@/components/series/series-list'
 import {
     ErrorDisplay,
     FilterBar,
-    type PlatformOption,
     type SortOption,
     type StatusOption,
     TabSwitcher,
-    type TagOption,
 } from '@/components/shared'
+import { usePlatforms } from '@/hooks/use-platforms'
 import { useSeries } from '@/hooks/use-series'
-import { getIconComponent } from '@/lib/utils/icon-utils'
+import { useTags } from '@/hooks/use-tags'
 import type { SeriesFilters, SeriesWithTags } from '@/types/series'
 import { isBacklogSeries } from '@/types/series'
 
@@ -62,8 +61,8 @@ export default function SeriesPage() {
           ])
 
     // Platform and tag data
-    const [platforms, setPlatforms] = useState<PlatformOption[]>([])
-    const [allTags, setAllTags] = useState<TagOption[]>([])
+    const { platformOptions: platforms } = usePlatforms()
+    const { tags: allTags } = useTags()
 
     // Edit modal state
     const [editModalOpen, setEditModalOpen] = useState(false)
@@ -107,51 +106,6 @@ export default function SeriesPage() {
 
     // Get current data based on active tab
     const currentHook = activeTab === 'active' ? activeSeries : watchedSeries
-
-    // Fetch available tags
-    useEffect(() => {
-        const fetchTags = async () => {
-            try {
-                const response = await fetch('/api/tags')
-                if (response.ok) {
-                    const tags = await response.json()
-                    setAllTags(tags)
-                }
-            } catch (error) {
-                console.error('Failed to fetch tags:', error)
-            }
-        }
-        fetchTags()
-    }, [])
-
-    // Load platforms dynamically
-    useEffect(() => {
-        const loadPlatforms = async () => {
-            try {
-                const response = await fetch('/api/platforms')
-                if (response.ok) {
-                    const data = await response.json()
-                    const platformData: PlatformOption[] = data.data.map(
-                        (p: {
-                            platformId: string
-                            displayName: string
-                            icon?: string
-                            color?: string
-                        }) => ({
-                            key: p.platformId,
-                            label: p.displayName,
-                            icon: getIconComponent(p.icon || 'Video'),
-                            color: p.color || '#6b7280',
-                        }),
-                    )
-                    setPlatforms(platformData)
-                }
-            } catch (error) {
-                console.error('Failed to load platforms:', error)
-            }
-        }
-        loadPlatforms()
-    }, [])
 
     // Client-side filtering for multiple platforms, tags, and backlog status
     const filteredSeries = useMemo(() => {

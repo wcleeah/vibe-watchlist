@@ -3,11 +3,13 @@
 import { Loader2, Plus, X } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { usePlatforms } from '@/hooks/use-platforms'
 
 interface PlatformCreatorProps {
     onPlatformCreated?: (platform: string) => void
@@ -16,6 +18,9 @@ interface PlatformCreatorProps {
 export function PlatformCreator({ onPlatformCreated }: PlatformCreatorProps) {
     const [isExpanded, setIsExpanded] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Use the centralized platforms hook (skip fetch since we only need addPlatform)
+    const { addPlatform } = usePlatforms({ fetchOnMount: false })
 
     const [formData, setFormData] = useState({
         platformId: '',
@@ -63,27 +68,20 @@ export function PlatformCreator({ onPlatformCreated }: PlatformCreatorProps) {
         setIsSubmitting(true)
 
         try {
-            const response = await fetch('/api/platforms/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    platformId: formData.platformId.trim(),
-                    name: formData.name.trim(),
-                    displayName: formData.displayName.trim(),
-                    patterns: formData.patterns,
-                    color: formData.color,
-                    icon: formData.icon,
-                }),
+            const newPlatform = await addPlatform({
+                platformId: formData.platformId.trim(),
+                name: formData.name.trim(),
+                displayName: formData.displayName.trim(),
+                patterns: formData.patterns,
+                color: formData.color,
+                icon: formData.icon,
             })
 
-            if (response.ok) {
-                const result = await response.json()
+            if (newPlatform) {
                 toast.success(
                     `Platform "${formData.displayName}" created successfully!`,
                 )
-                onPlatformCreated?.(result.platform.platformId)
+                onPlatformCreated?.(newPlatform.platformId)
                 setIsExpanded(false)
                 // Reset form
                 setFormData({
@@ -96,8 +94,7 @@ export function PlatformCreator({ onPlatformCreated }: PlatformCreatorProps) {
                     icon: 'Video',
                 })
             } else {
-                const error = await response.json()
-                toast.error(`Failed to create platform: ${error.error}`)
+                toast.error('Failed to create platform')
             }
         } catch (error) {
             console.error('Platform creation error:', error)

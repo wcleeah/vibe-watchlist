@@ -19,13 +19,13 @@ import { Label } from '@/components/ui/label'
 import { TagList } from '@/components/ui/tag'
 import { DatePickerField } from '@/components/video-form/date-picker-field'
 import { ScheduleSelector } from '@/components/video-form/schedule-selector'
+import { useTags } from '@/hooks/use-tags'
 import { SeriesService } from '@/lib/services/series-service'
 import type {
     ScheduleType,
     ScheduleValue,
     SeriesWithTags,
 } from '@/types/series'
-import type { Tag } from '@/types/tag'
 
 interface SeriesEditModalProps {
     series: SeriesWithTags | null
@@ -53,7 +53,7 @@ export function SeriesEditModal({
     onSuccess,
 }: SeriesEditModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [availableTags, setAvailableTags] = useState<Tag[]>([])
+    const { tags: availableTags, addTag: addNewTag } = useTags()
     const [tagInput, setTagInput] = useState('')
     const [isLoadingTags, setIsLoadingTags] = useState(false)
 
@@ -118,22 +118,6 @@ export function SeriesEditModal({
         }
     }, [series, open, reset])
 
-    // Fetch available tags
-    useEffect(() => {
-        const fetchTags = async () => {
-            try {
-                const response = await fetch('/api/tags')
-                if (response.ok) {
-                    const tags = await response.json()
-                    setAvailableTags(tags)
-                }
-            } catch (error) {
-                console.error('Failed to fetch tags:', error)
-            }
-        }
-        fetchTags()
-    }, [])
-
     const addTag = async (tagName: string) => {
         if (!tagName) return
 
@@ -157,15 +141,8 @@ export function SeriesEditModal({
 
         setIsLoadingTags(true)
         try {
-            const response = await fetch('/api/tags', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: tagName }),
-            })
-
-            if (response.ok) {
-                const newTag = await response.json()
-                setAvailableTags((prev) => [...prev, newTag])
+            const newTag = await addNewTag(tagName)
+            if (newTag) {
                 setValue('tagIds', [...formTagIds, newTag.id])
                 setTagInput('')
             } else {

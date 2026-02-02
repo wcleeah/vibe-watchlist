@@ -9,25 +9,13 @@ import {
     ToggleRight,
     Trash2,
 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { usePlatforms } from '@/hooks/use-platforms'
 
-interface PlatformConfig {
-    id: string
-    platformId: string
-    name: string
-    displayName: string
-    patterns: string[]
-    extractor: string
-    color: string
-    icon: string
-    enabled: boolean
-    isPreset: boolean
-    confidenceScore: number
-    createdAt: string
-    updatedAt: string
-}
+import type { PlatformConfig } from '@/types/platform'
 
 interface PlatformListProps {
     onEdit: (platform: PlatformConfig) => void
@@ -36,56 +24,17 @@ interface PlatformListProps {
 }
 
 export function PlatformList({ onEdit, onAdd, onRefresh }: PlatformListProps) {
-    const [platforms, setPlatforms] = useState<PlatformConfig[]>([])
-    const [loading, setLoading] = useState(true)
+    const { platforms, loading, toggleEnabled, deletePlatform, refetch } =
+        usePlatforms({ includeIcons: false })
     const [toggling, setToggling] = useState<string | null>(null)
-
-    const fetchPlatforms = useCallback(async () => {
-        try {
-            setLoading(true)
-            const response = await fetch('/api/platforms')
-            if (response.ok) {
-                const data = await response.json()
-                // Include disabled platforms for management
-                setPlatforms(data.data || [])
-            }
-        } catch (error) {
-            console.error('Failed to fetch platforms:', error)
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
-    useEffect(() => {
-        fetchPlatforms()
-    }, [fetchPlatforms])
 
     const handleToggleEnabled = async (
         platformId: string,
         currentlyEnabled: boolean,
     ) => {
-        try {
-            setToggling(platformId)
-            const response = await fetch(`/api/platforms/${platformId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled: !currentlyEnabled }),
-            })
-
-            if (response.ok) {
-                setPlatforms(
-                    platforms.map((p) =>
-                        p.platformId === platformId
-                            ? { ...p, enabled: !currentlyEnabled }
-                            : p,
-                    ),
-                )
-            }
-        } catch (error) {
-            console.error('Failed to toggle platform:', error)
-        } finally {
-            setToggling(null)
-        }
+        setToggling(platformId)
+        await toggleEnabled(platformId, !currentlyEnabled)
+        setToggling(null)
     }
 
     const handleDelete = async (platformId: string, isPreset: boolean) => {
@@ -104,31 +53,31 @@ export function PlatformList({ onEdit, onAdd, onRefresh }: PlatformListProps) {
             return
         }
 
-        try {
-            const response = await fetch(`/api/platforms/${platformId}`, {
-                method: 'DELETE',
-            })
-
-            if (response.ok) {
-                setPlatforms(
-                    platforms.filter((p) => p.platformId !== platformId),
-                )
-            }
-        } catch (error) {
-            console.error('Failed to delete platform:', error)
-        }
+        await deletePlatform(platformId)
     }
 
-    const getConfidenceColor = (score: number) => {
-        if (score >= 0.8) return 'text-green-600 dark:text-green-400'
-        if (score >= 0.6) return 'text-yellow-600 dark:text-yellow-400'
+    const handleRefresh = async () => {
+        await refetch()
+        onRefresh()
+    }
+
+    const getConfidenceColor = (score: number | string) => {
+        const numScore = typeof score === 'string' ? parseFloat(score) : score
+        if (numScore >= 0.8) return 'text-green-600 dark:text-green-400'
+        if (numScore >= 0.6) return 'text-yellow-600 dark:text-yellow-400'
         return 'text-red-600 dark:text-red-400'
     }
 
-    const getConfidenceLabel = (score: number) => {
-        if (score >= 0.8) return 'High'
-        if (score >= 0.6) return 'Medium'
+    const getConfidenceLabel = (score: number | string) => {
+        const numScore = typeof score === 'string' ? parseFloat(score) : score
+        if (numScore >= 0.8) return 'High'
+        if (numScore >= 0.6) return 'Medium'
         return 'Low'
+    }
+
+    const getConfidencePercent = (score: number | string) => {
+        const numScore = typeof score === 'string' ? parseFloat(score) : score
+        return Math.round(numScore * 100)
     }
 
     if (loading) {
@@ -159,7 +108,11 @@ export function PlatformList({ onEdit, onAdd, onRefresh }: PlatformListProps) {
                         Platform Configurations ({platforms.length})
                     </h3>
                     <div className='flex gap-2'>
-                        <Button onClick={onRefresh} variant='outline' size='sm'>
+                        <Button
+                            onClick={handleRefresh}
+                            variant='outline'
+                            size='sm'
+                        >
                             <RefreshCw className='w-4 h-4 mr-2' />
                             Refresh
                         </Button>
@@ -241,15 +194,16 @@ export function PlatformList({ onEdit, onAdd, onRefresh }: PlatformListProps) {
                                                 Confidence:
                                             </span>
                                             <span
-                                                className={`ml-2 text-sm font-medium ${getConfidenceColor(platform.confidenceScore)}`}
+                                                className={`ml-2 text-sm font-medium ${getConfidenceColor(platform.confidenceScore ?? 0.5)}`}
                                             >
                                                 {getConfidenceLabel(
-                                                    platform.confidenceScore,
+                                                    platform.confidenceScore ??
+                                                        0.5,
                                                 )}{' '}
                                                 (
-                                                {Math.round(
-                                                    platform.confidenceScore *
-                                                        100,
+                                                {getConfidencePercent(
+                                                    platform.confidenceScore ??
+                                                        0.5,
                                                 )}
                                                 %)
                                             </span>
@@ -277,15 +231,19 @@ export function PlatformList({ onEdit, onAdd, onRefresh }: PlatformListProps) {
                                     <div className='flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400'>
                                         <span>
                                             Created:{' '}
-                                            {new Date(
-                                                platform.createdAt,
-                                            ).toLocaleDateString()}
+                                            {platform.createdAt
+                                                ? new Date(
+                                                      platform.createdAt,
+                                                  ).toLocaleDateString()
+                                                : 'N/A'}
                                         </span>
                                         <span>
                                             Updated:{' '}
-                                            {new Date(
-                                                platform.updatedAt,
-                                            ).toLocaleDateString()}
+                                            {platform.updatedAt
+                                                ? new Date(
+                                                      platform.updatedAt,
+                                                  ).toLocaleDateString()
+                                                : 'N/A'}
                                         </span>
                                     </div>
                                 </div>
@@ -295,7 +253,7 @@ export function PlatformList({ onEdit, onAdd, onRefresh }: PlatformListProps) {
                                         onClick={() =>
                                             handleToggleEnabled(
                                                 platform.platformId,
-                                                platform.enabled,
+                                                platform.enabled ?? true,
                                             )
                                         }
                                         disabled={
@@ -325,13 +283,13 @@ export function PlatformList({ onEdit, onAdd, onRefresh }: PlatformListProps) {
                                         onClick={() =>
                                             handleDelete(
                                                 platform.platformId,
-                                                platform.isPreset,
+                                                platform.isPreset ?? false,
                                             )
                                         }
                                         variant='outline'
                                         size='sm'
                                         className='h-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950'
-                                        disabled={platform.isPreset}
+                                        disabled={platform.isPreset ?? false}
                                     >
                                         <Trash2 className='w-4 h-4' />
                                     </Button>

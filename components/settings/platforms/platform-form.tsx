@@ -3,12 +3,15 @@
 import { Plus, Save, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { usePlatforms } from '@/hooks/use-platforms'
 
-interface PlatformConfig {
-    id?: string
+import type { PlatformConfig } from '@/types/platform'
+
+interface PlatformFormData {
     platformId: string
     name: string
     displayName: string
@@ -17,7 +20,6 @@ interface PlatformConfig {
     color: string
     icon: string
     enabled: boolean
-    isPreset?: boolean
     confidenceScore: number
 }
 
@@ -34,7 +36,11 @@ export function PlatformForm({
     onClose,
     onSave,
 }: PlatformFormProps) {
-    const [formData, setFormData] = useState<PlatformConfig>({
+    const { addPlatform, updatePlatform } = usePlatforms({
+        fetchOnMount: false,
+    })
+
+    const [formData, setFormData] = useState<PlatformFormData>({
         platformId: '',
         name: '',
         displayName: '',
@@ -52,9 +58,19 @@ export function PlatformForm({
     useEffect(() => {
         if (platform) {
             setFormData({
-                ...platform,
+                platformId: platform.platformId,
+                name: platform.name,
+                displayName: platform.displayName,
                 patterns:
                     platform.patterns.length > 0 ? platform.patterns : [''],
+                extractor: platform.extractor ?? 'ai',
+                color: platform.color || '#6b7280',
+                icon: platform.icon || 'Video',
+                enabled: platform.enabled ?? true,
+                confidenceScore:
+                    typeof platform.confidenceScore === 'string'
+                        ? parseFloat(platform.confidenceScore)
+                        : (platform.confidenceScore ?? 0.5),
             })
         } else {
             // Reset form for new platform
@@ -117,31 +133,49 @@ export function PlatformForm({
 
             const submitData = {
                 ...formData,
-                patterns: formData.patterns.filter((p) => p.trim()), // Remove empty patterns
+                patterns: formData.patterns.filter((p) => p.trim()),
             }
 
-            const url = platform
-                ? `/api/platforms/${platform.platformId}`
-                : '/api/platforms'
-            const method = platform ? 'PUT' : 'POST'
+            if (platform) {
+                // Update existing platform
+                const success = await updatePlatform(platform.platformId, {
+                    name: submitData.name,
+                    displayName: submitData.displayName,
+                    patterns: submitData.patterns,
+                    extractor: submitData.extractor,
+                    color: submitData.color,
+                    icon: submitData.icon,
+                    enabled: submitData.enabled,
+                    confidenceScore: submitData.confidenceScore,
+                })
 
-            const response = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(submitData),
-            })
-
-            if (response.ok) {
-                toast.success(
-                    platform
-                        ? 'Platform updated successfully!'
-                        : 'Platform created successfully!',
-                )
-                onSave()
-                onClose()
+                if (success) {
+                    toast.success('Platform updated successfully!')
+                    onSave()
+                    onClose()
+                } else {
+                    setErrors({ submit: 'Failed to update platform' })
+                }
             } else {
-                const error = await response.json()
-                setErrors({ submit: error.error || 'Failed to save platform' })
+                // Create new platform
+                const result = await addPlatform({
+                    platformId: submitData.platformId,
+                    name: submitData.name,
+                    displayName: submitData.displayName,
+                    patterns: submitData.patterns,
+                    extractor: submitData.extractor,
+                    color: submitData.color,
+                    icon: submitData.icon,
+                    confidenceScore: submitData.confidenceScore,
+                })
+
+                if (result) {
+                    toast.success('Platform created successfully!')
+                    onSave()
+                    onClose()
+                } else {
+                    setErrors({ submit: 'Failed to create platform' })
+                }
             }
         } catch (error) {
             console.error('Error saving platform:', error)
@@ -176,8 +210,8 @@ export function PlatformForm({
 
     return (
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: Modal backdrop click-to-close is standard UX pattern */}
             {/* biome-ignore lint/a11y/noStaticElementInteractions: Modal backdrop click-to-close is standard UX pattern */}
-            {/* biome-ignore lint/a11y/useKeyWithClickEvents: Keyboard close handled at modal level */}
             <div
                 className='absolute inset-0 bg-black bg-opacity-50'
                 onClick={onClose}
@@ -218,7 +252,7 @@ export function PlatformForm({
                                     }))
                                 }
                                 placeholder='youtube'
-                                disabled={!!platform} // Can't change ID when editing
+                                disabled={!!platform}
                                 className={
                                     errors.platformId ? 'border-red-500' : ''
                                 }

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { TagList } from '@/components/ui/tag'
-import type { Tag } from '@/types/tag'
+import { useTags } from '@/hooks/use-tags'
 import type { VideoWithTags } from '@/types/video'
 
 interface VideoEditModalProps {
@@ -40,7 +40,7 @@ export function VideoEditModal({
     onSuccess,
 }: VideoEditModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [availableTags, setAvailableTags] = useState<Tag[]>([])
+    const { tags: availableTags, addTag: addNewTag } = useTags()
     const [tagInput, setTagInput] = useState('')
     const [isLoadingTags, setIsLoadingTags] = useState(false)
 
@@ -82,21 +82,6 @@ export function VideoEditModal({
         }
     }, [video, open, reset])
 
-    useEffect(() => {
-        const fetchTags = async () => {
-            try {
-                const response = await fetch('/api/tags')
-                if (response.ok) {
-                    const tags = await response.json()
-                    setAvailableTags(tags)
-                }
-            } catch (error) {
-                console.error('Failed to fetch tags:', error)
-            }
-        }
-        fetchTags()
-    }, [])
-
     const addTag = async (tagName: string) => {
         if (!tagName) return
 
@@ -120,15 +105,8 @@ export function VideoEditModal({
 
         setIsLoadingTags(true)
         try {
-            const response = await fetch('/api/tags', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: tagName }),
-            })
-
-            if (response.ok) {
-                const newTag = await response.json()
-                setAvailableTags((prev) => [...prev, newTag])
+            const newTag = await addNewTag(tagName)
+            if (newTag) {
                 setValue('tagIds', [...formTagIds, newTag.id])
                 setTagInput('')
             } else {
