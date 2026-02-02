@@ -59,43 +59,40 @@ This plan is organized into 4 phases, progressing from low-risk quick wins to mo
 
 ---
 
-## Phase 2: Hook Extraction (Medium Risk, High Impact)
+## Phase 2: Hook Extraction (Medium Risk, High Impact) - COMPLETED
 
 ### Task 2.1: Create `hooks/use-tags.ts`
 
 Centralize tag fetching used in 9 locations.
 
-- [ ] Create `hooks/use-tags.ts` with CRUD operations
-- [ ] Update `app/list/page.tsx` - Replace inline tag fetch
-- [ ] Update `app/playlists/page.tsx` - Replace inline tag fetch
-- [ ] Update `app/series/page.tsx` - Replace inline tag fetch
-- [ ] Update `components/playlists/playlist-edit-modal.tsx` - Replace inline tag fetch
-- [ ] Update `components/series/series-edit-modal.tsx` - Replace inline tag fetch
-- [ ] Update `components/video-form/form-layout.tsx` - Replace inline tag fetch
-- [ ] Update `components/video-form/video-edit-modal.tsx` - Replace inline tag fetch
-- [ ] Update `components/settings/tags-manager.tsx` - Replace inline tag fetch
+- [x] Create `hooks/use-tags.ts` with CRUD operations
+- [x] Update `app/list/page.tsx` - Replace inline tag fetch
+- [x] Update `app/playlists/page.tsx` - Replace inline tag fetch
+- [x] Update `app/series/page.tsx` - Replace inline tag fetch
+- [x] Update `components/playlists/playlist-edit-modal.tsx` - Replace inline tag fetch
+- [x] Update `components/series/series-edit-modal.tsx` - Replace inline tag fetch
+- [x] Update `components/video-form/form-layout.tsx` - Replace inline tag fetch
+- [x] Update `components/video-form/video-edit-modal.tsx` - Replace inline tag fetch
+- [x] Update `components/settings/tags-manager.tsx` - Replace inline tag fetch (full CRUD)
 
 ### Task 2.2: Create `hooks/use-platforms-with-icons.ts`
 
-- [ ] Create `hooks/use-platforms-with-icons.ts`
-- [ ] Update `app/list/page.tsx` - Replace inline platform fetch
-- [ ] Update `app/playlists/page.tsx` - Replace inline platform fetch
-- [ ] Update `app/series/page.tsx` - Replace inline platform fetch
+- [x] Create `hooks/use-platforms-with-icons.ts`
+- [x] Update `app/list/page.tsx` - Replace inline platform fetch
+- [x] Update `app/playlists/page.tsx` - Replace inline platform fetch
+- [x] Update `app/series/page.tsx` - Replace inline platform fetch
 
 ### Task 2.3: Create `hooks/use-tag-management.ts`
 
 Extract tag selection logic used by form modals.
 
-- [ ] Create `hooks/use-tag-management.ts`
-- [ ] Update `components/video-form/form-layout.tsx`
-- [ ] Update `components/series/series-edit-modal.tsx`
-- [ ] Update `components/video-form/video-edit-modal.tsx`
-- [ ] Update `components/playlists/playlist-edit-modal.tsx`
+- [~] Deferred - tag selection logic handled directly in `useTags` hook via `addTag()`
+- [~] Components now use `useTags().addTag()` for inline tag creation
 
 ### Task 2.4: Verify Changes
 
-- [ ] Run `bun run check`
-- [ ] Run `bun run build`
+- [x] Run `bun run check`
+- [x] Run `bun run build`
 
 ---
 
@@ -192,7 +189,7 @@ components/analytics/
 | Phase | Files Deleted | Files Created | Files Modified | Lines Removed | Lines Added (Net) |
 |-------|---------------|---------------|----------------|---------------|-------------------|
 | Phase 1 | 7 | 1 | 8 | ~1,100 | ~50 |
-| Phase 2 | 0 | 3 | 10 | ~400 | ~300 |
+| Phase 2 | 0 | 2 | 8 | ~344 | ~240 |
 | Phase 3 | 0 | 15 | 5 | ~1,500 | ~1,200 |
 | Phase 4 | 0 | 1 | 3 | ~300 | ~200 |
 | **Total** | **7** | **20** | **26** | **~3,300** | **~1,750** |
@@ -214,9 +211,17 @@ components/analytics/
   - Build passes successfully
 
 ### Phase 2 Progress
-- Started: [DATE]
-- Completed: [DATE]
+- Started: 2026-02-02
+- Completed: 2026-02-02
+- Commit: `abcb624` (Phase 2: Extract shared hooks for tags and platforms)
 - Notes:
+  - Created `hooks/use-tags.ts` (157 lines) - Full CRUD operations for tags
+  - Created `hooks/use-platforms-with-icons.ts` (83 lines) - Platform fetching with icon resolution
+  - Migrated 8 files to use the new hooks
+  - Removed ~344 lines of duplicated fetching logic across components
+  - Task 2.3 (use-tag-management.ts) deferred - inline tag creation handled via `useTags().addTag()`
+  - Fixed optional tag color handling with fallback `#6b7280` in tags-manager
+  - Build passes successfully with only pre-existing viewport metadata warnings
 
 ### Phase 3 Progress
 - Started: [DATE]
