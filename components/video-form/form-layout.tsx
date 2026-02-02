@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
+
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { usePlatforms } from '@/hooks/use-platforms'
 import { useTags } from '@/hooks/use-tags'
 import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import { SeriesService } from '@/lib/services/series-service'
@@ -50,6 +52,7 @@ export function FormLayout({
         number | undefined
     >(0)
     const { tags: availableTags, addTag: addNewTag } = useTags()
+    const { addPlatform } = usePlatforms({ fetchOnMount: false })
     const [tagInput, setTagInput] = useState('')
     const [isLoadingTags, setIsLoadingTags] = useState(false)
     const [tagError, setTagError] = useState<string | null>(null)
@@ -84,39 +87,26 @@ export function FormLayout({
     // Platform suggestion handlers
     const acceptPlatformSuggestion = async (suggestion: PlatformSuggestion) => {
         try {
-            const response = await fetch('/api/platforms/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    platformId: suggestion.platform,
-                    name: suggestion.platform,
-                    displayName:
-                        suggestion.platform.charAt(0).toUpperCase() +
-                        suggestion.platform.slice(1),
-                    patterns: suggestion.patterns,
-                    color: suggestion.color,
-                    icon: suggestion.icon,
-                    confidenceScore: suggestion.confidence,
-                }),
+            const newPlatform = await addPlatform({
+                platformId: suggestion.platform,
+                name: suggestion.platform,
+                displayName:
+                    suggestion.platform.charAt(0).toUpperCase() +
+                    suggestion.platform.slice(1),
+                patterns: suggestion.patterns,
+                color: suggestion.color,
+                icon: suggestion.icon,
+                confidenceScore: suggestion.confidence,
             })
 
-            if (response.ok) {
-                const result = await response.json()
-                console.log(
-                    '✅ Platform created successfully:',
-                    result.platform,
-                )
-                setValue('platform', result.platform.platformId)
+            if (newPlatform) {
+                console.log('✅ Platform created successfully:', newPlatform)
+                setValue('platform', newPlatform.platformId)
             } else {
-                const error = await response.json()
-                console.error('❌ Failed to create platform:', error)
-                // TODO: Add toast error
+                console.error('❌ Failed to create platform')
             }
         } catch (error) {
             console.error('❌ Platform creation error:', error)
-            // TODO: Add toast error
         }
     }
 

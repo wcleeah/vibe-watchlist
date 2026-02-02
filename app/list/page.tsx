@@ -15,7 +15,7 @@ import { VideoEditModal } from '@/components/video-form/video-edit-modal'
 import { ConvertToPlaylistModal } from '@/components/videos/convert-to-playlist-modal'
 import { ConvertToSeriesModal } from '@/components/videos/convert-to-series-modal'
 import { VideoList } from '@/components/videos/video-list'
-import { usePlatformsWithIcons } from '@/hooks/use-platforms-with-icons'
+import { usePlatforms } from '@/hooks/use-platforms'
 import { useTags } from '@/hooks/use-tags'
 import { useVideos } from '@/hooks/use-videos'
 import type { VideoFilters, VideoWithTags } from '@/types/video'
@@ -57,7 +57,7 @@ export default function ListPage() {
         useState(false)
 
     // Platform and tag data
-    const { platforms } = usePlatformsWithIcons()
+    const { platformOptions: platforms } = usePlatforms()
     const { tags: allTags } = useTags()
 
     // Parse sort value (custom order uses sortOrder from DB)

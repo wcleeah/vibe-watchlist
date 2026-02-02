@@ -14,7 +14,7 @@ import {
     type StatusOption,
     TabSwitcher,
 } from '@/components/shared'
-import { usePlatformsWithIcons } from '@/hooks/use-platforms-with-icons'
+import { usePlatforms } from '@/hooks/use-platforms'
 import { useSeries } from '@/hooks/use-series'
 import { useTags } from '@/hooks/use-tags'
 import type { SeriesFilters, SeriesWithTags } from '@/types/series'
@@ -61,7 +61,7 @@ export default function SeriesPage() {
           ])
 
     // Platform and tag data
-    const { platforms } = usePlatformsWithIcons()
+    const { platformOptions: platforms } = usePlatforms()
     const { tags: allTags } = useTags()
 
     // Edit modal state

@@ -61,7 +61,7 @@ This plan is organized into 4 phases, progressing from low-risk quick wins to mo
 
 ## Phase 2: Hook Extraction (Medium Risk, High Impact) - COMPLETED
 
-### Task 2.1: Create `hooks/use-tags.ts`
+### Task 2.1: Create `hooks/use-tags.ts` - COMPLETED
 
 Centralize tag fetching used in 9 locations.
 
@@ -75,24 +75,56 @@ Centralize tag fetching used in 9 locations.
 - [x] Update `components/video-form/video-edit-modal.tsx` - Replace inline tag fetch
 - [x] Update `components/settings/tags-manager.tsx` - Replace inline tag fetch (full CRUD)
 
-### Task 2.2: Create `hooks/use-platforms-with-icons.ts`
+### Task 2.2: Create `hooks/use-platforms-with-icons.ts` - COMPLETED (superseded by 2.5)
 
 - [x] Create `hooks/use-platforms-with-icons.ts`
 - [x] Update `app/list/page.tsx` - Replace inline platform fetch
 - [x] Update `app/playlists/page.tsx` - Replace inline platform fetch
 - [x] Update `app/series/page.tsx` - Replace inline platform fetch
 
-### Task 2.3: Create `hooks/use-tag-management.ts`
+### Task 2.3: Create `hooks/use-tag-management.ts` - DEFERRED
 
 Extract tag selection logic used by form modals.
 
 - [~] Deferred - tag selection logic handled directly in `useTags` hook via `addTag()`
 - [~] Components now use `useTags().addTag()` for inline tag creation
 
-### Task 2.4: Verify Changes
+### Task 2.4: Verify Changes (Initial)
 
 - [x] Run `bun run check`
 - [x] Run `bun run build`
+
+### Task 2.5: Unified `usePlatforms` Hook with Full CRUD - COMPLETED
+
+Consolidate platform management similar to `useTags`. Merges and replaces Task 2.2.
+
+#### 2.5.1: Create shared types
+- [x] Create `types/platform.ts` with `PlatformConfig`, `NewPlatformData` types
+
+#### 2.5.2: Create unified hook
+- [x] Create `hooks/use-platforms.ts` with CRUD operations (add, update, delete, toggleEnabled)
+- [x] Support `includeIcons` option (default: true) for `platformOptions` with resolved icons
+
+#### 2.5.3: Migrate settings components (full CRUD)
+- [x] Update `components/settings/platforms/platform-list.tsx` - Use hook for fetch, toggle, delete
+- [x] Update `components/settings/platforms/platform-form.tsx` - Use hook for create/update
+
+#### 2.5.4: Migrate video form components (create only)
+- [x] Update `components/video-form/platform-creator.tsx` - Use hook for create
+- [x] Update `components/video-form/form-layout.tsx` - Use hook for create
+
+#### 2.5.5: Migrate list pages
+- [x] Update `app/list/page.tsx` - Use `usePlatforms().platformOptions`
+- [x] Update `app/playlists/page.tsx` - Use `usePlatforms().platformOptions`
+- [x] Update `app/series/page.tsx` - Use `usePlatforms().platformOptions`
+
+#### 2.5.6: Cleanup
+- [x] Delete `hooks/use-platforms-with-icons.ts` (merged into unified hook)
+- [x] Delete `app/api/platforms/create/route.ts` (duplicate endpoint)
+
+#### 2.5.7: Verify Changes
+- [x] Run `bun run build`
+- [x] Commit changes
 
 ---
 
@@ -189,7 +221,7 @@ components/analytics/
 | Phase | Files Deleted | Files Created | Files Modified | Lines Removed | Lines Added (Net) |
 |-------|---------------|---------------|----------------|---------------|-------------------|
 | Phase 1 | 7 | 1 | 8 | ~1,100 | ~50 |
-| Phase 2 | 0 | 2 | 8 | ~344 | ~240 |
+| Phase 2 | 3 | 2 | 11 | ~500 | ~300 |
 | Phase 3 | 0 | 15 | 5 | ~1,500 | ~1,200 |
 | Phase 4 | 0 | 1 | 3 | ~300 | ~200 |
 | **Total** | **7** | **20** | **26** | **~3,300** | **~1,750** |
@@ -213,14 +245,21 @@ components/analytics/
 ### Phase 2 Progress
 - Started: 2026-02-02
 - Completed: 2026-02-02
-- Commit: `abcb624` (Phase 2: Extract shared hooks for tags and platforms)
+- Commits: 
+  - `abcb624` (Phase 2: Extract shared hooks for tags and platforms)
+  - `f41dbd0` (fix missing comma)
+  - [pending] (Task 2.5: Unified usePlatforms hook)
 - Notes:
   - Created `hooks/use-tags.ts` (157 lines) - Full CRUD operations for tags
-  - Created `hooks/use-platforms-with-icons.ts` (83 lines) - Platform fetching with icon resolution
+  - Created `hooks/use-platforms-with-icons.ts` (83 lines) - Later superseded by unified hook
   - Migrated 8 files to use the new hooks
-  - Removed ~344 lines of duplicated fetching logic across components
   - Task 2.3 (use-tag-management.ts) deferred - inline tag creation handled via `useTags().addTag()`
-  - Fixed optional tag color handling with fallback `#6b7280` in tags-manager
+  - Task 2.5: Created unified `hooks/use-platforms.ts` (229 lines) with full CRUD
+    - Replaced `use-platforms-with-icons.ts` 
+    - Migrated platform-creator.tsx, form-layout.tsx to use hook
+    - Migrated list/page.tsx, playlists/page.tsx, series/page.tsx
+    - Deleted duplicate `/api/platforms/create` endpoint
+  - Total removed: ~500+ lines of duplicated logic
   - Build passes successfully with only pre-existing viewport metadata warnings
 
 ### Phase 3 Progress

@@ -14,7 +14,7 @@ import {
     type SortOption,
     TabSwitcher,
 } from '@/components/shared'
-import { usePlatformsWithIcons } from '@/hooks/use-platforms-with-icons'
+import { usePlatforms } from '@/hooks/use-platforms'
 import { usePlaylists } from '@/hooks/use-playlists'
 import { useTags } from '@/hooks/use-tags'
 import type { PlaylistFilters, PlaylistSummary } from '@/types/playlist'
@@ -65,7 +65,7 @@ export default function PlaylistsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
     // Platform and tag data
-    const { platforms } = usePlatformsWithIcons()
+    const { platformOptions: platforms } = usePlatforms()
     const { tags: allTags } = useTags()
 
     // Build filters for active playlists (has unwatched videos)
