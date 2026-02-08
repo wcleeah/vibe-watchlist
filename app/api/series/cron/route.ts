@@ -13,8 +13,9 @@ export async function POST(request: NextRequest) {
         const cronSecret = request.headers.get('X-Cron-Secret')
         const expectedSecret = process.env.CRON_SECRET
 
+        console.log(`secret exists? ${!!process.env.CRON_SECRET}`)
         if (!expectedSecret || cronSecret !== expectedSecret) {
-            console.error('Cron: Unauthorized request')
+            console.log('Cron: Unauthorized request')
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 },

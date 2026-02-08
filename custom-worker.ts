@@ -48,6 +48,7 @@ export default {
         const baseUrl = env.WORKER_URL || 'https://vibe-watchlist.pages.dev'
 
         try {
+            console.log(`secret exists? ${!!env.CRON_SECRET}`);
             const response = await fetch(`${baseUrl}/api/series/cron`, {
                 method: 'POST',
                 headers: {
