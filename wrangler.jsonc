@@ -1,6 +1,6 @@
 {
     "$schema": "./node_modules/wrangler/config-schema.json",
-    "main": ".open-next/worker.js",
+    "main": "./custom-worker.ts",
     "name": "vibe-watchlist",
     "compatibility_date": "2026-01-06",
     "compatibility_flags": ["nodejs_compat"],
