@@ -100,10 +100,11 @@ export function SeriesEditModal({
         formTagIds.includes(tag.id),
     )
 
-    // Watch missedPeriods and autoAdvanceTotalEpisodes for optimistic totalEpisodes update
+    // Watch missedPeriods and autoAdvanceTotalEpisodes for optimistic updates
     const watchedMissedPeriods = watch('missedPeriods')
     const watchedAutoAdvance = watch('autoAdvanceTotalEpisodes')
     const watchedTotalEpisodes = watch('totalEpisodes')
+    const watchedWatchedEpisodes = watch('watchedEpisodes')
 
     useEffect(() => {
         if (!series) return
@@ -111,14 +112,28 @@ export function SeriesEditModal({
         const currentMissed = parseInt(watchedMissedPeriods || '0', 10)
         const isAutoAdvance = watchedAutoAdvance
 
-        // Only update if auto-advance is on and missed periods increased
-        if (isAutoAdvance && currentMissed > originalMissedPeriods) {
-            const increase = currentMissed - originalMissedPeriods
-            const currentTotal = parseInt(watchedTotalEpisodes || '0', 10) || 0
-            const newTotal = currentTotal + increase
+        if (!isAutoAdvance) {
+            // Still update original so we track changes relative to current value
+            setOriginalMissedPeriods(currentMissed)
+            return
+        }
 
+        const delta = currentMissed - originalMissedPeriods
+
+        if (delta !== 0) {
+            const currentTotal = parseInt(watchedTotalEpisodes || '0', 10) || 0
+            const newTotal = Math.max(0, currentTotal + delta)
             setValue('totalEpisodes', String(newTotal))
-            // Update original to prevent double-counting
+
+            // If missed periods decreased, increment watched episodes
+            if (delta < 0) {
+                const currentWatched =
+                    parseInt(watchedWatchedEpisodes || '0', 10) || 0
+                const newWatched = Math.max(0, currentWatched - delta) // -delta because delta is negative
+                setValue('watchedEpisodes', String(newWatched))
+            }
+
+            // Update original to track from new baseline
             setOriginalMissedPeriods(currentMissed)
         }
     }, [
@@ -126,6 +141,7 @@ export function SeriesEditModal({
         watchedAutoAdvance,
         series,
         watchedTotalEpisodes,
+        watchedWatchedEpisodes,
         setValue,
         originalMissedPeriods,
     ])
