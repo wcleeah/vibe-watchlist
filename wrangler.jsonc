@@ -1,6 +1,6 @@
 {
     "$schema": "./node_modules/wrangler/config-schema.json",
-    "main": "./custom-worker.ts",
+    "main": "./.open-next/worker.js",
     "name": "vibe-watchlist",
     "compatibility_date": "2026-01-06",
     "compatibility_flags": ["nodejs_compat"],
@@ -10,11 +10,6 @@
     },
     "vars": {
         "NODE_ENV": "production"
-    },
-    // Cron trigger for series schedule updates
-    // Runs daily at midnight HKT (16:00 UTC the previous day)
-    "triggers": {
-        "crons": ["0 16 * * *"]
     },
     "observability": {
         "enabled": false,
