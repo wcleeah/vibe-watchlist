@@ -112,29 +112,30 @@ export function SeriesEditModal({
         const currentMissed = parseInt(watchedMissedPeriods || '0', 10)
         const isAutoAdvance = watchedAutoAdvance
 
-        if (!isAutoAdvance) {
-            // Still update original so we track changes relative to current value
-            setOriginalMissedPeriods(currentMissed)
-            return
-        }
+        if (!isAutoAdvance) return
 
-        const delta = currentMissed - originalMissedPeriods
+        // Calculate delta from ORIGINAL missed count (not previous value)
+        const deltaFromOriginal = currentMissed - originalMissedPeriods
 
-        if (delta !== 0) {
-            const currentTotal = parseInt(watchedTotalEpisodes || '0', 10) || 0
-            const newTotal = Math.max(0, currentTotal + delta)
+        if (deltaFromOriginal === 0) return
+
+        const currentTotal = parseInt(watchedTotalEpisodes || '0', 10) || 0
+
+        if (deltaFromOriginal > 0) {
+            // Missed increased from original: increase total only
+            const newTotal = currentTotal + deltaFromOriginal
+            setValue('totalEpisodes', String(newTotal))
+        } else {
+            // Missed decreased from original: decrease total, increase watched
+            const decrease = -deltaFromOriginal // Make positive
+            const newTotal = Math.max(0, currentTotal - decrease)
             setValue('totalEpisodes', String(newTotal))
 
-            // If missed periods decreased, increment watched episodes
-            if (delta < 0) {
-                const currentWatched =
-                    parseInt(watchedWatchedEpisodes || '0', 10) || 0
-                const newWatched = Math.max(0, currentWatched - delta) // -delta because delta is negative
-                setValue('watchedEpisodes', String(newWatched))
-            }
-
-            // Update original to track from new baseline
-            setOriginalMissedPeriods(currentMissed)
+            // Increment watched by the decrease amount
+            const currentWatched =
+                parseInt(watchedWatchedEpisodes || '0', 10) || 0
+            const newWatched = currentWatched + decrease
+            setValue('watchedEpisodes', String(newWatched))
         }
     }, [
         watchedMissedPeriods,
