@@ -69,6 +69,10 @@ export function SeriesEditModal({
     )
     const [endDate, setEndDate] = useState<string | undefined>(undefined)
 
+    // Store original missed periods for auto-advance calculation
+    const [originalMissedPeriods, setOriginalMissedPeriods] =
+        useState<number>(0)
+
     const {
         register,
         handleSubmit,
@@ -96,6 +100,36 @@ export function SeriesEditModal({
         formTagIds.includes(tag.id),
     )
 
+    // Watch missedPeriods and autoAdvanceTotalEpisodes for optimistic totalEpisodes update
+    const watchedMissedPeriods = watch('missedPeriods')
+    const watchedAutoAdvance = watch('autoAdvanceTotalEpisodes')
+    const watchedTotalEpisodes = watch('totalEpisodes')
+
+    useEffect(() => {
+        if (!series) return
+
+        const currentMissed = parseInt(watchedMissedPeriods || '0', 10)
+        const isAutoAdvance = watchedAutoAdvance
+
+        // Only update if auto-advance is on and missed periods increased
+        if (isAutoAdvance && currentMissed > originalMissedPeriods) {
+            const increase = currentMissed - originalMissedPeriods
+            const currentTotal = parseInt(watchedTotalEpisodes || '0', 10) || 0
+            const newTotal = currentTotal + increase
+
+            setValue('totalEpisodes', String(newTotal))
+            // Update original to prevent double-counting
+            setOriginalMissedPeriods(currentMissed)
+        }
+    }, [
+        watchedMissedPeriods,
+        watchedAutoAdvance,
+        series,
+        watchedTotalEpisodes,
+        setValue,
+        originalMissedPeriods,
+    ])
+
     // Reset form when series changes
     useEffect(() => {
         if (series && open) {
@@ -122,6 +156,7 @@ export function SeriesEditModal({
             setStartDate(series.startDate)
             setEndDate(series.endDate || undefined)
             setTagInput('')
+            setOriginalMissedPeriods(series.missedPeriods ?? 0)
         }
     }, [series, open, reset])
 
