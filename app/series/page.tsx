@@ -3,6 +3,7 @@
 import { Archive, CalendarDays, CheckCircle2, RefreshCw } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { SeriesEditModal } from '@/components/series/series-edit-modal'
@@ -222,9 +223,13 @@ export default function SeriesPage() {
         setEditModalOpen(true)
     }
 
-    const handleRefresh = useCallback(() => {
-        activeSeries.refetch()
-        watchedSeries.refetch()
+    const handleRefresh = useCallback(async () => {
+        try {
+            await Promise.all([activeSeries.refetch(), watchedSeries.refetch()])
+            toast.success('Series refreshed')
+        } catch {
+            toast.error('Failed to refresh series')
+        }
     }, [activeSeries, watchedSeries])
 
     // Handle manual series update trigger
@@ -232,8 +237,11 @@ export default function SeriesPage() {
         setIsTriggeringUpdate(true)
         try {
             await activeSeries.triggerUpdate()
+            toast.success('Series update completed')
             // Refetch to show updated data
             await handleRefresh()
+        } catch {
+            toast.error('Failed to run series update')
         } finally {
             setIsTriggeringUpdate(false)
         }
