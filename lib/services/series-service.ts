@@ -218,4 +218,32 @@ export class SeriesService {
     static async incrementProgress(id: number): Promise<SeriesWithTags> {
         return SeriesService.updateProgress(id, { increment: 1 })
     }
+
+    /**
+     * Trigger manual series schedule update
+     * Runs the series update service on demand
+     */
+    static async triggerUpdate(): Promise<{
+        success: boolean
+        result: {
+            processed: number
+            updated: number
+            deactivated: number
+            errors: number
+        }
+    }> {
+        const response = await fetch(
+            `${SeriesService.API_BASE}/trigger-update`,
+            {
+                method: 'POST',
+            },
+        )
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to trigger series update')
+        }
+
+        return response.json()
+    }
 }

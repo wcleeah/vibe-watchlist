@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, CalendarDays, CheckCircle2 } from 'lucide-react'
+import { Archive, CalendarDays, CheckCircle2, RefreshCw } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -14,6 +14,7 @@ import {
     type StatusOption,
     TabSwitcher,
 } from '@/components/shared'
+import { Button } from '@/components/ui/button'
 import { usePlatforms } from '@/hooks/use-platforms'
 import { useSeries } from '@/hooks/use-series'
 import { useTags } from '@/hooks/use-tags'
@@ -69,6 +70,9 @@ export default function SeriesPage() {
     const [editingSeries, setEditingSeries] = useState<SeriesWithTags | null>(
         null,
     )
+
+    // Trigger update loading state
+    const [isTriggeringUpdate, setIsTriggeringUpdate] = useState(false)
 
     // Build filters for active series (not watched)
     const activeFilters: SeriesFilters = useMemo(
@@ -223,6 +227,18 @@ export default function SeriesPage() {
         watchedSeries.refetch()
     }, [activeSeries, watchedSeries])
 
+    // Handle manual series update trigger
+    const handleTriggerUpdate = useCallback(async () => {
+        setIsTriggeringUpdate(true)
+        try {
+            await activeSeries.triggerUpdate()
+            // Refetch to show updated data
+            await handleRefresh()
+        } finally {
+            setIsTriggeringUpdate(false)
+        }
+    }, [activeSeries, handleRefresh])
+
     // Tab configuration
     const tabs = [
         {
@@ -252,13 +268,29 @@ export default function SeriesPage() {
                             Series
                         </h1>
                     </div>
-                    <p className='text-gray-600 dark:text-gray-400'>
-                        {activeSeries.series.length +
-                            watchedSeries.series.length}{' '}
-                        series tracked
-                        {statusCounts.behind > 0 &&
-                            ` - ${statusCounts.behind} behind`}
-                    </p>
+                    <div className='flex items-center justify-between'>
+                        <p className='text-gray-600 dark:text-gray-400'>
+                            {activeSeries.series.length +
+                                watchedSeries.series.length}{' '}
+                            series tracked
+                            {statusCounts.behind > 0 &&
+                                ` - ${statusCounts.behind} behind`}
+                        </p>
+                        <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={handleTriggerUpdate}
+                            disabled={isTriggeringUpdate}
+                            className='gap-2'
+                        >
+                            <RefreshCw
+                                className={`w-4 h-4 ${
+                                    isTriggeringUpdate ? 'animate-spin' : ''
+                                }`}
+                            />
+                            {isTriggeringUpdate ? 'Updating...' : 'Run Update'}
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Error display */}
