@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
                 totalEpisodes: series.totalEpisodes,
                 watchedEpisodes: series.watchedEpisodes,
                 isWatched: series.isWatched,
+                autoAdvanceTotalEpisodes: series.autoAdvanceTotalEpisodes,
                 createdAt: series.createdAt,
                 updatedAt: series.updatedAt,
             })
@@ -185,6 +186,7 @@ export async function POST(request: NextRequest) {
             tagIds,
             totalEpisodes,
             watchedEpisodes,
+            autoAdvanceTotalEpisodes,
         } = body
 
         // Validation
@@ -300,6 +302,7 @@ export async function POST(request: NextRequest) {
                 totalEpisodes: totalEpisodes ?? null,
                 watchedEpisodes: watchedEpisodes ?? 0,
                 isWatched: false,
+                autoAdvanceTotalEpisodes: autoAdvanceTotalEpisodes ?? false,
             })
             .returning()
 
