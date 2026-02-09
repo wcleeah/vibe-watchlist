@@ -230,6 +230,9 @@ export const series = pgTable(
         totalEpisodes: integer('total_episodes'),
         watchedEpisodes: integer('watched_episodes').default(0).notNull(),
         isWatched: boolean('is_watched').default(false).notNull(),
+        autoAdvanceTotalEpisodes: boolean('auto_advance_total_episodes')
+            .default(false)
+            .notNull(),
         sortOrder: integer('sort_order').default(0).notNull(),
     },
     (table) => [
