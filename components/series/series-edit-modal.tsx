@@ -42,6 +42,8 @@ const editSchema = z.object({
     isActive: z.boolean(),
     totalEpisodes: z.string().optional(),
     watchedEpisodes: z.string().optional(),
+    missedPeriods: z.string().optional(),
+    autoAdvanceTotalEpisodes: z.boolean(),
 })
 
 type EditFormData = z.infer<typeof editSchema>
@@ -84,6 +86,8 @@ export function SeriesEditModal({
             isActive: true,
             totalEpisodes: '',
             watchedEpisodes: '',
+            missedPeriods: '0',
+            autoAdvanceTotalEpisodes: false,
         },
     })
 
@@ -109,6 +113,9 @@ export function SeriesEditModal({
                     series.watchedEpisodes != null
                         ? String(series.watchedEpisodes)
                         : '',
+                missedPeriods: String(series.missedPeriods ?? 0),
+                autoAdvanceTotalEpisodes:
+                    series.autoAdvanceTotalEpisodes ?? false,
             })
             setScheduleType(series.scheduleType as ScheduleType)
             setScheduleValue(series.scheduleValue)
@@ -183,6 +190,9 @@ export function SeriesEditModal({
             const watchedEpisodes = data.watchedEpisodes
                 ? parseInt(data.watchedEpisodes, 10)
                 : null
+            const missedPeriods = data.missedPeriods
+                ? parseInt(data.missedPeriods, 10)
+                : null
 
             await SeriesService.update(series.id, {
                 title: data.title,
@@ -202,6 +212,11 @@ export function SeriesEditModal({
                     watchedEpisodes !== null && !Number.isNaN(watchedEpisodes)
                         ? watchedEpisodes
                         : undefined,
+                missedPeriods:
+                    missedPeriods !== null && !Number.isNaN(missedPeriods)
+                        ? missedPeriods
+                        : undefined,
+                autoAdvanceTotalEpisodes: data.autoAdvanceTotalEpisodes,
             })
 
             toast.success('Series updated successfully')
@@ -384,6 +399,49 @@ export function SeriesEditModal({
                                         isSubmitting || scheduleType === 'dates'
                                     }
                                 />
+                            </div>
+                        </div>
+
+                        {/* Missed Periods - only for scheduled series */}
+                        {scheduleType !== 'none' && (
+                            <div className='space-y-2'>
+                                <Label htmlFor='missedPeriods'>
+                                    Missed Episodes
+                                </Label>
+                                <Input
+                                    id='missedPeriods'
+                                    type='number'
+                                    min='0'
+                                    {...register('missedPeriods')}
+                                    placeholder='0'
+                                    disabled={isSubmitting}
+                                />
+                                <p className='text-xs text-muted-foreground'>
+                                    Number of episodes behind schedule
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Auto Advance Total Episodes */}
+                        <div className='flex items-start space-x-2 pt-2'>
+                            <input
+                                type='checkbox'
+                                id='autoAdvanceTotalEpisodes'
+                                {...register('autoAdvanceTotalEpisodes')}
+                                disabled={isSubmitting}
+                                className='h-4 w-4 rounded border-gray-300 mt-1'
+                            />
+                            <div className='space-y-1'>
+                                <Label
+                                    htmlFor='autoAdvanceTotalEpisodes'
+                                    className='cursor-pointer'
+                                >
+                                    Auto-advance total episodes
+                                </Label>
+                                <p className='text-xs text-muted-foreground'>
+                                    Automatically increase total episodes when
+                                    new episodes are released
+                                </p>
                             </div>
                         </div>
                     </div>

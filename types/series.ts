@@ -77,6 +77,7 @@ export interface CreateSeriesRequest {
     tagIds?: number[]
     totalEpisodes?: number
     watchedEpisodes?: number
+    autoAdvanceTotalEpisodes?: boolean
 }
 
 export interface UpdateSeriesRequest {
