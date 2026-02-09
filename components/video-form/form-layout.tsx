@@ -69,6 +69,8 @@ export function FormLayout({
     const [endDate, setEndDate] = useState<string | undefined>(undefined)
     const [totalEpisodes, setTotalEpisodes] = useState<string>('')
     const [saveAsDefault, setSaveAsDefault] = useState(false)
+    const [autoAdvanceTotalEpisodes, setAutoAdvanceTotalEpisodes] =
+        useState(false)
     const [seriesError, setSeriesError] = useState<string | null>(null)
     const [isSubmittingSeries, setIsSubmittingSeries] = useState(false)
 
@@ -222,6 +224,7 @@ export function FormLayout({
                 totalEpisodes: totalEpisodes
                     ? parseInt(totalEpisodes, 10)
                     : undefined,
+                autoAdvanceTotalEpisodes,
             })
 
             // Save as default mode for platform if checked
@@ -536,6 +539,30 @@ export function FormLayout({
                                 scheduleType === 'dates'
                             }
                         />
+                    </div>
+
+                    {/* Auto-advance total episodes checkbox */}
+                    <div className='flex items-start space-x-2'>
+                        <Checkbox
+                            id='auto-advance-episodes'
+                            checked={autoAdvanceTotalEpisodes}
+                            onChange={(e) =>
+                                setAutoAdvanceTotalEpisodes(e.target.checked)
+                            }
+                            disabled={isSubmitting || isSubmittingSeries}
+                        />
+                        <div className='space-y-1'>
+                            <Label
+                                htmlFor='auto-advance-episodes'
+                                className='text-sm cursor-pointer'
+                            >
+                                Auto-advance total episodes
+                            </Label>
+                            <p className='text-xs text-muted-foreground'>
+                                Automatically increase total episodes when new
+                                episodes are released
+                            </p>
+                        </div>
                     </div>
 
                     {/* Save as default mode checkbox */}
