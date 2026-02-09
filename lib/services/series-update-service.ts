@@ -69,6 +69,14 @@ export class SeriesUpdateService {
 
                 const hasEnded = s.endDate && new Date(s.endDate) < now
 
+                // Calculate new total episodes if auto-advance is enabled
+                let newTotalEpisodes = s.totalEpisodes
+                if (s.autoAdvanceTotalEpisodes && missedPeriods > 0) {
+                    // If totalEpisodes is null/undefined, treat as 0
+                    const currentTotal = s.totalEpisodes ?? 0
+                    newTotalEpisodes = currentTotal + missedPeriods
+                }
+
                 await db
                     .update(series)
                     .set({
@@ -76,6 +84,9 @@ export class SeriesUpdateService {
                         nextEpisodeAt,
                         isActive: !hasEnded,
                         updatedAt: now,
+                        ...(s.autoAdvanceTotalEpisodes && missedPeriods > 0
+                            ? { totalEpisodes: newTotalEpisodes }
+                            : {}),
                     })
                     .where(eq(series.id, s.id))
 

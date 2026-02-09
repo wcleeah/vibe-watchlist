@@ -135,6 +135,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             totalEpisodes,
             watchedEpisodes,
             isWatched,
+            missedPeriods,
+            autoAdvanceTotalEpisodes,
         } = body
 
         // Check if series exists
@@ -165,6 +167,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (watchedEpisodes !== undefined)
             updateData.watchedEpisodes = watchedEpisodes
         if (isWatched !== undefined) updateData.isWatched = isWatched
+        if (missedPeriods !== undefined)
+            updateData.missedPeriods = missedPeriods
+        if (autoAdvanceTotalEpisodes !== undefined)
+            updateData.autoAdvanceTotalEpisodes = autoAdvanceTotalEpisodes
 
         // Handle schedule changes
         if (scheduleType && scheduleValue) {

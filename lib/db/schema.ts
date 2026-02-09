@@ -182,6 +182,9 @@ export const series = pgTable(
         totalEpisodes: integer('total_episodes'), // nullable - not all series have known totals
         watchedEpisodes: integer('watched_episodes').default(0).notNull(),
         isWatched: boolean('is_watched').default(false).notNull(), // marks series as finished
+        autoAdvanceTotalEpisodes: boolean('auto_advance_total_episodes')
+            .default(false)
+            .notNull(),
         sortOrder: integer('sort_order').default(0).notNull(),
         createdAt: timestamp('created_at').defaultNow(),
         updatedAt: timestamp('updated_at').defaultNow(),
