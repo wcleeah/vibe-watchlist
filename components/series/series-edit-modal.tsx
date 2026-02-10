@@ -69,9 +69,10 @@ export function SeriesEditModal({
     )
     const [endDate, setEndDate] = useState<string | undefined>(undefined)
 
-    // Track previous missed periods value for incremental updates
-    const [previousMissedPeriods, setPreviousMissedPeriods] =
-        useState<number>(0)
+    // Store original values when modal opens (baseline for auto-advance calculations)
+    const [originalTotal, setOriginalTotal] = useState<number>(0)
+    const [originalWatched, setOriginalWatched] = useState<number>(0)
+    const [originalMissed, setOriginalMissed] = useState<number>(0)
 
     const {
         register,
@@ -105,44 +106,44 @@ export function SeriesEditModal({
     const watchedTotalEpisodes = watch('totalEpisodes')
     const watchedWatchedEpisodes = watch('watchedEpisodes')
 
+    // Update total episodes based on missed count (only when above original)
+    const updateTotalEpisodes = (newMissed: number) => {
+        if (newMissed > originalMissed) {
+            // Above original: increase total
+            const newTotal = originalTotal + (newMissed - originalMissed)
+            setValue('totalEpisodes', String(newTotal))
+        } else {
+            // At or below original: restore to original
+            setValue('totalEpisodes', String(originalTotal))
+        }
+    }
+
+    // Update watched episodes based on missed count (only when below original)
+    const updateWatchedEpisodes = (newMissed: number) => {
+        if (newMissed < originalMissed) {
+            // Below original: increase watched
+            const newWatched = originalWatched + (originalMissed - newMissed)
+            setValue('watchedEpisodes', String(newWatched))
+        } else {
+            // At or above original: restore to original
+            setValue('watchedEpisodes', String(originalWatched))
+        }
+    }
+
     // Handle missed periods change with auto-advance logic
     const handleMissedPeriodsChange = (value: string) => {
         if (!series) return
 
         const newMissed = parseInt(value || '0', 10)
-        const isAutoAdvance = watchedAutoAdvance
 
         // Always update the missed periods value
         setValue('missedPeriods', value)
 
-        if (!isAutoAdvance) return
+        if (!watchedAutoAdvance) return
 
-        // Calculate delta from PREVIOUS missed count (incremental change)
-        const delta = newMissed - previousMissedPeriods
-
-        if (delta === 0) return
-
-        const currentTotal = parseInt(watchedTotalEpisodes || '0', 10) || 0
-
-        if (delta > 0) {
-            // Missed increased: increase total by the delta
-            const newTotal = currentTotal + delta
-            setValue('totalEpisodes', String(newTotal))
-        } else {
-            // Missed decreased: decrease total, increase watched
-            const decrease = -delta // Make positive
-            const newTotal = Math.max(0, currentTotal - decrease)
-            setValue('totalEpisodes', String(newTotal))
-
-            // Increment watched by the decrease amount
-            const currentWatched =
-                parseInt(watchedWatchedEpisodes || '0', 10) || 0
-            const newWatched = currentWatched + decrease
-            setValue('watchedEpisodes', String(newWatched))
-        }
-
-        // Update previous value for next incremental change
-        setPreviousMissedPeriods(newMissed)
+        // Handle total and watched separately
+        updateTotalEpisodes(newMissed)
+        updateWatchedEpisodes(newMissed)
     }
 
     // Reset form when series changes
@@ -171,7 +172,10 @@ export function SeriesEditModal({
             setStartDate(series.startDate)
             setEndDate(series.endDate || undefined)
             setTagInput('')
-            setPreviousMissedPeriods(series.missedPeriods ?? 0)
+            // Store original values for auto-advance calculations
+            setOriginalTotal(series.totalEpisodes ?? 0)
+            setOriginalWatched(series.watchedEpisodes ?? 0)
+            setOriginalMissed(series.missedPeriods ?? 0)
         }
     }, [series, open, reset])
 
