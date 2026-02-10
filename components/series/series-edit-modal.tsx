@@ -101,34 +101,8 @@ export function SeriesEditModal({
         formTagIds.includes(tag.id),
     )
 
-    // Watch values needed for missed periods calculation
+    // Watch auto-advance toggle
     const watchedAutoAdvance = watch('autoAdvanceTotalEpisodes')
-    const watchedTotalEpisodes = watch('totalEpisodes')
-    const watchedWatchedEpisodes = watch('watchedEpisodes')
-
-    // Update total episodes based on missed count (only when above original)
-    const updateTotalEpisodes = (newMissed: number) => {
-        if (newMissed > originalMissed) {
-            // Above original: increase total
-            const newTotal = originalTotal + (newMissed - originalMissed)
-            setValue('totalEpisodes', String(newTotal))
-        } else {
-            // At or below original: restore to original
-            setValue('totalEpisodes', String(originalTotal))
-        }
-    }
-
-    // Update watched episodes based on missed count (only when below original)
-    const updateWatchedEpisodes = (newMissed: number) => {
-        if (newMissed < originalMissed) {
-            // Below original: increase watched
-            const newWatched = originalWatched + (originalMissed - newMissed)
-            setValue('watchedEpisodes', String(newWatched))
-        } else {
-            // At or above original: restore to original
-            setValue('watchedEpisodes', String(originalWatched))
-        }
-    }
 
     // Handle missed periods change with auto-advance logic
     const handleMissedPeriodsChange = (value: string) => {
@@ -141,9 +115,21 @@ export function SeriesEditModal({
 
         if (!watchedAutoAdvance) return
 
-        // Handle total and watched separately
-        updateTotalEpisodes(newMissed)
-        updateWatchedEpisodes(newMissed)
+        // Update total episodes (only when above original)
+        if (newMissed > originalMissed) {
+            const newTotal = originalTotal + (newMissed - originalMissed)
+            setValue('totalEpisodes', String(newTotal))
+        } else {
+            setValue('totalEpisodes', String(originalTotal))
+        }
+
+        // Update watched episodes (only when below original)
+        if (newMissed < originalMissed) {
+            const newWatched = originalWatched + (originalMissed - newMissed)
+            setValue('watchedEpisodes', String(newWatched))
+        } else {
+            setValue('watchedEpisodes', String(originalWatched))
+        }
     }
 
     // Reset form when series changes
