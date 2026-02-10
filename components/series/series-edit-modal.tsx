@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -100,31 +100,29 @@ export function SeriesEditModal({
         formTagIds.includes(tag.id),
     )
 
-    // Watch missedPeriods and autoAdvanceTotalEpisodes for optimistic updates
-    const watchedMissedPeriods = watch('missedPeriods')
+    // Watch values needed for missed periods calculation
     const watchedAutoAdvance = watch('autoAdvanceTotalEpisodes')
     const watchedTotalEpisodes = watch('totalEpisodes')
     const watchedWatchedEpisodes = watch('watchedEpisodes')
 
-    // Ref to prevent infinite loop when calling setValue
-    const isProcessingRef = useRef(false)
+    // Handle missed periods change with auto-advance logic
+    const handleMissedPeriodsChange = (value: string) => {
+        if (!series) return
 
-    useEffect(() => {
-        if (!series || isProcessingRef.current) return
-
-        const currentMissed = parseInt(watchedMissedPeriods || '0', 10)
+        const newMissed = parseInt(value || '0', 10)
         const isAutoAdvance = watchedAutoAdvance
+
+        // Always update the missed periods value
+        setValue('missedPeriods', value)
 
         if (!isAutoAdvance) return
 
-        // Calculate delta from ORIGINAL missed count (not previous value)
-        const deltaFromOriginal = currentMissed - originalMissedPeriods
+        // Calculate delta from ORIGINAL missed count
+        const deltaFromOriginal = newMissed - originalMissedPeriods
 
         if (deltaFromOriginal === 0) return
 
         const currentTotal = parseInt(watchedTotalEpisodes || '0', 10) || 0
-
-        isProcessingRef.current = true
 
         if (deltaFromOriginal > 0) {
             // Missed increased from original: increase total only
@@ -142,18 +140,7 @@ export function SeriesEditModal({
             const newWatched = currentWatched + decrease
             setValue('watchedEpisodes', String(newWatched))
         }
-
-        // Reset flag after render
-        setTimeout(() => {
-            isProcessingRef.current = false
-        }, 0)
-    }, [
-        watchedMissedPeriods,
-        watchedAutoAdvance,
-        series,
-        setValue,
-        originalMissedPeriods,
-    ])
+    }
 
     // Reset form when series changes
     useEffect(() => {
@@ -472,7 +459,12 @@ export function SeriesEditModal({
                                     id='missedPeriods'
                                     type='number'
                                     min='0'
-                                    {...register('missedPeriods')}
+                                    value={watch('missedPeriods')}
+                                    onChange={(e) =>
+                                        handleMissedPeriodsChange(
+                                            e.target.value,
+                                        )
+                                    }
                                     placeholder='0'
                                     disabled={isSubmitting}
                                 />
