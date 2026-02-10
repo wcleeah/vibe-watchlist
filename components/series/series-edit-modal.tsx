@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -106,8 +106,11 @@ export function SeriesEditModal({
     const watchedTotalEpisodes = watch('totalEpisodes')
     const watchedWatchedEpisodes = watch('watchedEpisodes')
 
+    // Ref to prevent infinite loop when calling setValue
+    const isProcessingRef = useRef(false)
+
     useEffect(() => {
-        if (!series) return
+        if (!series || isProcessingRef.current) return
 
         const currentMissed = parseInt(watchedMissedPeriods || '0', 10)
         const isAutoAdvance = watchedAutoAdvance
@@ -120,6 +123,8 @@ export function SeriesEditModal({
         if (deltaFromOriginal === 0) return
 
         const currentTotal = parseInt(watchedTotalEpisodes || '0', 10) || 0
+
+        isProcessingRef.current = true
 
         if (deltaFromOriginal > 0) {
             // Missed increased from original: increase total only
@@ -137,12 +142,15 @@ export function SeriesEditModal({
             const newWatched = currentWatched + decrease
             setValue('watchedEpisodes', String(newWatched))
         }
+
+        // Reset flag after render
+        setTimeout(() => {
+            isProcessingRef.current = false
+        }, 0)
     }, [
         watchedMissedPeriods,
         watchedAutoAdvance,
         series,
-        watchedTotalEpisodes,
-        watchedWatchedEpisodes,
         setValue,
         originalMissedPeriods,
     ])
