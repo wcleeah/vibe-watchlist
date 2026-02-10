@@ -101,10 +101,7 @@ export function SeriesEditModal({
         formTagIds.includes(tag.id),
     )
 
-    // Watch auto-advance toggle
-    const watchedAutoAdvance = watch('autoAdvanceTotalEpisodes')
-
-    // Handle missed periods change with auto-advance logic
+    // Handle missed periods change - updates total and watched episodes
     const handleMissedPeriodsChange = (value: string) => {
         if (!series) return
 
@@ -112,8 +109,6 @@ export function SeriesEditModal({
 
         // Always update the missed periods value
         setValue('missedPeriods', value)
-
-        if (!watchedAutoAdvance) return
 
         // Update total episodes (only when above original)
         if (newMissed > originalMissed) {
@@ -463,6 +458,10 @@ export function SeriesEditModal({
                                 />
                                 <p className='text-xs text-muted-foreground'>
                                     Number of episodes behind schedule
+                                </p>
+                                <p className='text-xs text-amber-600 dark:text-amber-400'>
+                                    Changing this will override Total and
+                                    Watched episodes
                                 </p>
                             </div>
                         )}
