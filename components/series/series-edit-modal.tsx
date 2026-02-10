@@ -69,8 +69,8 @@ export function SeriesEditModal({
     )
     const [endDate, setEndDate] = useState<string | undefined>(undefined)
 
-    // Store original missed periods for auto-advance calculation
-    const [originalMissedPeriods, setOriginalMissedPeriods] =
+    // Track previous missed periods value for incremental updates
+    const [previousMissedPeriods, setPreviousMissedPeriods] =
         useState<number>(0)
 
     const {
@@ -117,20 +117,20 @@ export function SeriesEditModal({
 
         if (!isAutoAdvance) return
 
-        // Calculate delta from ORIGINAL missed count
-        const deltaFromOriginal = newMissed - originalMissedPeriods
+        // Calculate delta from PREVIOUS missed count (incremental change)
+        const delta = newMissed - previousMissedPeriods
 
-        if (deltaFromOriginal === 0) return
+        if (delta === 0) return
 
         const currentTotal = parseInt(watchedTotalEpisodes || '0', 10) || 0
 
-        if (deltaFromOriginal > 0) {
-            // Missed increased from original: increase total only
-            const newTotal = currentTotal + deltaFromOriginal
+        if (delta > 0) {
+            // Missed increased: increase total by the delta
+            const newTotal = currentTotal + delta
             setValue('totalEpisodes', String(newTotal))
         } else {
-            // Missed decreased from original: decrease total, increase watched
-            const decrease = -deltaFromOriginal // Make positive
+            // Missed decreased: decrease total, increase watched
+            const decrease = -delta // Make positive
             const newTotal = Math.max(0, currentTotal - decrease)
             setValue('totalEpisodes', String(newTotal))
 
@@ -140,6 +140,9 @@ export function SeriesEditModal({
             const newWatched = currentWatched + decrease
             setValue('watchedEpisodes', String(newWatched))
         }
+
+        // Update previous value for next incremental change
+        setPreviousMissedPeriods(newMissed)
     }
 
     // Reset form when series changes
@@ -168,7 +171,7 @@ export function SeriesEditModal({
             setStartDate(series.startDate)
             setEndDate(series.endDate || undefined)
             setTagInput('')
-            setOriginalMissedPeriods(series.missedPeriods ?? 0)
+            setPreviousMissedPeriods(series.missedPeriods ?? 0)
         }
     }, [series, open, reset])
 
