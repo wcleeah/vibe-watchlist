@@ -16,6 +16,7 @@ interface UseSeriesReturn {
     incrementProgress: (id: number) => Promise<boolean>
     deleteSeries: (id: number) => Promise<void>
     reorderSeries: (orderedIds: number[]) => Promise<void>
+    triggerUpdate: () => Promise<void>
 }
 
 interface UseSeriesOptions {
@@ -200,6 +201,21 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
         })
     }, [])
 
+    // Trigger manual series update
+    const triggerUpdate = useCallback(async () => {
+        try {
+            await SeriesService.triggerUpdate()
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Failed to trigger series update',
+            )
+            console.error('Failed to trigger series update:', err)
+            throw err
+        }
+    }, [])
+
     useEffect(() => {
         if (autoFetch) {
             fetchSeries()
@@ -217,5 +233,6 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
         incrementProgress,
         deleteSeries,
         reorderSeries,
+        triggerUpdate,
     }
 }

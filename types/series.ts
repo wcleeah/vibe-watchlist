@@ -55,6 +55,7 @@ export interface Series
     scheduleValue: ScheduleValue
     startDate: string // ISO date string
     endDate: string | null
+    autoAdvanceTotalEpisodes: boolean
 }
 
 // Series with tags included
@@ -76,6 +77,7 @@ export interface CreateSeriesRequest {
     tagIds?: number[]
     totalEpisodes?: number
     watchedEpisodes?: number
+    autoAdvanceTotalEpisodes?: boolean
 }
 
 export interface UpdateSeriesRequest {
@@ -91,6 +93,8 @@ export interface UpdateSeriesRequest {
     totalEpisodes?: number | null
     watchedEpisodes?: number
     isWatched?: boolean
+    missedPeriods?: number
+    autoAdvanceTotalEpisodes?: boolean
 }
 
 // Progress update request
