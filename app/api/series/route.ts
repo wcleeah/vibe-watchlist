@@ -68,7 +68,8 @@ export async function GET(request: NextRequest) {
             )
         }
 
-        const result = await db
+        // Fetch series without joins
+        const seriesResult = await db
             .select({
                 id: series.id,
                 url: series.url,
@@ -89,17 +90,13 @@ export async function GET(request: NextRequest) {
                 isWatched: series.isWatched,
                 createdAt: series.createdAt,
                 updatedAt: series.updatedAt,
-                tags: sql`COALESCE(json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}, 'color', ${tags.color})) FILTER (WHERE ${tags.id} IS NOT NULL), '[]'::json)`,
             })
             .from(series)
-            .leftJoin(seriesTags, eq(series.id, seriesTags.seriesId))
-            .leftJoin(tags, eq(seriesTags.tagId, tags.id))
             .where(
                 whereConditions.length > 0
                     ? and(...whereConditions)
                     : undefined,
             )
-            .groupBy(series.id)
             .orderBy(
                 // Use sortOrder column only for custom order, otherwise use selected column
                 sortBy === 'custom' || !sortBy
@@ -119,29 +116,47 @@ export async function GET(request: NextRequest) {
                           : sql`${series.sortOrder} ASC, ${series.missedPeriods} DESC`,
             )
 
-        // Parse the tags and schedule value
-        const seriesWithTags = result.map((s) => {
-            let parsedTags: Array<Record<string, unknown>> = []
+        // Fetch all tags for the series in one query
+        const seriesIds = seriesResult.map((s) => s.id)
+        const tagsResult =
+            seriesIds.length > 0
+                ? await db
+                      .select({
+                          seriesId: seriesTags.seriesId,
+                          tagId: tags.id,
+                          tagName: tags.name,
+                          tagColor: tags.color,
+                      })
+                      .from(seriesTags)
+                      .innerJoin(tags, eq(seriesTags.tagId, tags.id))
+                      .where(inArray(seriesTags.seriesId, seriesIds))
+                : []
 
-            try {
-                if (typeof s.tags === 'string') {
-                    parsedTags = JSON.parse(s.tags)
-                } else if (Array.isArray(s.tags)) {
-                    parsedTags = s.tags
-                }
-            } catch {
-                parsedTags = []
+        // Group tags by series
+        const tagsBySeries = new Map<
+            number,
+            Array<{ id: number; name: string; color: string | null }>
+        >()
+        for (const tag of tagsResult) {
+            if (!tagsBySeries.has(tag.seriesId)) {
+                tagsBySeries.set(tag.seriesId, [])
             }
+            tagsBySeries.get(tag.seriesId)?.push({
+                id: tag.tagId,
+                name: tag.tagName,
+                color: tag.tagColor,
+            })
+        }
 
-            return {
-                ...s,
-                scheduleValue: ScheduleService.parseScheduleValue(
-                    s.scheduleType as ScheduleType,
-                    s.scheduleValue,
-                ),
-                tags: parsedTags,
-            }
-        })
+        // Merge series with their tags
+        const seriesWithTags = seriesResult.map((s) => ({
+            ...s,
+            scheduleValue: ScheduleService.parseScheduleValue(
+                s.scheduleType as ScheduleType,
+                s.scheduleValue,
+            ),
+            tags: tagsBySeries.get(s.id) || [],
+        }))
 
         return NextResponse.json({ success: true, series: seriesWithTags })
     } catch (error) {

@@ -14,6 +14,68 @@ interface RouteParams {
     params: Promise<{ id: string }>
 }
 
+// Helper function to fetch a single series with its tags
+async function fetchSeriesWithTags(seriesId: number) {
+    // Fetch series
+    const seriesResult = await db
+        .select({
+            id: series.id,
+            url: series.url,
+            title: series.title,
+            description: series.description,
+            platform: series.platform,
+            thumbnailUrl: series.thumbnailUrl,
+            scheduleType: series.scheduleType,
+            scheduleValue: series.scheduleValue,
+            startDate: series.startDate,
+            endDate: series.endDate,
+            lastWatchedAt: series.lastWatchedAt,
+            missedPeriods: series.missedPeriods,
+            nextEpisodeAt: series.nextEpisodeAt,
+            isActive: series.isActive,
+            totalEpisodes: series.totalEpisodes,
+            watchedEpisodes: series.watchedEpisodes,
+            isWatched: series.isWatched,
+            createdAt: series.createdAt,
+            updatedAt: series.updatedAt,
+        })
+        .from(series)
+        .where(eq(series.id, seriesId))
+        .limit(1)
+
+    if (seriesResult.length === 0) {
+        return null
+    }
+
+    const s = seriesResult[0]
+
+    // Fetch tags for this series
+    const tagsResult = await db
+        .select({
+            tagId: tags.id,
+            tagName: tags.name,
+            tagColor: tags.color,
+        })
+        .from(seriesTags)
+        .innerJoin(tags, eq(seriesTags.tagId, tags.id))
+        .where(eq(seriesTags.seriesId, seriesId))
+
+    const parsedTags = tagsResult.map((t) => ({
+        id: t.tagId,
+        name: t.tagName,
+        color: t.tagColor,
+    }))
+
+    return {
+        ...s,
+        scheduleValue: ScheduleService.parseScheduleValue(
+            s.scheduleType as ScheduleType,
+            s.scheduleValue,
+        ),
+        tags: parsedTags,
+    }
+}
+
 // GET /api/series/[id] - Get a single series
 export async function GET(_request: NextRequest, { params }: RouteParams) {
     try {
@@ -27,62 +89,13 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
             )
         }
 
-        const result = await db
-            .select({
-                id: series.id,
-                url: series.url,
-                title: series.title,
-                description: series.description,
-                platform: series.platform,
-                thumbnailUrl: series.thumbnailUrl,
-                scheduleType: series.scheduleType,
-                scheduleValue: series.scheduleValue,
-                startDate: series.startDate,
-                endDate: series.endDate,
-                lastWatchedAt: series.lastWatchedAt,
-                missedPeriods: series.missedPeriods,
-                nextEpisodeAt: series.nextEpisodeAt,
-                isActive: series.isActive,
-                totalEpisodes: series.totalEpisodes,
-                watchedEpisodes: series.watchedEpisodes,
-                isWatched: series.isWatched,
-                createdAt: series.createdAt,
-                updatedAt: series.updatedAt,
-                tags: sql`COALESCE(json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}, 'color', ${tags.color})) FILTER (WHERE ${tags.id} IS NOT NULL), '[]'::json)`,
-            })
-            .from(series)
-            .leftJoin(seriesTags, eq(series.id, seriesTags.seriesId))
-            .leftJoin(tags, eq(seriesTags.tagId, tags.id))
-            .where(eq(series.id, seriesId))
-            .groupBy(series.id)
+        const seriesWithTags = await fetchSeriesWithTags(seriesId)
 
-        if (result.length === 0) {
+        if (!seriesWithTags) {
             return NextResponse.json(
                 { success: false, error: 'Series not found' },
                 { status: 404 },
             )
-        }
-
-        const s = result[0]
-        let parsedTags: Array<Record<string, unknown>> = []
-
-        try {
-            if (typeof s.tags === 'string') {
-                parsedTags = JSON.parse(s.tags)
-            } else if (Array.isArray(s.tags)) {
-                parsedTags = s.tags
-            }
-        } catch {
-            parsedTags = []
-        }
-
-        const seriesWithTags = {
-            ...s,
-            scheduleValue: ScheduleService.parseScheduleValue(
-                s.scheduleType as ScheduleType,
-                s.scheduleValue,
-            ),
-            tags: parsedTags,
         }
 
         return NextResponse.json({ success: true, series: seriesWithTags })
@@ -241,55 +254,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         // Fetch updated series with tags
-        const result = await db
-            .select({
-                id: series.id,
-                url: series.url,
-                title: series.title,
-                description: series.description,
-                platform: series.platform,
-                thumbnailUrl: series.thumbnailUrl,
-                scheduleType: series.scheduleType,
-                scheduleValue: series.scheduleValue,
-                startDate: series.startDate,
-                endDate: series.endDate,
-                lastWatchedAt: series.lastWatchedAt,
-                missedPeriods: series.missedPeriods,
-                nextEpisodeAt: series.nextEpisodeAt,
-                isActive: series.isActive,
-                totalEpisodes: series.totalEpisodes,
-                watchedEpisodes: series.watchedEpisodes,
-                isWatched: series.isWatched,
-                createdAt: series.createdAt,
-                updatedAt: series.updatedAt,
-                tags: sql`COALESCE(json_agg(json_build_object('id', ${tags.id}, 'name', ${tags.name}, 'color', ${tags.color})) FILTER (WHERE ${tags.id} IS NOT NULL), '[]'::json)`,
-            })
-            .from(series)
-            .leftJoin(seriesTags, eq(series.id, seriesTags.seriesId))
-            .leftJoin(tags, eq(seriesTags.tagId, tags.id))
-            .where(eq(series.id, seriesId))
-            .groupBy(series.id)
+        const seriesWithTags = await fetchSeriesWithTags(seriesId)
 
-        const s = result[0]
-        let parsedTags: Array<Record<string, unknown>> = []
-
-        try {
-            if (typeof s.tags === 'string') {
-                parsedTags = JSON.parse(s.tags)
-            } else if (Array.isArray(s.tags)) {
-                parsedTags = s.tags
-            }
-        } catch {
-            parsedTags = []
-        }
-
-        const seriesWithTags = {
-            ...s,
-            scheduleValue: ScheduleService.parseScheduleValue(
-                s.scheduleType as ScheduleType,
-                s.scheduleValue,
-            ),
-            tags: parsedTags,
+        if (!seriesWithTags) {
+            return NextResponse.json(
+                { success: false, error: 'Series not found' },
+                { status: 404 },
+            )
         }
 
         return NextResponse.json({ success: true, series: seriesWithTags })
