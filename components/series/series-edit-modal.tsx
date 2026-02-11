@@ -150,8 +150,8 @@ export function SeriesEditModal({
             })
             setScheduleType(series.scheduleType as ScheduleType)
             setScheduleValue(series.scheduleValue)
-            setStartDate(series.startDate)
-            setEndDate(series.endDate || undefined)
+            setStartDate(series.startDate?.split('T')[0])
+            setEndDate(series.endDate?.split('T')[0])
             setTagInput('')
             // Store original values for auto-advance calculations
             setOriginalTotal(series.totalEpisodes ?? 0)
