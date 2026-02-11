@@ -1,8 +1,9 @@
-import { and, eq, lte } from 'drizzle-orm'
+import { and, eq, lte, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { series, userConfig } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
+import { getEndOfHKTDay, isHKTAfter, nowHKT, toHKT } from '@/lib/utils/hkt-date'
 import type { ScheduleType, ScheduleValue } from '@/types/series'
 
 export interface SeriesUpdateResult {
@@ -24,13 +25,18 @@ export class SeriesUpdateService {
         console.log('SeriesUpdateService: Starting series schedule update')
 
         const timezone = await SeriesUpdateService.getTimezone()
-        const now = new Date()
+        const now = nowHKT()
 
+        // Query series where nextEpisodeAt is due (in HKT)
+        // Use SQL to ensure proper timezone comparison at the database level
         const activeSeries = await db
             .select()
             .from(series)
             .where(
-                and(eq(series.isActive, true), lte(series.nextEpisodeAt, now)),
+                and(
+                    eq(series.isActive, true),
+                    sql`${series.nextEpisodeAt} <= ${now}`,
+                ),
             )
 
         console.log(
@@ -66,17 +72,21 @@ export class SeriesUpdateService {
                     timezone,
                 )
 
-                let nextEpisodeAt = now
-                while (nextEpisodeAt <= now) {
+                // Calculate next episode date (ensuring it's in the future in HKT)
+                let nextEpisodeAt = toHKT(now)
+                do {
                     nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
                         scheduleType,
                         scheduleValue as ScheduleValue,
                         nextEpisodeAt,
                         timezone,
                     )
-                }
+                    nextEpisodeAt = toHKT(nextEpisodeAt)
+                } while (nextEpisodeAt.getTime() <= now.getTime())
 
-                const hasEnded = s.endDate && new Date(s.endDate) < now
+                // Check if series has ended (current HKT time is past end of endDate day)
+                const hasEnded =
+                    s.endDate && isHKTAfter(now, getEndOfHKTDay(s.endDate))
 
                 // Calculate new total episodes if auto-advance is enabled
                 let newTotalEpisodes = s.totalEpisodes
