@@ -1,3 +1,4 @@
+import { createSentinelDate, toHKT } from '@/lib/utils/hkt-date'
 import type {
     DailySchedule,
     DateScheduleEntry,
@@ -45,11 +46,11 @@ export class ScheduleService {
     ): Date {
         // Backlog series don't have schedules - return far future date
         if (scheduleType === 'none') {
-            return new Date('9999-12-31T23:59:59Z')
+            return createSentinelDate()
         }
 
-        // Convert to timezone-aware date
-        const localDate = ScheduleService.toTimezone(fromDate, timezone)
+        // Convert to HKT timezone
+        const localDate = toHKT(fromDate)
 
         switch (scheduleType) {
             case 'daily':
@@ -83,18 +84,16 @@ export class ScheduleService {
         now: Date,
         scheduleType: ScheduleType,
         scheduleValue: ScheduleValue,
-        timezone: string = 'Asia/Hong_Kong',
+        _timezone: string = 'Asia/Hong_Kong',
     ): number {
         // Backlog series don't track missed periods
         if (scheduleType === 'none') {
             return 0
         }
 
-        const localNow = ScheduleService.toTimezone(now, timezone)
-        const localNextEpisode = ScheduleService.toTimezone(
-            nextEpisodeAt,
-            timezone,
-        )
+        // Convert both dates to HKT for comparison
+        const localNow = toHKT(now)
+        const localNextEpisode = toHKT(nextEpisodeAt)
 
         if (localNow < localNextEpisode) {
             return 0
@@ -426,41 +425,7 @@ export class ScheduleService {
         }
 
         // No future dates - return far future date (series ended)
-        return new Date('9999-12-31T23:59:59Z')
-    }
-
-    /**
-     * Convert a date to a specific timezone
-     */
-    private static toTimezone(date: Date, timezone: string): Date {
-        try {
-            const formatter = new Intl.DateTimeFormat('en-US', {
-                timeZone: timezone,
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false,
-            })
-
-            const parts = formatter.formatToParts(date)
-            const getPart = (type: string) =>
-                parts.find((p) => p.type === type)?.value || '0'
-
-            return new Date(
-                parseInt(getPart('year')),
-                parseInt(getPart('month')) - 1,
-                parseInt(getPart('day')),
-                parseInt(getPart('hour')),
-                parseInt(getPart('minute')),
-                parseInt(getPart('second')),
-            )
-        } catch {
-            // Fallback to original date if timezone is invalid
-            return date
-        }
+        return createSentinelDate()
     }
 
     /**

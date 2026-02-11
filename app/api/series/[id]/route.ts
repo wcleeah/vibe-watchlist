@@ -4,6 +4,11 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { series, seriesTags, tags } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
+import {
+    formatDateToHKTString,
+    getEndOfHKTDay,
+    parseToHKT,
+} from '@/lib/utils/hkt-date'
 import type {
     ScheduleType,
     ScheduleValue,
@@ -68,6 +73,8 @@ async function fetchSeriesWithTags(seriesId: number) {
 
     return {
         ...s,
+        startDate: formatDateToHKTString(s.startDate),
+        endDate: formatDateToHKTString(s.endDate),
         scheduleValue: ScheduleService.parseScheduleValue(
             s.scheduleType as ScheduleType,
             s.scheduleValue,
@@ -195,7 +202,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
             // Recalculate next episode date
             const baseDate = startDate
-                ? new Date(startDate)
+                ? parseToHKT(startDate)
                 : new Date(existingSeries[0].startDate)
             updateData.nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
                 scheduleType,
@@ -205,7 +212,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         if (startDate !== undefined) {
-            updateData.startDate = startDate
+            updateData.startDate = parseToHKT(startDate)
             // Only recalculate next episode if start date changed but schedule didn't
             if (!scheduleType) {
                 const effectiveScheduleType = existingSeries[0]
@@ -219,13 +226,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                     ScheduleService.calculateNextEpisodeDate(
                         effectiveScheduleType,
                         effectiveScheduleValue,
-                        new Date(startDate),
+                        parseToHKT(startDate),
                     )
             }
         }
 
         if (endDate !== undefined) {
-            updateData.endDate = endDate
+            updateData.endDate = endDate ? getEndOfHKTDay(endDate) : null
         }
 
         // Update series
