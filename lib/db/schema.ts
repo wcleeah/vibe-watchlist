@@ -1,7 +1,6 @@
 import { relations } from 'drizzle-orm'
 import {
     boolean,
-    date,
     decimal,
     foreignKey,
     index,
@@ -172,8 +171,8 @@ export const series = pgTable(
         thumbnailUrl: text('thumbnail_url'),
         scheduleType: text('schedule_type').notNull(), // 'daily' | 'weekly' | 'custom' | 'none'
         scheduleValue: jsonb('schedule_value').notNull(), // { interval: number } or { days: string[] } or {}
-        startDate: date('start_date').notNull(),
-        endDate: date('end_date'),
+        startDate: timestamp('start_date').notNull(),
+        endDate: timestamp('end_date'),
         lastWatchedAt: timestamp('last_watched_at'),
         missedPeriods: integer('missed_periods').default(0).notNull(),
         nextEpisodeAt: timestamp('next_episode_at').notNull(),
