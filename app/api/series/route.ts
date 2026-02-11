@@ -4,7 +4,11 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { platformConfigs, series, seriesTags, tags } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
-import { getEndOfHKTDay, parseToHKT } from '@/lib/utils/hkt-date'
+import {
+    formatDateToHKTString,
+    getEndOfHKTDay,
+    parseToHKT,
+} from '@/lib/utils/hkt-date'
 import type {
     CreateSeriesRequest,
     ScheduleType,
@@ -150,9 +154,11 @@ export async function GET(request: NextRequest) {
             })
         }
 
-        // Merge series with their tags
+        // Merge series with their tags and format dates to HKT
         const seriesWithTags = seriesResult.map((s) => ({
             ...s,
+            startDate: formatDateToHKTString(s.startDate),
+            endDate: formatDateToHKTString(s.endDate),
             scheduleValue: ScheduleService.parseScheduleValue(
                 s.scheduleType as ScheduleType,
                 s.scheduleValue,

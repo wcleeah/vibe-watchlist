@@ -4,7 +4,11 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { series, seriesTags, tags } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
-import { getEndOfHKTDay, parseToHKT } from '@/lib/utils/hkt-date'
+import {
+    formatDateToHKTString,
+    getEndOfHKTDay,
+    parseToHKT,
+} from '@/lib/utils/hkt-date'
 import type {
     ScheduleType,
     ScheduleValue,
@@ -69,6 +73,8 @@ async function fetchSeriesWithTags(seriesId: number) {
 
     return {
         ...s,
+        startDate: formatDateToHKTString(s.startDate),
+        endDate: formatDateToHKTString(s.endDate),
         scheduleValue: ScheduleService.parseScheduleValue(
             s.scheduleType as ScheduleType,
             s.scheduleValue,

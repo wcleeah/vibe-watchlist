@@ -244,3 +244,18 @@ export function isSentinelDate(date: Date | string | number): boolean {
 export function createSentinelDate(): Date {
     return createDateInHKT(9999, 12, 31, 23, 59, 59, 999) // Dec 31, 9999 in HKT
 }
+
+/**
+ * Format a date as YYYY-MM-DD string in HKT timezone
+ * Useful for API responses that need date-only format
+ */
+export function formatDateToHKTString(
+    date: Date | string | number | null,
+): string | null {
+    if (!date) return null
+    const hktDate = toHKT(date)
+    const year = hktDate.getFullYear()
+    const month = String(hktDate.getMonth() + 1).padStart(2, '0')
+    const day = String(hktDate.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
