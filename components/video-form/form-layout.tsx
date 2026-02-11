@@ -243,6 +243,7 @@ export function FormLayout({
                 }
             }
 
+            toast.success('Series created successfully!')
             onSeriesCreated?.()
             onReset()
         } catch (error) {

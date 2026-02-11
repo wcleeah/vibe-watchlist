@@ -1,10 +1,16 @@
 'use client'
 
 import type { LucideIcon } from 'lucide-react'
-import { Filter, Search, Tag, X } from 'lucide-react'
+import { ChevronDown, Filter, Search, Tag, X } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
@@ -169,29 +175,65 @@ export function FilterBar({
                         <Filter className='w-4 h-4' />
                         Platforms:
                     </div>
-                    <div className='flex flex-wrap gap-2'>
-                        {platforms.map(({ key, label, icon: Icon }) => (
+                    <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
                             <Button
-                                key={key}
-                                variant={
-                                    selectedPlatforms.includes(key)
-                                        ? 'default'
-                                        : 'outline'
-                                }
+                                variant='outline'
                                 size='sm'
-                                onClick={() => onPlatformToggle(key)}
-                                className={cn(
-                                    'h-8',
-                                    selectedPlatforms.includes(key)
-                                        ? 'bg-gray-100 dark:bg-gray-800'
-                                        : '',
-                                )}
+                                className='h-8 w-32 justify-between'
                             >
-                                <Icon className='w-3 h-3 mr-1' />
-                                {label}
+                                <span>
+                                    {selectedPlatforms.length === 0
+                                        ? 'All'
+                                        : selectedPlatforms.length === 1
+                                          ? platforms.find(
+                                                (p) =>
+                                                    p.key ===
+                                                    selectedPlatforms[0],
+                                            )?.label || '1'
+                                          : `${selectedPlatforms.length} selected`}
+                                </span>
+                                <ChevronDown className='w-3 h-3' />
                             </Button>
-                        ))}
-                    </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            align='start'
+                            className='w-48'
+                            onCloseAutoFocus={(e) => e.preventDefault()}
+                        >
+                            {platforms.map(({ key, label, icon: Icon }) => (
+                                <DropdownMenuItem
+                                    key={key}
+                                    onSelect={(e) => {
+                                        e.preventDefault()
+                                        onPlatformToggle(key)
+                                    }}
+                                    className='flex justify-between cursor-pointer'
+                                >
+                                    <div className='flex items-center gap-2'>
+                                        <Icon className='w-4 h-4' />
+                                        {label}
+                                    </div>
+                                    <div className='w-4 h-4 border rounded flex items-center justify-center'>
+                                        {selectedPlatforms.includes(key) && (
+                                            <svg
+                                                className='w-3 h-3'
+                                                viewBox='0 0 24 24'
+                                                fill='none'
+                                                stroke='currentColor'
+                                                strokeWidth='3'
+                                                strokeLinecap='round'
+                                                strokeLinejoin='round'
+                                            >
+                                                <title>Checked</title>
+                                                <polyline points='20 6 9 17 4 12' />
+                                            </svg>
+                                        )}
+                                    </div>
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             )}
 
