@@ -173,11 +173,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             updateData.autoAdvanceTotalEpisodes = autoAdvanceTotalEpisodes
 
         // Handle schedule changes
-        if (scheduleType && scheduleValue) {
+        if (scheduleType) {
+            const effectiveScheduleValue =
+                scheduleValue ??
+                ScheduleService.getDefaultScheduleValue(scheduleType)
+
             if (
                 !ScheduleService.isValidScheduleValue(
                     scheduleType,
-                    scheduleValue,
+                    effectiveScheduleValue,
                 )
             ) {
                 return NextResponse.json(
@@ -185,8 +189,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                     { status: 400 },
                 )
             }
+
             updateData.scheduleType = scheduleType
-            updateData.scheduleValue = scheduleValue
+            updateData.scheduleValue = effectiveScheduleValue
 
             // Recalculate next episode date
             const baseDate = startDate
@@ -194,27 +199,29 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 : new Date(existingSeries[0].startDate)
             updateData.nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
                 scheduleType,
-                scheduleValue as ScheduleValue,
+                effectiveScheduleValue,
                 baseDate,
             )
         }
 
         if (startDate !== undefined) {
             updateData.startDate = startDate
-            // Recalculate next episode if start date changed
-            const effectiveScheduleType =
-                scheduleType || (existingSeries[0].scheduleType as ScheduleType)
-            const effectiveScheduleValue =
-                scheduleValue ||
-                ScheduleService.parseScheduleValue(
-                    effectiveScheduleType,
-                    existingSeries[0].scheduleValue,
-                )
-            updateData.nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
-                effectiveScheduleType,
-                effectiveScheduleValue,
-                new Date(startDate),
-            )
+            // Only recalculate next episode if start date changed but schedule didn't
+            if (!scheduleType) {
+                const effectiveScheduleType = existingSeries[0]
+                    .scheduleType as ScheduleType
+                const effectiveScheduleValue =
+                    ScheduleService.parseScheduleValue(
+                        effectiveScheduleType,
+                        existingSeries[0].scheduleValue,
+                    )
+                updateData.nextEpisodeAt =
+                    ScheduleService.calculateNextEpisodeDate(
+                        effectiveScheduleType,
+                        effectiveScheduleValue,
+                        new Date(startDate),
+                    )
+            }
         }
 
         if (endDate !== undefined) {

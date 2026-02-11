@@ -44,6 +44,15 @@ export class SeriesUpdateService {
         for (const s of activeSeries) {
             try {
                 const scheduleType = s.scheduleType as ScheduleType
+
+                // Skip backlog series - they don't have schedules to update
+                if (scheduleType === 'none') {
+                    console.log(
+                        `SeriesUpdateService: Skipping backlog series ${s.id}`,
+                    )
+                    continue
+                }
+
                 const scheduleValue = ScheduleService.parseScheduleValue(
                     scheduleType,
                     s.scheduleValue,
