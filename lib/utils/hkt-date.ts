@@ -48,13 +48,32 @@ export function toHKT(date: Date | string | number = new Date()): Date {
 }
 
 /**
+ * Create a Date representing a specific date at midnight in HKT timezone
+ * This ensures the date is created in HKT regardless of server timezone
+ */
+function createDateInHKT(
+    year: number,
+    month: number, // 1-indexed (1 = January)
+    day: number,
+    hour = 0,
+    minute = 0,
+    second = 0,
+    ms = 0,
+): Date {
+    // Create an ISO string in HKT timezone and parse it
+    // Format: YYYY-MM-DDTHH:mm:ss.sss+08:00
+    const isoString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}.${String(ms).padStart(3, '0')}+08:00`
+    return new Date(isoString)
+}
+
+/**
  * Get the start of the day (00:00:00) in HKT for the given date
  */
 export function getStartOfHKTDay(date: Date | string | number): Date {
     const hktDate = toHKT(date)
-    return new Date(
+    return createDateInHKT(
         hktDate.getFullYear(),
-        hktDate.getMonth(),
+        hktDate.getMonth() + 1, // convert to 1-indexed
         hktDate.getDate(),
         0,
         0,
@@ -68,9 +87,9 @@ export function getStartOfHKTDay(date: Date | string | number): Date {
  */
 export function getEndOfHKTDay(date: Date | string | number): Date {
     const hktDate = toHKT(date)
-    return new Date(
+    return createDateInHKT(
         hktDate.getFullYear(),
-        hktDate.getMonth(),
+        hktDate.getMonth() + 1, // convert to 1-indexed
         hktDate.getDate(),
         23,
         59,
@@ -140,9 +159,18 @@ export function isHKTSameDay(
  */
 export function addHKTDays(date: Date | string | number, days: number): Date {
     const hktDate = toHKT(date)
-    const result = new Date(hktDate)
-    result.setDate(result.getDate() + days)
-    return result
+    // Calculate new date by adding days to the HKT date components
+    const newDate = new Date(
+        hktDate.getFullYear(),
+        hktDate.getMonth(),
+        hktDate.getDate() + days,
+        hktDate.getHours(),
+        hktDate.getMinutes(),
+        hktDate.getSeconds(),
+        hktDate.getMilliseconds(),
+    )
+    // Convert back to ensure it's properly in HKT
+    return toHKT(newDate)
 }
 
 /**
@@ -190,8 +218,8 @@ export function parseToHKT(dateString: string): Date {
     // If it's just a date (YYYY-MM-DD), treat it as start of day in HKT
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
         const [year, month, day] = dateString.split('-').map(Number)
-        // Month is 0-indexed in Date constructor
-        return new Date(year, month - 1, day, 0, 0, 0)
+        // Use createDateInHKT to ensure it's created in HKT timezone
+        return createDateInHKT(year, month, day, 0, 0, 0, 0)
     }
 
     // Otherwise parse as normal and convert to HKT
@@ -214,5 +242,5 @@ export function isSentinelDate(date: Date | string | number): boolean {
  * Create a sentinel date for backlog series
  */
 export function createSentinelDate(): Date {
-    return new Date(9999, 11, 31, 23, 59, 59, 999) // Dec 31, 9999
+    return createDateInHKT(9999, 12, 31, 23, 59, 59, 999) // Dec 31, 9999 in HKT
 }
