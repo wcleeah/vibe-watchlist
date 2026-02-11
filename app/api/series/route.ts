@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { platformConfigs, series, seriesTags, tags } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
+import { getEndOfHKTDay, parseToHKT } from '@/lib/utils/hkt-date'
 import type {
     CreateSeriesRequest,
     ScheduleType,
@@ -275,15 +276,18 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        // Parse dates to HKT timezone
+        const parsedStartDate = parseToHKT(startDate)
+        const parsedEndDate = endDate ? getEndOfHKTDay(endDate) : null
+
         // Calculate next episode date
-        const parsedStartDate = new Date(startDate)
         const nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
             scheduleType,
             effectiveScheduleValue as ScheduleValue,
             parsedStartDate,
         )
 
-        // Insert series
+        // Insert series with HKT dates
         const newSeries = await db
             .insert(series)
             .values({
@@ -294,8 +298,8 @@ export async function POST(request: NextRequest) {
                 thumbnailUrl: thumbnailUrl || null,
                 scheduleType,
                 scheduleValue: effectiveScheduleValue,
-                startDate,
-                endDate: endDate || null,
+                startDate: parsedStartDate,
+                endDate: parsedEndDate,
                 nextEpisodeAt,
                 missedPeriods: 0,
                 isActive: true,

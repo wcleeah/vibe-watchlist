@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { series } from '@/lib/db/schema'
 import { fetchSeriesWithTags } from '@/lib/db/series-helpers'
 import { ScheduleService } from '@/lib/services/schedule-service'
+import { nowHKT } from '@/lib/utils/hkt-date'
 import type { ScheduleType, ScheduleValue } from '@/types/series'
 
 interface RouteParams {
@@ -52,7 +53,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             )
         }
 
-        const now = new Date()
+        const now = nowHKT()
 
         // Calculate next episode date from now
         const scheduleType = currentSeries.scheduleType as ScheduleType

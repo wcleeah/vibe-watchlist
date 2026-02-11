@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { series, seriesTags, tags, videos, videoTags } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
+import { getEndOfHKTDay, parseToHKT } from '@/lib/utils/hkt-date'
 import type { ScheduleType, ScheduleValue } from '@/types/series'
 
 interface ConvertToSeriesRequest {
@@ -114,8 +115,11 @@ export async function POST(
 
         const tagIds = videoTagResults.map((vt) => vt.tagId)
 
+        // Parse dates to HKT timezone
+        const parsedStartDate = parseToHKT(startDate)
+        const parsedEndDate = endDate ? getEndOfHKTDay(endDate) : null
+
         // Calculate next episode date
-        const parsedStartDate = new Date(startDate)
         const nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
             scheduleType,
             scheduleValue,
@@ -133,8 +137,8 @@ export async function POST(
                 thumbnailUrl: video.thumbnailUrl,
                 scheduleType,
                 scheduleValue,
-                startDate,
-                endDate: endDate || null,
+                startDate: parsedStartDate,
+                endDate: parsedEndDate,
                 nextEpisodeAt,
                 missedPeriods: 0,
                 isActive: true,
