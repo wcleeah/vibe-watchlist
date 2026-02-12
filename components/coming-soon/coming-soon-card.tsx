@@ -120,7 +120,7 @@ export function ComingSoonCard({
     // Highlight released (not yet transformed) items with a ring
     const highlightClass =
         isReleased && !isTransformed
-            ? 'ring-2 ring-yellow-400/60 dark:ring-yellow-500/40'
+            ? 'ring-2 ring-green-400/60 dark:ring-green-500/40'
             : ''
 
     return (
