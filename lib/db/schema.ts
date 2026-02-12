@@ -243,6 +243,53 @@ export const playlistTags = pgTable(
     ],
 )
 
+// Coming Soon table for tracking unreleased videos/series
+export const comingSoon = pgTable(
+    'coming_soon',
+    {
+        id: serial('id').primaryKey(),
+        url: text().notNull(), // Preview/trailer URL
+        title: text(),
+        platform: text().notNull(),
+        thumbnailUrl: text('thumbnail_url'),
+        releaseDate: timestamp('release_date').notNull(),
+        transformedAt: timestamp('transformed_at'),
+        sortOrder: integer('sort_order').default(0).notNull(),
+        createdAt: timestamp('created_at').defaultNow(),
+        updatedAt: timestamp('updated_at').defaultNow(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.platform],
+            foreignColumns: [platformConfigs.platformId],
+            name: 'coming_soon_platform_fkey',
+        }).onDelete('restrict'),
+        index('coming_soon_release_date_idx').on(table.releaseDate),
+    ],
+)
+
+// Coming Soon tags junction table
+export const comingSoonTags = pgTable(
+    'coming_soon_tags',
+    {
+        id: serial('id').primaryKey(),
+        comingSoonId: integer('coming_soon_id').notNull(),
+        tagId: integer('tag_id').notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.comingSoonId],
+            foreignColumns: [comingSoon.id],
+            name: 'coming_soon_tags_coming_soon_id_fk',
+        }).onDelete('cascade'),
+        foreignKey({
+            columns: [table.tagId],
+            foreignColumns: [tags.id],
+            name: 'coming_soon_tags_tag_id_fk',
+        }).onDelete('cascade'),
+    ],
+)
+
 export const userConfig = pgTable(
     'user_config',
     {
@@ -293,6 +340,7 @@ export const tagsRelations = relations(tags, ({ many }) => ({
     videoTags: many(videoTags),
     seriesTags: many(seriesTags),
     playlistTags: many(playlistTags),
+    comingSoonTags: many(comingSoonTags),
 }))
 
 export const videoTagsRelations = relations(videoTags, ({ one }) => ({
@@ -332,6 +380,21 @@ export const playlistTagsRelations = relations(playlistTags, ({ one }) => ({
     }),
 }))
 
+export const comingSoonRelations = relations(comingSoon, ({ many }) => ({
+    comingSoonTags: many(comingSoonTags),
+}))
+
+export const comingSoonTagsRelations = relations(comingSoonTags, ({ one }) => ({
+    comingSoon: one(comingSoon, {
+        fields: [comingSoonTags.comingSoonId],
+        references: [comingSoon.id],
+    }),
+    tag: one(tags, {
+        fields: [comingSoonTags.tagId],
+        references: [tags.id],
+    }),
+}))
+
 export type Video = typeof videos.$inferSelect
 export type NewVideo = typeof videos.$inferInsert
 export type Tag = typeof tags.$inferSelect
@@ -355,3 +418,7 @@ export type Playlist = typeof playlists.$inferSelect
 export type NewPlaylist = typeof playlists.$inferInsert
 export type PlaylistTag = typeof playlistTags.$inferSelect
 export type NewPlaylistTag = typeof playlistTags.$inferInsert
+export type ComingSoon = typeof comingSoon.$inferSelect
+export type NewComingSoon = typeof comingSoon.$inferInsert
+export type ComingSoonTag = typeof comingSoonTags.$inferSelect
+export type NewComingSoonTag = typeof comingSoonTags.$inferInsert

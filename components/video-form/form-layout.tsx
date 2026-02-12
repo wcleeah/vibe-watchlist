@@ -34,6 +34,7 @@ interface FormLayoutProps {
     defaultMode?: ContentMode
     onSeriesCreated?: () => void
     onPlaylistImported?: () => void
+    onComingSoonCreated?: () => void
 }
 
 export function FormLayout({
@@ -46,6 +47,7 @@ export function FormLayout({
     defaultMode = 'video',
     onSeriesCreated,
     onPlaylistImported,
+    onComingSoonCreated,
 }: FormLayoutProps) {
     const { setValue, getValues, watch } = useFormContext<VideoFormData>()
     const [selectedSuggestion, setSelectedSuggestion] = useState<
@@ -80,6 +82,13 @@ export function FormLayout({
     const [isLoadingPreview, setIsLoadingPreview] = useState(false)
     const [isImportingPlaylist, setIsImportingPlaylist] = useState(false)
     const [playlistError, setPlaylistError] = useState<string | null>(null)
+
+    // Coming Soon mode state
+    const [comingSoonReleaseDate, setComingSoonReleaseDate] = useState<string>(
+        new Date().toISOString().split('T')[0],
+    )
+    const [comingSoonError, setComingSoonError] = useState<string | null>(null)
+    const [isSubmittingComingSoon, setIsSubmittingComingSoon] = useState(false)
 
     // Update mode when defaultMode changes
     useEffect(() => {
@@ -363,6 +372,46 @@ export function FormLayout({
         setPlaylistError(null)
     }
 
+    // Coming Soon submission handler
+    const handleComingSoonSubmit = async () => {
+        const formData = getValues()
+        setComingSoonError(null)
+        setIsSubmittingComingSoon(true)
+
+        try {
+            const response = await fetch('/api/coming-soon', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: formData.url,
+                    title: formData.title,
+                    platform: formData.platform || 'unknown',
+                    thumbnailUrl: formData.thumbnailUrl || undefined,
+                    releaseDate: comingSoonReleaseDate,
+                    tagIds: selectedTagIds,
+                }),
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.error || 'Failed to add coming soon item')
+            }
+
+            toast.success('Coming soon item added!')
+            onComingSoonCreated?.()
+            onReset()
+        } catch (error) {
+            console.error('Failed to add coming soon item:', error)
+            setComingSoonError(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to add coming soon item',
+            )
+        } finally {
+            setIsSubmittingComingSoon(false)
+        }
+    }
+
     return (
         <div className={`space-y-6`}>
             <div className='text-center mb-4'>
@@ -372,7 +421,9 @@ export function FormLayout({
                         ? 'Video'
                         : mode === 'series'
                           ? 'Series'
-                          : 'Playlist'}
+                          : mode === 'coming-soon'
+                            ? 'Coming Soon'
+                            : 'Playlist'}
                 </h2>
             </div>
 
@@ -386,9 +437,16 @@ export function FormLayout({
                         setPlaylistPreview(null)
                         setPlaylistError(null)
                     }
+                    // Reset coming soon error when switching modes
+                    if (newMode !== 'coming-soon') {
+                        setComingSoonError(null)
+                    }
                 }}
                 disabled={
-                    isSubmitting || isSubmittingSeries || isImportingPlaylist
+                    isSubmitting ||
+                    isSubmittingSeries ||
+                    isImportingPlaylist ||
+                    isSubmittingComingSoon
                 }
             />
 
@@ -421,7 +479,11 @@ export function FormLayout({
                         }
                     }}
                     error={aiMetadataError || undefined}
-                    disabled={isSubmitting || isSubmittingSeries}
+                    disabled={
+                        isSubmitting ||
+                        isSubmittingSeries ||
+                        isSubmittingComingSoon
+                    }
                 />
             )}
 
@@ -584,6 +646,24 @@ export function FormLayout({
                 </div>
             )}
 
+            {/* Coming Soon Fields - Only shown in Coming Soon mode */}
+            {mode === 'coming-soon' && (
+                <div className='space-y-4 p-4 bg-muted/50 rounded-lg'>
+                    <DatePickerField
+                        id='coming-soon-release-date'
+                        label='Release Date'
+                        value={comingSoonReleaseDate}
+                        onChange={(date) =>
+                            setComingSoonReleaseDate(
+                                date || new Date().toISOString().split('T')[0],
+                            )
+                        }
+                        required
+                        disabled={isSubmitting || isSubmittingComingSoon}
+                    />
+                </div>
+            )}
+
             {/* Tags - For all modes */}
             <TagInput
                 value={tagInput}
@@ -598,7 +678,8 @@ export function FormLayout({
                     isLoadingTags ||
                     isSubmitting ||
                     isSubmittingSeries ||
-                    isImportingPlaylist
+                    isImportingPlaylist ||
+                    isSubmittingComingSoon
                 }
                 error={tagError}
             />
@@ -618,7 +699,8 @@ export function FormLayout({
                     disabled={
                         isSubmitting ||
                         isSubmittingSeries ||
-                        isImportingPlaylist
+                        isImportingPlaylist ||
+                        isSubmittingComingSoon
                     }
                 >
                     Reset
@@ -637,6 +719,17 @@ export function FormLayout({
                         className='flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
                     >
                         {isSubmittingSeries ? 'Adding...' : 'Add Series'}
+                    </Button>
+                ) : mode === 'coming-soon' ? (
+                    <Button
+                        type='button'
+                        onClick={handleComingSoonSubmit}
+                        disabled={isSubmitting || isSubmittingComingSoon}
+                        className='flex-1 h-12 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
+                    >
+                        {isSubmittingComingSoon
+                            ? 'Adding...'
+                            : 'Add Coming Soon'}
                     </Button>
                 ) : playlistPreview ? (
                     <Button
@@ -675,6 +768,11 @@ export function FormLayout({
             {playlistError && mode === 'playlist' && (
                 <p className='text-sm text-destructive text-center'>
                     {playlistError}
+                </p>
+            )}
+            {comingSoonError && mode === 'coming-soon' && (
+                <p className='text-sm text-destructive text-center'>
+                    {comingSoonError}
                 </p>
             )}
         </div>
