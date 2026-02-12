@@ -1,7 +1,8 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { NavigationTabs } from '@/components/navigation-tabs'
@@ -26,6 +27,7 @@ export default function Home() {
     })
     const { setValue } = form
 
+    const searchParams = useSearchParams()
     const urlValidation = useUrlValidation()
     const aiMetadata = useAIMetadataFetching(urlValidation.urlValidationResult)
     const [mode, setMode] = useState<'input' | 'form'>('input')
@@ -36,6 +38,67 @@ export default function Home() {
     >([])
     const [platformDiscoveryProcessed, setPlatformDiscoveryProcessed] =
         useState(false)
+
+    // Coming soon transform state
+    const comingSoonId = searchParams.get('comingSoonId')
+    const transformUrl = searchParams.get('url')
+    const comingSoonTagsFetched = useRef(false)
+
+    // Release toast - fires on every visit to homepage
+    useEffect(() => {
+        fetch('/api/coming-soon/released')
+            .then((res) => {
+                if (!res.ok) return null
+                return res.json()
+            })
+            .then((data) => {
+                if (data && Array.isArray(data) && data.length > 0) {
+                    toast.info(
+                        `${data.length} coming soon item${data.length > 1 ? 's have' : ' has'} been released!`,
+                        {
+                            action: {
+                                label: 'View',
+                                onClick: () => {
+                                    window.location.href = '/coming-soon'
+                                },
+                            },
+                            duration: 8000,
+                        },
+                    )
+                }
+            })
+            .catch(() => {
+                // Silently ignore release check failures
+            })
+    }, [])
+
+    // Transform: auto-fill URL from query param
+    useEffect(() => {
+        if (transformUrl && comingSoonId) {
+            urlValidation.setUrl(transformUrl)
+        }
+    }, [transformUrl, comingSoonId, urlValidation.setUrl])
+
+    // Transform: fetch coming soon item's tags and pre-select them
+    useEffect(() => {
+        if (!comingSoonId || comingSoonTagsFetched.current) return
+
+        comingSoonTagsFetched.current = true
+        fetch(`/api/coming-soon/${comingSoonId}`)
+            .then((res) => {
+                if (!res.ok) return null
+                return res.json()
+            })
+            .then((data) => {
+                if (data?.tags && Array.isArray(data.tags)) {
+                    const tagIds = data.tags.map((t: { id: number }) => t.id)
+                    setValue('tags', tagIds)
+                }
+            })
+            .catch((err) => {
+                console.error('Failed to fetch coming soon item tags:', err)
+            })
+    }, [comingSoonId, setValue])
 
     // Determine default mode based on URL type
     const defaultMode: ContentMode = urlValidation.urlValidationResult
@@ -179,6 +242,24 @@ export default function Home() {
                     setSubmitError('Failed to add video')
                 }
             } else {
+                // If this was a transform from coming soon, mark as transformed
+                if (comingSoonId) {
+                    try {
+                        await fetch(`/api/coming-soon/${comingSoonId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                transformedAt: new Date().toISOString(),
+                            }),
+                        })
+                    } catch (err) {
+                        console.error(
+                            'Failed to mark coming soon item as transformed:',
+                            err,
+                        )
+                    }
+                }
+
                 reset(false) // Reset URL and global state
                 form.reset() // Reset form
                 toast.success('Video added successfully!')

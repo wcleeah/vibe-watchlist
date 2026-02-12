@@ -47,7 +47,7 @@ export type ScheduleValue =
     | NoSchedule
 
 // Content mode for the add form
-export type ContentMode = 'video' | 'series' | 'playlist'
+export type ContentMode = 'video' | 'series' | 'playlist' | 'coming-soon'
 
 // Series with typed schedule value
 export interface Series
