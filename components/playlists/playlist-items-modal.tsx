@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, ExternalLink, Loader2 } from 'lucide-react'
+import { Check, ExternalLink, Globe, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog'
 
+import { RefreshMetadataModal } from '@/components/video-form/refresh-metadata-modal'
 import type {
     PlaylistSummary,
     PlaylistVideo,
@@ -36,6 +37,8 @@ export function PlaylistItemsModal({
         null,
     )
     const [watchingVideoId, setWatchingVideoId] = useState<number | null>(null)
+    const [refreshVideo, setRefreshVideo] = useState<PlaylistVideo | null>(null)
+    const [refreshModalOpen, setRefreshModalOpen] = useState(false)
 
     const fetchPlaylistDetails = useCallback(async () => {
         if (!playlist?.id) return
@@ -126,6 +129,46 @@ export function PlaylistItemsModal({
         }
     }
 
+    const handleRefreshMetadata = (video: PlaylistVideo) => {
+        setRefreshVideo(video)
+        setRefreshModalOpen(true)
+    }
+
+    const handleUpdateMetadata = async (
+        title: string,
+        thumbnailUrl: string | null,
+    ) => {
+        if (!refreshVideo?.id) return
+
+        try {
+            const response = await fetch(`/api/videos/${refreshVideo.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title,
+                    thumbnailUrl,
+                }),
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to update video')
+            }
+
+            // Refresh playlist data
+            await fetchPlaylistDetails()
+            onRefresh?.()
+            toast.success('Video metadata updated')
+        } catch (error) {
+            console.error('Error updating video:', error)
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to update video',
+            )
+            throw error
+        }
+    }
+
     const buildWatchUrl = (video: PlaylistVideo) => {
         if (!playlistData || !video.youtubeVideoId) return video.url
 
@@ -191,12 +234,21 @@ export function PlaylistItemsModal({
                                     onUnmarkWatched={() =>
                                         handleUnmarkWatched(video)
                                     }
+                                    onRefreshMetadata={() =>
+                                        handleRefreshMetadata(video)
+                                    }
                                 />
                             ))}
                         </div>
                     )}
                 </div>
             </DialogContent>
+            <RefreshMetadataModal
+                video={refreshVideo}
+                open={refreshModalOpen}
+                onOpenChange={setRefreshModalOpen}
+                onUpdate={handleUpdateMetadata}
+            />
         </Dialog>
     )
 }
@@ -207,6 +259,7 @@ interface PlaylistItemRowProps {
     isLoading: boolean
     onMarkWatched: () => void
     onUnmarkWatched: () => void
+    onRefreshMetadata?: () => void
 }
 
 function PlaylistItemRow({
@@ -215,6 +268,7 @@ function PlaylistItemRow({
     isLoading,
     onMarkWatched,
     onUnmarkWatched,
+    onRefreshMetadata,
 }: PlaylistItemRowProps) {
     return (
         <div
@@ -305,6 +359,16 @@ function PlaylistItemRow({
                         ) : (
                             'markWatched()'
                         )}
+                    </button>
+                )}
+                {onRefreshMetadata && video.platform === 'youtube' && (
+                    <button
+                        type='button'
+                        onClick={onRefreshMetadata}
+                        className='px-2 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors'
+                        title='Refresh metadata'
+                    >
+                        <Globe className='w-3 h-3' />
                     </button>
                 )}
             </div>
