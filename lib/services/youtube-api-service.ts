@@ -25,6 +25,31 @@ export interface YouTubePlaylistItem {
     channelTitle: string
 }
 
+export interface YouTubeVideoMetadata {
+    videoId: string
+    title: string
+    description: string
+    thumbnailUrl: string
+    channelTitle: string
+    publishedAt: string
+    language?: string
+}
+
+export interface YouTubeVideoMetadataMultiLang {
+    videoId: string
+    original: YouTubeVideoMetadata
+    languages: Map<string, YouTubeVideoMetadata>
+}
+
+export interface LocalizedMetadataOption {
+    languageCode: string
+    languageName: string
+    title: string
+    description: string
+    thumbnailUrl: string
+    isOriginal: boolean
+}
+
 interface YouTubeApiError {
     error: {
         code: number
@@ -202,10 +227,219 @@ export function buildPlaylistWatchUrl(
     return url.toString()
 }
 
+/**
+ * Supported language codes for YouTube metadata localization
+ */
+export const SUPPORTED_LANGUAGE_CODES = {
+    ENGLISH: 'en',
+    CHINESE_TRADITIONAL_TW: 'zh-TW',
+    CHINESE_TRADITIONAL_HK: 'zh-HK',
+    CHINESE_TRADITIONAL: 'zh-Hant',
+} as const
+
+/**
+ * Language names for display
+ */
+export const LANGUAGE_NAMES: Record<string, string> = {
+    en: 'English',
+    'zh-TW': 'Chinese (Traditional - Taiwan)',
+    'zh-HK': 'Chinese (Traditional - Hong Kong)',
+    'zh-Hant': 'Chinese (Traditional)',
+    original: 'Original Title',
+}
+
+/**
+ * Validates if a language code is supported
+ */
+export function isValidLanguageCode(code: string): boolean {
+    return (
+        Object.values(SUPPORTED_LANGUAGE_CODES).includes(code as any) ||
+        code === 'original'
+    )
+}
+
+/**
+ * Extracts YouTube video ID from various URL formats
+ */
+export function extractYouTubeVideoId(url: string): string | null {
+    try {
+        const urlObj = new URL(url)
+
+        // youtu.be/VIDEO_ID format
+        if (urlObj.hostname === 'youtu.be') {
+            return urlObj.pathname.slice(1) || null
+        }
+
+        // youtube.com/watch?v=VIDEO_ID format
+        if (urlObj.hostname.includes('youtube.com')) {
+            // Standard watch URL
+            if (urlObj.pathname === '/watch') {
+                return urlObj.searchParams.get('v')
+            }
+            // Shorts URL: /shorts/VIDEO_ID
+            if (urlObj.pathname.startsWith('/shorts/')) {
+                return urlObj.pathname.split('/')[2] || null
+            }
+            // Embed URL: /embed/VIDEO_ID
+            if (urlObj.pathname.startsWith('/embed/')) {
+                return urlObj.pathname.split('/')[2] || null
+            }
+            // Live URL: /live/VIDEO_ID
+            if (urlObj.pathname.startsWith('/live/')) {
+                return urlObj.pathname.split('/')[2] || null
+            }
+        }
+
+        return null
+    } catch {
+        return null
+    }
+}
+
+/**
+ * Fetches video metadata for a specific language
+ */
+async function fetchVideoMetadataWithLanguage(
+    videoId: string,
+    hl?: string,
+): Promise<YouTubeVideoMetadata | null> {
+    const apiKey = getApiKey()
+
+    const url = new URL(`${YOUTUBE_API_BASE}/videos`)
+    url.searchParams.set('part', 'snippet')
+    url.searchParams.set('id', videoId)
+    url.searchParams.set('key', apiKey)
+
+    if (hl) {
+        url.searchParams.set('hl', hl)
+    }
+
+    const response = await fetch(url.toString())
+
+    if (!response.ok) {
+        const error = (await response.json()) as YouTubeApiError
+        console.error(
+            `YouTube API error for video ${videoId}${hl ? ` (hl=${hl})` : ''}:`,
+            error.error?.message || response.statusText,
+        )
+        return null
+    }
+
+    const data = await response.json()
+
+    if (!data.items || data.items.length === 0) {
+        console.warn(`Video not found: ${videoId}`)
+        return null
+    }
+
+    const video = data.items[0]
+    const snippet = video.snippet
+
+    // Get the best thumbnail available
+    const thumbnails = snippet.thumbnails || {}
+    const thumbnailUrl =
+        thumbnails.maxres?.url ||
+        thumbnails.high?.url ||
+        thumbnails.medium?.url ||
+        thumbnails.default?.url ||
+        ''
+
+    // Use localized title/description when available (when hl parameter is used)
+    const localizedTitle = snippet.localized?.title || snippet.title
+    const localizedDescription =
+        snippet.localized?.description || snippet.description
+
+    return {
+        videoId,
+        title: localizedTitle || 'Untitled Video',
+        description: localizedDescription || '',
+        thumbnailUrl,
+        channelTitle: snippet.channelTitle || '',
+        publishedAt: snippet.publishedAt || '',
+        language: hl,
+    }
+}
+
+/**
+ * Fetches video metadata in multiple languages and returns options for user selection
+ *
+ * @param videoId - The YouTube video ID
+ * @param languageCodes - Array of language codes to fetch (defaults to ['en', 'zh-TW', 'zh-HK', 'zh-Hant'])
+ * @returns Object containing all metadata options including original
+ */
+export async function fetchYouTubeVideoMetadataMultiLang(
+    videoId: string,
+    languageCodes: string[] = [
+        SUPPORTED_LANGUAGE_CODES.ENGLISH,
+        SUPPORTED_LANGUAGE_CODES.CHINESE_TRADITIONAL_TW,
+        SUPPORTED_LANGUAGE_CODES.CHINESE_TRADITIONAL_HK,
+        SUPPORTED_LANGUAGE_CODES.CHINESE_TRADITIONAL,
+    ],
+): Promise<{
+    videoId: string
+    options: LocalizedMetadataOption[]
+}> {
+    // Fetch original metadata (no hl parameter)
+    const originalMetadata = await fetchVideoMetadataWithLanguage(videoId)
+
+    if (!originalMetadata) {
+        throw new Error(`Failed to fetch metadata for video: ${videoId}`)
+    }
+
+    const options: LocalizedMetadataOption[] = [
+        {
+            languageCode: 'original',
+            languageName: LANGUAGE_NAMES.original,
+            title: originalMetadata.title,
+            description: originalMetadata.description,
+            thumbnailUrl: originalMetadata.thumbnailUrl,
+            isOriginal: true,
+        },
+    ]
+
+    // Fetch metadata for each requested language
+    const languagePromises = languageCodes.map(async (code) => {
+        try {
+            const metadata = await fetchVideoMetadataWithLanguage(videoId, code)
+
+            if (metadata) {
+                // Only add if the title is different from original
+                if (metadata.title !== originalMetadata.title) {
+                    options.push({
+                        languageCode: code,
+                        languageName: LANGUAGE_NAMES[code] || code,
+                        title: metadata.title,
+                        description: metadata.description,
+                        thumbnailUrl: metadata.thumbnailUrl,
+                        isOriginal: false,
+                    })
+                }
+            }
+        } catch (error) {
+            console.warn(
+                `Failed to fetch metadata for video ${videoId} with language ${code}:`,
+                error,
+            )
+        }
+    })
+
+    await Promise.all(languagePromises)
+
+    return {
+        videoId,
+        options,
+    }
+}
+
 export const YouTubeApiService = {
     getPlaylistInfo,
     getPlaylistItems,
     checkPlaylistUpdated,
     isValidPlaylistId,
     buildPlaylistWatchUrl,
+    fetchYouTubeVideoMetadataMultiLang,
+    extractYouTubeVideoId,
+    isValidLanguageCode,
+    SUPPORTED_LANGUAGE_CODES,
+    LANGUAGE_NAMES,
 }

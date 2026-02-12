@@ -23,6 +23,7 @@ export interface PreviewCardProps {
     onMarkWatched?: (id: number) => Promise<void>
     onDelete?: (id: number) => Promise<void>
     onEdit?: (video: VideoData) => void
+    onRefreshMetadata?: (video: VideoData) => void
     onConvertToSeries?: (video: VideoData) => void
     onConvertToPlaylist?: (video: VideoData) => void
     isPlaylistUrl?: boolean

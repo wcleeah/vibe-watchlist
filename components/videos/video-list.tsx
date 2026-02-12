@@ -21,6 +21,7 @@ interface VideoListProps {
     onMarkWatched?: (id: number) => Promise<void>
     onDelete?: (id: number) => Promise<void>
     onEdit?: (video: VideoWithTags) => void
+    onRefreshMetadata?: (video: VideoWithTags) => void
     onConvertToSeries?: (video: VideoWithTags) => void
     onConvertToPlaylist?: (video: VideoWithTags) => void
     playlistUrlVideoIds?: Set<number>
@@ -37,6 +38,7 @@ export function VideoList({
     onMarkWatched,
     onDelete,
     onEdit,
+    onRefreshMetadata,
     onConvertToSeries,
     onConvertToPlaylist,
     playlistUrlVideoIds,
@@ -52,6 +54,11 @@ export function VideoList({
                 onMarkWatched={onMarkWatched}
                 onDelete={onDelete}
                 onEdit={onEdit ? () => onEdit(video) : undefined}
+                onRefreshMetadata={
+                    onRefreshMetadata
+                        ? () => onRefreshMetadata(video)
+                        : undefined
+                }
                 onConvertToSeries={
                     onConvertToSeries
                         ? () => onConvertToSeries(video)

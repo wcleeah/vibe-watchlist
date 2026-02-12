@@ -6,7 +6,7 @@ import { parseVideoUrlWithPlatforms } from '@/lib/utils/url-parser'
 
 export async function POST(request: NextRequest) {
     try {
-        const { url, platform: providedPlatform } = await request.json()
+        const { url, platform: providedPlatform, force } = await request.json()
 
         if (!url || typeof url !== 'string') {
             return NextResponse.json(
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Extract metadata with AI analysis
-        const result = await aiMetadataService.extractMetadata(url)
+        const result = await aiMetadataService.extractMetadata(url, force)
 
         if (result.success) {
             return NextResponse.json({

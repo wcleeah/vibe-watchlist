@@ -72,9 +72,23 @@ async function getTwitchAccessToken(): Promise<string> {
 export class SharedMetadataService {
     /**
      * Extract metadata from YouTube using oEmbed API
+     * @param url - The YouTube video URL
+     * @param languageCode - Optional language code (e.g., 'en', 'zh-TW', 'zh-HK')
      */
-    static async extractYouTubeMetadata(url: string): Promise<VideoMetadata> {
-        const oEmbedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
+    static async extractYouTubeMetadata(
+        url: string,
+        languageCode?: string,
+    ): Promise<VideoMetadata> {
+        const params = new URLSearchParams({
+            url: url,
+            format: 'json',
+        })
+
+        if (languageCode) {
+            params.set('hl', languageCode)
+        }
+
+        const oEmbedUrl = `https://www.youtube.com/oembed?${params.toString()}`
 
         const response = await fetch(oEmbedUrl, {
             headers: {
@@ -113,6 +127,99 @@ export class SharedMetadataService {
             authorName: data.author_name,
             authorUrl: data.author_url,
         }
+    }
+
+    /**
+     * Supported language codes for YouTube oEmbed
+     */
+    static readonly SUPPORTED_LANGUAGE_CODES = {
+        ENGLISH: 'en',
+        CHINESE_TRADITIONAL_TW: 'zh-TW',
+        CHINESE_TRADITIONAL_HK: 'zh-HK',
+        CHINESE_TRADITIONAL: 'zh-Hant',
+    } as const
+
+    static readonly LANGUAGE_NAMES: Record<string, string> = {
+        en: 'English',
+        'zh-TW': 'Chinese (Traditional - Taiwan)',
+        'zh-HK': 'Chinese (Traditional - Hong Kong)',
+        'zh-Hant': 'Chinese (Traditional)',
+        original: 'Original Title',
+    }
+
+    /**
+     * Extract metadata from YouTube using oEmbed API in multiple languages
+     *
+     * @param url - The YouTube video URL
+     * @param languageCodes - Array of language codes to fetch (defaults to all supported)
+     * @returns Array of metadata options including original
+     */
+    static async extractYouTubeMetadataMultiLang(
+        url: string,
+        languageCodes: string[] = [
+            SharedMetadataService.SUPPORTED_LANGUAGE_CODES.ENGLISH,
+            SharedMetadataService.SUPPORTED_LANGUAGE_CODES
+                .CHINESE_TRADITIONAL_TW,
+            SharedMetadataService.SUPPORTED_LANGUAGE_CODES
+                .CHINESE_TRADITIONAL_HK,
+            SharedMetadataService.SUPPORTED_LANGUAGE_CODES.CHINESE_TRADITIONAL,
+        ],
+    ): Promise<
+        Array<{
+            languageCode: string
+            languageName: string
+            metadata: VideoMetadata
+            isOriginal: boolean
+        }>
+    > {
+        // Fetch original metadata first
+        const originalMetadata =
+            await SharedMetadataService.extractYouTubeMetadata(url)
+
+        const results: Array<{
+            languageCode: string
+            languageName: string
+            metadata: VideoMetadata
+            isOriginal: boolean
+        }> = [
+            {
+                languageCode: 'original',
+                languageName: SharedMetadataService.LANGUAGE_NAMES.original,
+                metadata: originalMetadata,
+                isOriginal: true,
+            },
+        ]
+
+        // Fetch metadata for each language
+        const fetchPromises = languageCodes.map(async (code) => {
+            try {
+                const metadata =
+                    await SharedMetadataService.extractYouTubeMetadata(
+                        url,
+                        code,
+                    )
+
+                // Only add if title is different from original
+                if (metadata.title !== originalMetadata.title) {
+                    results.push({
+                        languageCode: code,
+                        languageName:
+                            SharedMetadataService.LANGUAGE_NAMES[code] || code,
+                        metadata,
+                        isOriginal: false,
+                    })
+                }
+            } catch (error) {
+                console.warn(
+                    `Failed to fetch YouTube metadata for ${url} with language ${code}:`,
+                    error,
+                )
+            }
+        })
+
+        await Promise.all(fetchPromises)
+
+        return results
     }
 
     /**

@@ -1,6 +1,6 @@
 'use client'
 
-import { ListMusic, Pencil, RefreshCw } from 'lucide-react'
+import { Globe, ListMusic, Pencil, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 
 import { type ActionConfig, ErrorDisplay, MediaCard } from '@/components/shared'
@@ -19,6 +19,7 @@ export function VideoCard({
     onMarkWatched,
     onDelete,
     onEdit,
+    onRefreshMetadata,
     onConvertToSeries,
     onConvertToPlaylist,
     isPlaylistUrl = false,
@@ -143,6 +144,16 @@ export function VideoCard({
             onClick: () => onEdit(video),
             variant: 'ghost',
             icon: <Pencil className='w-3 h-3' />,
+        })
+    }
+
+    if (onRefreshMetadata && video.platform === 'youtube') {
+        secondaryActions.push({
+            id: 'refresh-metadata',
+            label: 'refreshMetadata()',
+            onClick: () => onRefreshMetadata(video),
+            variant: 'ghost',
+            icon: <Globe className='w-3 h-3' />,
         })
     }
 

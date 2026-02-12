@@ -11,6 +11,7 @@ import {
     type SortOption,
     TabSwitcher,
 } from '@/components/shared'
+import { RefreshMetadataModal } from '@/components/video-form/refresh-metadata-modal'
 import { VideoEditModal } from '@/components/video-form/video-edit-modal'
 import { ConvertToPlaylistModal } from '@/components/videos/convert-to-playlist-modal'
 import { ConvertToSeriesModal } from '@/components/videos/convert-to-series-modal'
@@ -54,6 +55,10 @@ export default function ListPage() {
     const [convertPlaylistVideo, setConvertPlaylistVideo] =
         useState<VideoWithTags | null>(null)
     const [convertPlaylistModalOpen, setConvertPlaylistModalOpen] =
+        useState(false)
+    const [refreshMetadataVideo, setRefreshMetadataVideo] =
+        useState<VideoWithTags | null>(null)
+    const [refreshMetadataModalOpen, setRefreshMetadataModalOpen] =
         useState(false)
 
     // Platform and tag data
@@ -170,6 +175,33 @@ export default function ListPage() {
         setConvertPlaylistModalOpen(true)
     }
 
+    const handleRefreshMetadata = (video: VideoWithTags) => {
+        setRefreshMetadataVideo(video)
+        setRefreshMetadataModalOpen(true)
+    }
+
+    const handleUpdateMetadata = async (
+        title: string,
+        thumbnailUrl: string | null,
+    ) => {
+        if (!refreshMetadataVideo) return
+
+        const response = await fetch(`/api/videos/${refreshMetadataVideo.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title,
+                thumbnailUrl,
+            }),
+        })
+
+        if (!response.ok) {
+            throw new Error('Failed to update video')
+        }
+
+        handleRefresh()
+    }
+
     const handleRefresh = useCallback(() => {
         activeVideos.refetch()
         watchedVideos.refetch()
@@ -282,6 +314,7 @@ export default function ListPage() {
                     }
                     onDelete={currentHook.deleteVideo}
                     onEdit={handleEdit}
+                    onRefreshMetadata={handleRefreshMetadata}
                     onConvertToSeries={handleConvertToSeries}
                     onConvertToPlaylist={handleConvertToPlaylist}
                     playlistUrlVideoIds={playlistUrlVideoIds}
@@ -322,6 +355,12 @@ export default function ListPage() {
                     open={convertPlaylistModalOpen}
                     onOpenChange={setConvertPlaylistModalOpen}
                     onSuccess={handleRefresh}
+                />
+                <RefreshMetadataModal
+                    video={refreshMetadataVideo}
+                    open={refreshMetadataModalOpen}
+                    onOpenChange={setRefreshMetadataModalOpen}
+                    onUpdate={handleUpdateMetadata}
                 />
             </main>
         </div>

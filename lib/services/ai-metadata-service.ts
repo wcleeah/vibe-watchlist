@@ -7,6 +7,7 @@ import {
     SharedMetadataService,
     type VideoMetadata,
 } from '@/lib/services/shared-metadata-service'
+import { YouTubeApiService } from '@/lib/services/youtube-api-service'
 import type {
     AIMetadataConfig,
     GoogleSearchResult,
@@ -32,18 +33,26 @@ export class AIMetadataService {
         this.aiService = new AIService()
     }
 
-    async extractMetadata(url: string): Promise<MetadataExtractionResponse> {
+    async extractMetadata(
+        url: string,
+        force?: boolean,
+    ): Promise<MetadataExtractionResponse> {
         logger.log(
             '🔍 AI METADATA SERVICE: Starting extractMetadata for URL:',
             url,
+            'force:',
+            force,
         )
 
         try {
-            const cacheDisabled = process.env.DISABLE_METADATA_CACHE === 'true'
+            const cacheDisabled =
+                process.env.DISABLE_METADATA_CACHE === 'true' || force
 
             if (cacheDisabled) {
                 logger.log(
-                    '🔍 AI METADATA SERVICE: Caching disabled, skipping cache check',
+                    force
+                        ? '🔍 AI METADATA SERVICE: Force refresh requested, skipping cache'
+                        : '🔍 AI METADATA SERVICE: Caching disabled, skipping cache check',
                 )
             } else {
                 logger.log(
@@ -148,14 +157,92 @@ export class AIMetadataService {
 
             if (platform === 'youtube') {
                 logger.log(
-                    '🎯 OFFICIAL PLATFORM HANDLER: Calling YouTube oEmbed API',
+                    '🎯 OFFICIAL PLATFORM HANDLER: Fetching YouTube metadata with multiple languages',
                 )
-                metadata =
-                    await SharedMetadataService.extractYouTubeMetadata(url)
+
+                const videoId = YouTubeApiService.extractYouTubeVideoId(url)
+                if (!videoId) {
+                    throw new Error('Failed to extract YouTube video ID')
+                }
+
+                const multiLangResult =
+                    await YouTubeApiService.fetchYouTubeVideoMetadataMultiLang(
+                        videoId,
+                    )
                 logger.log(
-                    '🎯 OFFICIAL PLATFORM HANDLER: YouTube API response:',
-                    metadata ? 'SUCCESS' : 'NULL',
+                    '🎯 OFFICIAL PLATFORM HANDLER: YouTube multi-language API returned',
+                    multiLangResult.options.length,
+                    'language options',
                 )
+
+                // Fetch HTML content for thumbnail prioritization
+                logger.log(
+                    '🎯 OFFICIAL PLATFORM HANDLER: Fetching HTML content for thumbnail prioritization',
+                )
+                const htmlContent = await this.fetchHtmlContent(url)
+                logger.log(
+                    '🎯 OFFICIAL PLATFORM HANDLER: HTML content fetched, length:',
+                    htmlContent.length,
+                )
+
+                logger.log(
+                    '🎯 OFFICIAL PLATFORM HANDLER: Extracting metadata from HTML',
+                )
+                const extractedMetadata =
+                    await MetascraperService.extractMetadata(htmlContent, url)
+                logger.log(
+                    '🎯 OFFICIAL PLATFORM HANDLER: HTML metadata extracted - ogImage:',
+                    !!extractedMetadata.ogImage,
+                    'twitterImage:',
+                    !!extractedMetadata.twitterImage,
+                )
+
+                // Create suggestions from all language options
+                const seenTitles = new Set<string>()
+                const suggestions: MetadataSuggestion[] = []
+
+                for (const option of multiLangResult.options) {
+                    // Normalize title for deduplication
+                    const normalizedTitle = option.title.trim().toLowerCase()
+                    if (seenTitles.has(normalizedTitle)) {
+                        logger.log(
+                            '🎯 OFFICIAL PLATFORM HANDLER: Skipping duplicate title:',
+                            option.title,
+                        )
+                        continue
+                    }
+                    seenTitles.add(normalizedTitle)
+
+                    // Prioritize thumbnails: HTML meta tags → API thumbnails
+                    const thumbnailUrl =
+                        extractedMetadata.ogImage ||
+                        extractedMetadata.twitterImage ||
+                        option.thumbnailUrl ||
+                        ''
+
+                    suggestions.push({
+                        title: option.title,
+                        thumbnailUrl: thumbnailUrl || undefined,
+                        platform,
+                        confidence: 1.0, // Official API = perfect confidence
+                        reasoning: `Official ${platform} API (${option.languageName})`,
+                    })
+                }
+
+                logger.log(
+                    '🎯 OFFICIAL PLATFORM HANDLER: Returning',
+                    suggestions.length,
+                    'unique language options after deduplication',
+                )
+
+                return {
+                    success: true,
+                    suggestions,
+                    fallback: {
+                        title: suggestions[0]?.title,
+                        thumbnailUrl: suggestions[0]?.thumbnailUrl,
+                    },
+                }
             } else if (platform === 'twitch') {
                 logger.log(
                     '🎯 OFFICIAL PLATFORM HANDLER: Calling Twitch Helix API',
