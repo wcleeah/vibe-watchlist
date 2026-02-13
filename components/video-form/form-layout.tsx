@@ -87,6 +87,9 @@ export function FormLayout({
     const [comingSoonReleaseDate, setComingSoonReleaseDate] = useState<string>(
         new Date().toISOString().split('T')[0],
     )
+    const [comingSoonReleaseTime, setComingSoonReleaseTime] = useState<
+        string | undefined
+    >(undefined)
     const [comingSoonError, setComingSoonError] = useState<string | null>(null)
     const [isSubmittingComingSoon, setIsSubmittingComingSoon] = useState(false)
 
@@ -388,6 +391,7 @@ export function FormLayout({
                     platform: formData.platform || 'unknown',
                     thumbnailUrl: formData.thumbnailUrl || undefined,
                     releaseDate: comingSoonReleaseDate,
+                    releaseTime: comingSoonReleaseTime || undefined,
                     tagIds: selectedTagIds,
                 }),
             })
@@ -660,6 +664,9 @@ export function FormLayout({
                         }
                         required
                         disabled={isSubmitting || isSubmittingComingSoon}
+                        showTimePicker
+                        timeValue={comingSoonReleaseTime}
+                        onTimeChange={setComingSoonReleaseTime}
                     />
                 </div>
             )}

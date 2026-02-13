@@ -32,14 +32,34 @@ export function ComingSoonCard({
     const isReleased =
         item.isReleased ?? toHKT(item.releaseDate).getTime() <= Date.now()
 
-    // Format release date for display
-    const releaseDateDisplay = formatHKTDate(item.releaseDate, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: undefined,
-        minute: undefined,
-    })
+    // Format release date for display (include time if not midnight HKT)
+    const releaseDateDisplay = (() => {
+        const dateOnly = formatHKTDate(item.releaseDate, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: undefined,
+            minute: undefined,
+        })
+
+        // Check if the time component is non-midnight in HKT
+        const d = new Date(
+            typeof item.releaseDate === 'string'
+                ? item.releaseDate
+                : item.releaseDate,
+        )
+        const hktTime = d.toLocaleString('en-US', {
+            timeZone: 'Asia/Hong_Kong',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        })
+
+        if (hktTime !== '00:00') {
+            return `${dateOnly} ${hktTime} HKT`
+        }
+        return dateOnly
+    })()
 
     // Build metadata badges
     const metadata = [

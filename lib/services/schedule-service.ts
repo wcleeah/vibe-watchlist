@@ -1,4 +1,10 @@
-import { createSentinelDate, toHKT } from '@/lib/utils/hkt-date'
+import {
+    addHKTDays,
+    createSentinelDate,
+    getHKTDayOfWeek,
+    parseToHKT,
+    toHKT,
+} from '@/lib/utils/hkt-date'
 import type {
     DailySchedule,
     DateScheduleEntry,
@@ -42,7 +48,7 @@ export class ScheduleService {
         scheduleType: ScheduleType,
         scheduleValue: ScheduleValue,
         fromDate: Date,
-        timezone: string = 'Asia/Hong_Kong',
+        _timezone: string = 'Asia/Hong_Kong',
     ): Date {
         // Backlog series don't have schedules - return far future date
         if (scheduleType === 'none') {
@@ -56,9 +62,7 @@ export class ScheduleService {
             case 'daily':
             case 'custom': {
                 const interval = (scheduleValue as DailySchedule).interval
-                const nextDate = new Date(localDate)
-                nextDate.setDate(nextDate.getDate() + interval)
-                return nextDate
+                return addHKTDays(localDate, interval)
             }
             case 'weekly': {
                 const days = (scheduleValue as WeeklySchedule).days
@@ -112,13 +116,15 @@ export class ScheduleService {
                 const days = (scheduleValue as WeeklySchedule).days
                 // Count how many scheduled days have passed
                 let count = 0
-                const checkDate = new Date(localNextEpisode)
-                while (checkDate <= localNow) {
-                    const dayName = DAY_NAMES[checkDate.getDay()]
+                let i = 0
+                while (true) {
+                    const checkDate = addHKTDays(localNextEpisode, i)
+                    if (checkDate.getTime() > localNow.getTime()) break
+                    const dayName = DAY_NAMES[getHKTDayOfWeek(checkDate)]
                     if (days.includes(dayName)) {
                         count++
                     }
-                    checkDate.setDate(checkDate.getDate() + 1)
+                    i++
                 }
                 return count
             }
@@ -127,10 +133,10 @@ export class ScheduleService {
                 // Count total episodes from dates that have passed
                 let count = 0
                 for (const entry of entries) {
-                    const entryDate = new Date(entry.date)
+                    const entryDate = parseToHKT(entry.date)
                     if (
-                        entryDate <= localNow &&
-                        entryDate >= localNextEpisode
+                        entryDate.getTime() <= localNow.getTime() &&
+                        entryDate.getTime() >= localNextEpisode.getTime()
                     ) {
                         count += entry.episodes
                     }
@@ -384,7 +390,7 @@ export class ScheduleService {
      */
     private static getNextWeeklyDate(fromDate: Date, days: DayOfWeek[]): Date {
         const sortedDays = days.map((d) => DAY_MAP[d]).sort((a, b) => a - b)
-        const currentDay = fromDate.getDay()
+        const currentDay = getHKTDayOfWeek(fromDate)
 
         // Find the next scheduled day
         let nextDay = sortedDays.find((d) => d > currentDay)
@@ -398,9 +404,7 @@ export class ScheduleService {
             daysToAdd = 7 - currentDay + nextDay
         }
 
-        const nextDate = new Date(fromDate)
-        nextDate.setDate(nextDate.getDate() + daysToAdd)
-        return nextDate
+        return addHKTDays(fromDate, daysToAdd)
     }
 
     /**
@@ -412,13 +416,14 @@ export class ScheduleService {
     ): Date {
         // Sort entries by date
         const sortedEntries = [...entries].sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+            (a, b) =>
+                parseToHKT(a.date).getTime() - parseToHKT(b.date).getTime(),
         )
 
         // Find the next entry after fromDate
         const fromTime = fromDate.getTime()
         for (const entry of sortedEntries) {
-            const entryDate = new Date(entry.date)
+            const entryDate = parseToHKT(entry.date)
             if (entryDate.getTime() > fromTime) {
                 return entryDate
             }

@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { comingSoon, comingSoonTags, tags } from '@/lib/db/schema'
 import { PlatformDataService } from '@/lib/services/platform-data-service'
-import { nowHKT, parseToHKT } from '@/lib/utils/hkt-date'
+import { createDateInHKT, nowHKT, parseToHKT } from '@/lib/utils/hkt-date'
 import {
     parseVideoUrlWithPlatforms,
     type VideoPlatform,
@@ -198,7 +198,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { url, title, platform, thumbnailUrl, releaseDate, tagIds } = body
+        const {
+            url,
+            title,
+            platform,
+            thumbnailUrl,
+            releaseDate,
+            releaseTime,
+            tagIds,
+        } = body
 
         if (!url || typeof url !== 'string') {
             return NextResponse.json(
@@ -241,7 +249,28 @@ export async function POST(request: NextRequest) {
         }
 
         const finalPlatform = platform || parsedUrl.platform
-        const parsedReleaseDate = parseToHKT(releaseDate)
+
+        // Parse release date, optionally with time
+        let parsedReleaseDate: Date
+        if (
+            releaseTime &&
+            typeof releaseTime === 'string' &&
+            /^\d{2}:\d{2}$/.test(releaseTime)
+        ) {
+            const [year, month, day] = releaseDate.split('-').map(Number)
+            const [hour, minute] = releaseTime.split(':').map(Number)
+            parsedReleaseDate = createDateInHKT(
+                year,
+                month,
+                day,
+                hour,
+                minute,
+                0,
+                0,
+            )
+        } else {
+            parsedReleaseDate = parseToHKT(releaseDate)
+        }
 
         const [inserted] = await db
             .insert(comingSoon)

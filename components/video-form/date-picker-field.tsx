@@ -14,6 +14,9 @@ interface DatePickerFieldProps {
     className?: string
     minDate?: string
     maxDate?: string
+    showTimePicker?: boolean
+    timeValue?: string
+    onTimeChange?: (time: string | undefined) => void
 }
 
 export function DatePickerField({
@@ -27,10 +30,18 @@ export function DatePickerField({
     className,
     minDate,
     maxDate,
+    showTimePicker = false,
+    timeValue,
+    onTimeChange,
 }: DatePickerFieldProps) {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value
         onChange(newValue || undefined)
+    }
+
+    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value
+        onTimeChange?.(newValue || undefined)
     }
 
     // Format date for display
@@ -47,6 +58,14 @@ export function DatePickerField({
             return dateStr
         }
     }
+
+    const inputClassName = cn(
+        'flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm',
+        'ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium',
+        'placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+        'dark:border-gray-800 dark:bg-gray-950 dark:ring-offset-gray-950 dark:placeholder:text-gray-400 dark:focus-visible:ring-gray-300',
+    )
 
     return (
         <div className={cn('space-y-2', className)}>
@@ -65,16 +84,27 @@ export function DatePickerField({
                     min={minDate}
                     max={maxDate}
                     placeholder={placeholder}
-                    className={cn(
-                        'flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm',
-                        'ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium',
-                        'placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2',
-                        'disabled:cursor-not-allowed disabled:opacity-50',
-                        'dark:border-gray-800 dark:bg-gray-950 dark:ring-offset-gray-950 dark:placeholder:text-gray-400 dark:focus-visible:ring-gray-300',
-                    )}
+                    className={inputClassName}
                 />
             </div>
-            {value && (
+            {showTimePicker && (
+                <div className='relative'>
+                    <input
+                        type='time'
+                        id={`${id}-time`}
+                        value={timeValue || ''}
+                        onChange={handleTimeChange}
+                        disabled={disabled}
+                        className={inputClassName}
+                    />
+                    <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                        {timeValue
+                            ? `Release time: ${timeValue} HKT`
+                            : 'Optional - defaults to start of day (HKT)'}
+                    </p>
+                </div>
+            )}
+            {value && !showTimePicker && (
                 <p className='text-xs text-gray-500 dark:text-gray-400'>
                     {formatDisplayDate(value)}
                 </p>

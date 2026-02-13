@@ -10,17 +10,23 @@
 const HKT_TIMEZONE = 'Asia/Hong_Kong'
 
 /**
- * Convert a date to HKT timezone
- * Returns a new Date object representing the same moment in time,
- * but with components adjusted to HKT timezone
+ * Internal helper: extract HKT date/time components from any Date/string/number.
+ * Uses Intl.DateTimeFormat to correctly resolve HKT components regardless of
+ * the server's local timezone.
  */
-export function toHKT(date: Date | string | number = new Date()): Date {
+function getHKTParts(date: Date | string | number): {
+    year: number
+    month: number // 1-indexed (1 = January)
+    day: number
+    hour: number
+    minute: number
+    second: number
+} {
     const inputDate =
         typeof date === 'string' || typeof date === 'number'
             ? new Date(date)
-            : new Date(date.getTime())
+            : date
 
-    // Use Intl.DateTimeFormat to get HKT components
     const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: HKT_TIMEZONE,
         year: 'numeric',
@@ -33,27 +39,29 @@ export function toHKT(date: Date | string | number = new Date()): Date {
     })
 
     const parts = formatter.formatToParts(inputDate)
-    const getPart = (type: string): string =>
-        parts.find((p) => p.type === type)?.value || '0'
+    const get = (type: string): number =>
+        parseInt(parts.find((p) => p.type === type)?.value || '0', 10)
 
-    // Create new date with HKT components (month is 0-indexed in Date constructor)
-    return new Date(
-        parseInt(getPart('year')),
-        parseInt(getPart('month')) - 1,
-        parseInt(getPart('day')),
-        parseInt(getPart('hour')),
-        parseInt(getPart('minute')),
-        parseInt(getPart('second')),
-    )
+    return {
+        year: get('year'),
+        month: get('month'), // 1-indexed from Intl
+        day: get('day'),
+        hour: get('hour'),
+        minute: get('minute'),
+        second: get('second'),
+    }
 }
 
 /**
- * Create a Date representing a specific date at midnight in HKT timezone
- * This ensures the date is created in HKT regardless of server timezone
+ * Create a Date representing a specific moment in HKT timezone.
+ * Returns a Date whose UTC instant correctly corresponds to the given
+ * HKT components, regardless of the server's local timezone.
+ *
+ * @param month 1-indexed (1 = January)
  */
-function createDateInHKT(
+export function createDateInHKT(
     year: number,
-    month: number, // 1-indexed (1 = January)
+    month: number,
     day: number,
     hour = 0,
     minute = 0,
@@ -67,35 +75,42 @@ function createDateInHKT(
 }
 
 /**
+ * Convert a date to HKT timezone.
+ * Returns a Date whose UTC instant correctly represents the same moment,
+ * re-created via createDateInHKT to ensure the UTC value is accurate
+ * regardless of the server's local timezone.
+ */
+export function toHKT(date: Date | string | number = new Date()): Date {
+    const { year, month, day, hour, minute, second } = getHKTParts(date)
+    return createDateInHKT(year, month, day, hour, minute, second, 0)
+}
+
+/**
+ * Get the day of the week in HKT (0 = Sunday, 6 = Saturday).
+ * Equivalent to Date.getDay() but timezone-aware for HKT.
+ */
+export function getHKTDayOfWeek(date: Date | string | number): number {
+    const { year, month, day } = getHKTParts(date)
+    // Create a date from HKT components in UTC to get the correct day of week
+    // We use UTC methods to avoid any local timezone interference
+    const d = new Date(Date.UTC(year, month - 1, day))
+    return d.getUTCDay()
+}
+
+/**
  * Get the start of the day (00:00:00) in HKT for the given date
  */
 export function getStartOfHKTDay(date: Date | string | number): Date {
-    const hktDate = toHKT(date)
-    return createDateInHKT(
-        hktDate.getFullYear(),
-        hktDate.getMonth() + 1, // convert to 1-indexed
-        hktDate.getDate(),
-        0,
-        0,
-        0,
-        0,
-    )
+    const { year, month, day } = getHKTParts(date)
+    return createDateInHKT(year, month, day, 0, 0, 0, 0)
 }
 
 /**
  * Get the end of the day (23:59:59.999) in HKT for the given date
  */
 export function getEndOfHKTDay(date: Date | string | number): Date {
-    const hktDate = toHKT(date)
-    return createDateInHKT(
-        hktDate.getFullYear(),
-        hktDate.getMonth() + 1, // convert to 1-indexed
-        hktDate.getDate(),
-        23,
-        59,
-        59,
-        999,
-    )
+    const { year, month, day } = getHKTParts(date)
+    return createDateInHKT(year, month, day, 23, 59, 59, 999)
 }
 
 /**
@@ -145,32 +160,18 @@ export function isHKTSameDay(
     date1: Date | string | number,
     date2: Date | string | number,
 ): boolean {
-    const d1 = toHKT(date1)
-    const d2 = toHKT(date2)
-    return (
-        d1.getFullYear() === d2.getFullYear() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getDate() === d2.getDate()
-    )
+    const d1 = getHKTParts(date1)
+    const d2 = getHKTParts(date2)
+    return d1.year === d2.year && d1.month === d2.month && d1.day === d2.day
 }
 
 /**
  * Add days to a date in HKT
  */
 export function addHKTDays(date: Date | string | number, days: number): Date {
-    const hktDate = toHKT(date)
-    // Calculate new date by adding days to the HKT date components
-    const newDate = new Date(
-        hktDate.getFullYear(),
-        hktDate.getMonth(),
-        hktDate.getDate() + days,
-        hktDate.getHours(),
-        hktDate.getMinutes(),
-        hktDate.getSeconds(),
-        hktDate.getMilliseconds(),
-    )
-    // Convert back to ensure it's properly in HKT
-    return toHKT(newDate)
+    const { year, month, day, hour, minute, second } = getHKTParts(date)
+    // createDateInHKT handles day overflow correctly via Date parsing
+    return createDateInHKT(year, month, day + days, hour, minute, second, 0)
 }
 
 /**
@@ -180,8 +181,11 @@ export function formatHKTDate(
     date: Date | string | number,
     options: Intl.DateTimeFormatOptions = {},
 ): string {
-    const hktDate = toHKT(date)
-    return hktDate.toLocaleString('en-US', {
+    const inputDate =
+        typeof date === 'string' || typeof date === 'number'
+            ? new Date(date)
+            : date
+    return inputDate.toLocaleString('en-US', {
         timeZone: HKT_TIMEZONE,
         year: 'numeric',
         month: 'short',
@@ -197,17 +201,8 @@ export function formatHKTDate(
  * Note: This creates a date string that looks like ISO but represents HKT time
  */
 export function toHKTISOString(date: Date | string | number): string {
-    const hktDate = toHKT(date)
-    // Format as YYYY-MM-DDTHH:mm:ss.sss+08:00 (HKT offset)
-    const year = hktDate.getFullYear()
-    const month = String(hktDate.getMonth() + 1).padStart(2, '0')
-    const day = String(hktDate.getDate()).padStart(2, '0')
-    const hour = String(hktDate.getHours()).padStart(2, '0')
-    const minute = String(hktDate.getMinutes()).padStart(2, '0')
-    const second = String(hktDate.getSeconds()).padStart(2, '0')
-    const ms = String(hktDate.getMilliseconds()).padStart(3, '0')
-
-    return `${year}-${month}-${day}T${hour}:${minute}:${second}.${ms}+08:00`
+    const { year, month, day, hour, minute, second } = getHKTParts(date)
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}.000+08:00`
 }
 
 /**
@@ -230,12 +225,8 @@ export function parseToHKT(dateString: string): Date {
  * Check if a date is the sentinel date (9999-12-31) used for backlog series
  */
 export function isSentinelDate(date: Date | string | number): boolean {
-    const hktDate = toHKT(date)
-    return (
-        hktDate.getFullYear() === 9999 &&
-        hktDate.getMonth() === 11 && // December (0-indexed)
-        hktDate.getDate() === 31
-    )
+    const { year, month, day } = getHKTParts(date)
+    return year === 9999 && month === 12 && day === 31
 }
 
 /**
@@ -253,9 +244,6 @@ export function formatDateToHKTString(
     date: Date | string | number | null,
 ): string | null {
     if (!date) return null
-    const hktDate = toHKT(date)
-    const year = hktDate.getFullYear()
-    const month = String(hktDate.getMonth() + 1).padStart(2, '0')
-    const day = String(hktDate.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
+    const { year, month, day } = getHKTParts(date)
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }

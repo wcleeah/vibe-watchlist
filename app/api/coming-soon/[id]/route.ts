@@ -2,7 +2,7 @@ import { eq, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { comingSoon, comingSoonTags, tags } from '@/lib/db/schema'
-import { parseToHKT } from '@/lib/utils/hkt-date'
+import { createDateInHKT, parseToHKT } from '@/lib/utils/hkt-date'
 
 // GET /api/coming-soon/[id] - Get a specific coming soon item with tags
 export async function GET(
@@ -92,7 +92,14 @@ export async function PUT(
         }
 
         const body = await request.json()
-        const { title, thumbnailUrl, releaseDate, tagIds, transformedAt } = body
+        const {
+            title,
+            thumbnailUrl,
+            releaseDate,
+            releaseTime,
+            tagIds,
+            transformedAt,
+        } = body
 
         const updateData: {
             title?: string
@@ -113,7 +120,25 @@ export async function PUT(
         }
 
         if (releaseDate !== undefined) {
-            updateData.releaseDate = parseToHKT(releaseDate)
+            if (
+                releaseTime &&
+                typeof releaseTime === 'string' &&
+                /^\d{2}:\d{2}$/.test(releaseTime)
+            ) {
+                const [year, month, day] = releaseDate.split('-').map(Number)
+                const [hour, minute] = releaseTime.split(':').map(Number)
+                updateData.releaseDate = createDateInHKT(
+                    year,
+                    month,
+                    day,
+                    hour,
+                    minute,
+                    0,
+                    0,
+                )
+            } else {
+                updateData.releaseDate = parseToHKT(releaseDate)
+            }
         }
 
         if (transformedAt !== undefined) {

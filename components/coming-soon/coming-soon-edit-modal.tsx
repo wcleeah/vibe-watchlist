@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { TagList } from '@/components/ui/tag'
+import { DatePickerField } from '@/components/video-form/date-picker-field'
 import { useTags } from '@/hooks/use-tags'
 import { formatDateToHKTString } from '@/lib/utils/hkt-date'
 
@@ -47,6 +48,9 @@ export function ComingSoonEditModal({
     const { tags: availableTags, addTag: addNewTag } = useTags()
     const [tagInput, setTagInput] = useState('')
     const [isLoadingTags, setIsLoadingTags] = useState(false)
+    const [releaseTime, setReleaseTime] = useState<string | undefined>(
+        undefined,
+    )
 
     const {
         register,
@@ -79,6 +83,29 @@ export function ComingSoonEditModal({
                 tagIds: item.tags?.map((t) => t.id) || [],
             })
             setTagInput('')
+
+            // Extract time from release date if not midnight HKT
+            if (item.releaseDate) {
+                const d = new Date(
+                    typeof item.releaseDate === 'string'
+                        ? item.releaseDate
+                        : item.releaseDate,
+                )
+                const hktTime = d.toLocaleString('en-US', {
+                    timeZone: 'Asia/Hong_Kong',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                })
+                // Only set time if it's not midnight
+                if (hktTime !== '00:00') {
+                    setReleaseTime(hktTime)
+                } else {
+                    setReleaseTime(undefined)
+                }
+            } else {
+                setReleaseTime(undefined)
+            }
         }
     }, [item, open, reset])
 
@@ -147,6 +174,7 @@ export function ComingSoonEditModal({
                     title: data.title,
                     thumbnailUrl: data.thumbnailUrl || null,
                     releaseDate: data.releaseDate,
+                    releaseTime: releaseTime || undefined,
                     tagIds: data.tagIds,
                 }),
             })
@@ -235,17 +263,18 @@ export function ComingSoonEditModal({
                     </div>
 
                     <div className='space-y-2'>
-                        <label
-                            htmlFor='cs-releaseDate'
-                            className='text-sm font-medium text-gray-700 dark:text-gray-300'
-                        >
-                            Release Date (HKT)
-                        </label>
-                        <Input
+                        <DatePickerField
                             id='cs-releaseDate'
-                            type='date'
-                            {...register('releaseDate')}
+                            label='Release Date (HKT)'
+                            value={watch('releaseDate')}
+                            onChange={(date) =>
+                                setValue('releaseDate', date || '')
+                            }
+                            required
                             disabled={isSubmitting}
+                            showTimePicker
+                            timeValue={releaseTime}
+                            onTimeChange={setReleaseTime}
                         />
                         {errors.releaseDate && (
                             <p className='text-sm text-red-600'>
