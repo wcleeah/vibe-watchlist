@@ -110,18 +110,10 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
                 .where(eq(videos.id, update.id))
         }
 
-        // Update playlist metadata
-        const playlistInfo = await YouTubeApiService.getPlaylistInfo(
-            playlist.youtubePlaylistId,
-        )
-
+        // Update playlist sync bookkeeping (preserve existing metadata)
         await db
             .update(playlists)
             .set({
-                title: playlistInfo.title,
-                description: playlistInfo.description,
-                thumbnailUrl: playlistInfo.thumbnailUrl,
-                channelTitle: playlistInfo.channelTitle,
                 itemCount: youtubeItems.length,
                 lastSyncedAt: new Date(),
                 updatedAt: new Date(),
@@ -151,9 +143,9 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             playlist: {
                 id: playlistId,
                 youtubePlaylistId: playlist.youtubePlaylistId,
-                title: playlistInfo.title,
-                thumbnailUrl: playlistInfo.thumbnailUrl,
-                channelTitle: playlistInfo.channelTitle,
+                title: playlist.title,
+                thumbnailUrl: playlist.thumbnailUrl,
+                channelTitle: playlist.channelTitle,
                 itemCount: youtubeItems.length,
                 watchedCount,
                 unwatchedCount,
