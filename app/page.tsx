@@ -360,6 +360,7 @@ export default function Home() {
                                                 handlePlatformSuggestionsDismiss
                                             }
                                             defaultMode={defaultMode}
+                                            comingSoonId={comingSoonId}
                                         />
                                     </div>
                                     <div>

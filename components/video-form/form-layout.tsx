@@ -32,6 +32,7 @@ interface FormLayoutProps {
     onReset: () => void
     onPlatformSuggestionsDismiss?: () => void
     defaultMode?: ContentMode
+    comingSoonId?: string | null
     onSeriesCreated?: () => void
     onPlaylistImported?: () => void
     onComingSoonCreated?: () => void
@@ -45,6 +46,7 @@ export function FormLayout({
     onReset,
     onPlatformSuggestionsDismiss,
     defaultMode = 'video',
+    comingSoonId,
     onSeriesCreated,
     onPlaylistImported,
     onComingSoonCreated,
@@ -97,6 +99,25 @@ export function FormLayout({
     useEffect(() => {
         setMode(defaultMode)
     }, [defaultMode])
+
+    // Mark coming soon item as transformed
+    const markComingSoonTransformed = async () => {
+        if (!comingSoonId) return
+        try {
+            await fetch(`/api/coming-soon/${comingSoonId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    transformedAt: new Date().toISOString(),
+                }),
+            })
+        } catch (err) {
+            console.error(
+                'Failed to mark coming soon item as transformed:',
+                err,
+            )
+        }
+    }
 
     // Platform suggestion handlers
     const acceptPlatformSuggestion = async (suggestion: PlatformSuggestion) => {
@@ -257,6 +278,7 @@ export function FormLayout({
             }
 
             toast.success('Series created successfully!')
+            await markComingSoonTransformed()
             onSeriesCreated?.()
             onReset()
         } catch (error) {
@@ -355,6 +377,7 @@ export function FormLayout({
             }
 
             toast.success('Playlist imported successfully!')
+            await markComingSoonTransformed()
             setPlaylistPreview(null)
             onPlaylistImported?.()
             onReset()
