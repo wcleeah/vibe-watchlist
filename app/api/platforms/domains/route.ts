@@ -16,15 +16,19 @@ export async function GET(request: NextRequest) {
             )
         }
 
-        // Find platform mapping for this domain by checking patterns
+        // Find platform mapping for this domain by checking patterns (case-insensitive)
         const results = await db.select().from(platformConfigs)
+        const domainLower = domain.toLowerCase()
 
         // Find platform where domain matches any pattern
         const matchingPlatform = results.find((platform) =>
-            platform.patterns?.some(
-                (pattern) =>
-                    pattern.includes(domain) || domain.includes(pattern),
-            ),
+            platform.patterns?.some((pattern) => {
+                const patternLower = pattern.toLowerCase()
+                return (
+                    patternLower.includes(domainLower) ||
+                    domainLower.includes(patternLower)
+                )
+            }),
         )
 
         if (!matchingPlatform) {
@@ -71,10 +75,14 @@ export async function POST(request: NextRequest) {
         const existing = await db.select().from(platformConfigs)
 
         const existingMapping = existing.find((config) =>
-            config.patterns?.some(
-                (pattern) =>
-                    pattern.includes(domain) || domain.includes(pattern),
-            ),
+            config.patterns?.some((pattern) => {
+                const patternLower = pattern.toLowerCase()
+                const domainLower = domain.toLowerCase()
+                return (
+                    patternLower.includes(domainLower) ||
+                    domainLower.includes(patternLower)
+                )
+            }),
         )
 
         if (existingMapping) {

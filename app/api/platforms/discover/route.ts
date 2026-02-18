@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { platformConfigs } from '@/lib/db/schema'
 import { aiService } from '@/lib/services/ai-service'
 
 export async function POST(request: NextRequest) {
@@ -17,6 +19,25 @@ export async function POST(request: NextRequest) {
         const suggestion = await aiService.detectPlatform(url)
 
         console.log('✅ Platform Discovery API: Found suggestion:', suggestion)
+
+        // Check if the suggested platform already exists (case-insensitive)
+        const normalizedId = suggestion.platform.toLowerCase()
+        const allPlatforms = await db.select().from(platformConfigs)
+
+        const existingPlatform = allPlatforms.find(
+            (p) => p.platformId.toLowerCase() === normalizedId,
+        )
+
+        if (existingPlatform) {
+            console.log(
+                '✅ Platform Discovery API: Platform already exists:',
+                existingPlatform.platformId,
+            )
+            return NextResponse.json({
+                success: true,
+                existingPlatform: existingPlatform.platformId,
+            })
+        }
 
         return NextResponse.json({
             success: true,

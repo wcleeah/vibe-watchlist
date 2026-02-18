@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type {
     MetadataExtractionResponse,
     MetadataSuggestion,
@@ -14,6 +14,7 @@ export interface UseAIMetadataFetchingReturn {
     error: string | null
     selectedSuggestion?: MetadataSuggestion
     setSelectedSuggestion: (suggestion: MetadataSuggestion | undefined) => void
+    updateSuggestionsPlatform: (platform: string) => void
 }
 
 export function useAIMetadataFetching(
@@ -94,6 +95,19 @@ export function useAIMetadataFetching(
             })
     }, [urlValidationResult])
 
+    const updateSuggestionsPlatform = useCallback((platform: string) => {
+        setSuggestions((prev) => {
+            if (prev.length > 0 && prev[0].platform === platform) {
+                return prev
+            }
+            return prev.map((s) => ({ ...s, platform }))
+        })
+        setSelectedSuggestion((prev) => {
+            if (!prev || prev.platform === platform) return prev
+            return { ...prev, platform }
+        })
+    }, [])
+
     return {
         suggestions,
         fallback,
@@ -101,5 +115,6 @@ export function useAIMetadataFetching(
         error,
         selectedSuggestion,
         setSelectedSuggestion,
+        updateSuggestionsPlatform,
     }
 }

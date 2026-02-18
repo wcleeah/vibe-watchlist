@@ -68,10 +68,13 @@ export function createDateInHKT(
     second = 0,
     ms = 0,
 ): Date {
-    // Create an ISO string in HKT timezone and parse it
-    // Format: YYYY-MM-DDTHH:mm:ss.sss+08:00
-    const isoString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}.${String(ms).padStart(3, '0')}+08:00`
-    return new Date(isoString)
+    // Use Date.UTC for arithmetic so that day/month overflow is handled
+    // correctly (e.g. Jan 32 → Feb 1). Then subtract 8 hours to convert
+    // the HKT wall-clock time to the correct UTC instant.
+    const utcMs =
+        Date.UTC(year, month - 1, day, hour, minute, second, ms) -
+        8 * 60 * 60 * 1000
+    return new Date(utcMs)
 }
 
 /**

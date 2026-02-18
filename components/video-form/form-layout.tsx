@@ -101,9 +101,10 @@ export function FormLayout({
     // Platform suggestion handlers
     const acceptPlatformSuggestion = async (suggestion: PlatformSuggestion) => {
         try {
+            const normalizedPlatformId = suggestion.platform.toLowerCase()
             const newPlatform = await addPlatform({
-                platformId: suggestion.platform,
-                name: suggestion.platform,
+                platformId: normalizedPlatformId,
+                name: normalizedPlatformId,
                 displayName:
                     suggestion.platform.charAt(0).toUpperCase() +
                     suggestion.platform.slice(1),

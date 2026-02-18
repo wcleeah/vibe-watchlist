@@ -40,6 +40,9 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        // Normalize platformId to lowercase for consistent matching
+        config.platformId = config.platformId.toLowerCase()
+
         // Validate patterns is an array
         if (!Array.isArray(config.patterns)) {
             return NextResponse.json(
@@ -51,7 +54,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Check if platform already exists
+        // Check if platform already exists (case-insensitive via normalized ID)
         const existing = await db
             .select()
             .from(platformConfigs)

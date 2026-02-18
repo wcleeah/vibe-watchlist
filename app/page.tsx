@@ -25,7 +25,7 @@ export default function Home() {
             platform: 'unknown',
         },
     })
-    const { setValue } = form
+    const { setValue, watch, getValues } = form
 
     const searchParams = useSearchParams()
     const urlValidation = useUrlValidation()
@@ -143,6 +143,12 @@ export default function Home() {
                 return response.json()
             })
             .then((data) => {
+                // If the platform already exists, set it directly
+                if (data.existingPlatform) {
+                    setValue('platform', data.existingPlatform)
+                    return
+                }
+
                 const suggestion: PlatformSuggestion = data.suggestion
                 if (suggestion.confidence > 0.3) {
                     setPlatformSuggestions([suggestion])
@@ -154,7 +160,7 @@ export default function Home() {
             .finally(() => {
                 setPlatformDiscoveryProcessed(true)
             })
-    }, [urlValidation.urlValidationResult])
+    }, [urlValidation.urlValidationResult, setValue])
 
     useEffect(() => {
         if (isReadyForForm && mode === 'input') {
@@ -175,11 +181,41 @@ export default function Home() {
     useEffect(() => {
         if (aiMetadata.fetchDone && aiMetadata.suggestions.length > 0) {
             const suggestion = aiMetadata.suggestions[0]
-            setValue('platform', suggestion.platform)
+            // Only set platform from suggestion if form still has 'unknown';
+            // platform discovery may have already set the correct platform
+            const currentPlatform = getValues('platform')
+            if (!currentPlatform || currentPlatform === 'unknown') {
+                setValue('platform', suggestion.platform)
+            } else if (suggestion.platform !== currentPlatform) {
+                // Suggestions arrived after discover already set the platform;
+                // sync the correct platform into the suggestions
+                aiMetadata.updateSuggestionsPlatform(currentPlatform)
+            }
             setValue('thumbnailUrl', suggestion.thumbnailUrl)
             setValue('title', suggestion.title)
         }
-    }, [aiMetadata.fetchDone, aiMetadata.suggestions, setValue])
+    }, [
+        aiMetadata.fetchDone,
+        aiMetadata.suggestions,
+        setValue,
+        getValues,
+        aiMetadata.updateSuggestionsPlatform,
+    ])
+
+    // Sync form platform changes back to AI metadata suggestions
+    // so the MetadataSelector dropdown shows the correct platform
+    useEffect(() => {
+        const subscription = watch((value, { name }) => {
+            if (
+                name === 'platform' &&
+                value.platform &&
+                value.platform !== 'unknown'
+            ) {
+                aiMetadata.updateSuggestionsPlatform(value.platform)
+            }
+        })
+        return () => subscription.unsubscribe()
+    }, [watch, aiMetadata.updateSuggestionsPlatform])
 
     const reset = async (clearCache: boolean = false) => {
         const currentUrl = urlValidation.urlValidationResult?.url

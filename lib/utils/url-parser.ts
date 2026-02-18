@@ -33,12 +33,21 @@ export function parseVideoUrlWithPlatforms(
         for (const platform of platforms) {
             if (!platform.enabled || !platform.patterns) continue
 
-            // Check if hostname matches any of the platform's patterns
+            // Check if URL matches any of the platform's patterns (case-insensitive)
+            const hrefLower = urlObj.href.toLowerCase()
             const matchesPattern = platform.patterns.some((pattern: string) =>
-                urlObj.href.includes(pattern.toLowerCase()),
+                hrefLower.includes(pattern.toLowerCase()),
             )
 
-            if (matchesPattern) {
+            // Fallback: check if hostname contains the platform ID
+            // (handles AI-generated regex patterns that .includes() can't match)
+            const matchesHostname =
+                !matchesPattern &&
+                urlObj.hostname
+                    .toLowerCase()
+                    .includes(platform.platformId.toLowerCase())
+
+            if (matchesPattern || matchesHostname) {
                 // Extract video ID based on platform
                 const videoId = extractVideoId(urlObj, platform.platformId)
 
