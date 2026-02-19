@@ -162,6 +162,40 @@ export class AIMetadataService {
 
                 const videoId = YouTubeApiService.extractYouTubeVideoId(url)
                 if (!videoId) {
+                    // Check if this is a playlist URL
+                    const urlObj = new URL(url)
+                    const playlistId =
+                        urlObj.searchParams.get('list') || undefined
+
+                    if (playlistId) {
+                        logger.log(
+                            '🎯 OFFICIAL PLATFORM HANDLER: Detected playlist URL, fetching playlist metadata for:',
+                            playlistId,
+                        )
+                        const playlistInfo =
+                            await YouTubeApiService.getPlaylistInfo(playlistId)
+
+                        return {
+                            success: true,
+                            suggestions: [
+                                {
+                                    title: playlistInfo.title,
+                                    thumbnailUrl:
+                                        playlistInfo.thumbnailUrl || undefined,
+                                    platform,
+                                    confidence: 1.0,
+                                    reasoning:
+                                        'Official YouTube API (Playlist)',
+                                },
+                            ],
+                            fallback: {
+                                title: playlistInfo.title,
+                                thumbnailUrl:
+                                    playlistInfo.thumbnailUrl || undefined,
+                            },
+                        }
+                    }
+
                     throw new Error('Failed to extract YouTube video ID')
                 }
 
