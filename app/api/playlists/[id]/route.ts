@@ -141,13 +141,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         }
 
         const body = await request.json()
-        const { tagIds, title } = body
+        const { tagIds, title, cascadeWatched } = body
 
-        // Update title if provided
+        // Update title and/or cascadeWatched if provided
+        const updateFields: Record<string, unknown> = {}
         if (title !== undefined) {
+            updateFields.title = title
+        }
+        if (typeof cascadeWatched === 'boolean') {
+            updateFields.cascadeWatched = cascadeWatched
+        }
+        if (Object.keys(updateFields).length > 0) {
+            updateFields.updatedAt = new Date()
             await db
                 .update(playlists)
-                .set({ title, updatedAt: new Date() })
+                .set(updateFields)
                 .where(eq(playlists.id, playlistId))
         }
 

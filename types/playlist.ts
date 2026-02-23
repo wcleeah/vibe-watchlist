@@ -30,6 +30,7 @@ export interface PlaylistSummary {
     watchedCount: number
     unwatchedCount: number
     isWatched: boolean | null
+    cascadeWatched: boolean
     sortOrder: number
     lastSyncedAt: Date | null
     createdAt: Date | null

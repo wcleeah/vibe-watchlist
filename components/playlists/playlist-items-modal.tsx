@@ -80,12 +80,19 @@ export function PlaylistItemsModal({
                 throw new Error(error.error || 'Failed to mark as watched')
             }
 
+            const data = await response.json()
+
             // Refresh playlist data
             await fetchPlaylistDetails()
             onRefresh?.()
-            toast.success(
-                `Marked videos 1-${video.playlistIndex + 1} as watched`,
-            )
+
+            if (data.cascaded) {
+                toast.success(
+                    `Marked videos 1-${video.playlistIndex + 1} as watched`,
+                )
+            } else {
+                toast.success('Marked as watched')
+            }
         } catch (error) {
             console.error('Error marking watched:', error)
             toast.error(
@@ -228,6 +235,9 @@ export function PlaylistItemsModal({
                                     video={video}
                                     watchUrl={buildWatchUrl(video)}
                                     isLoading={watchingVideoId === video.id}
+                                    cascadeWatched={
+                                        playlistData?.cascadeWatched ?? true
+                                    }
                                     onMarkWatched={() =>
                                         handleMarkWatched(video)
                                     }
@@ -257,6 +267,7 @@ interface PlaylistItemRowProps {
     video: PlaylistVideo
     watchUrl: string
     isLoading: boolean
+    cascadeWatched: boolean
     onMarkWatched: () => void
     onUnmarkWatched: () => void
     onRefreshMetadata?: () => void
@@ -266,6 +277,7 @@ function PlaylistItemRow({
     video,
     watchUrl,
     isLoading,
+    cascadeWatched,
     onMarkWatched,
     onUnmarkWatched,
     onRefreshMetadata,
@@ -352,7 +364,11 @@ function PlaylistItemRow({
                         onClick={onMarkWatched}
                         disabled={isLoading}
                         className='px-3 py-1.5 text-xs bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded transition-colors flex items-center gap-1'
-                        title='Mark watched up to this video'
+                        title={
+                            cascadeWatched
+                                ? 'Mark watched up to this video'
+                                : 'Mark as watched'
+                        }
                     >
                         {isLoading ? (
                             <Loader2 className='w-3 h-3 animate-spin' />

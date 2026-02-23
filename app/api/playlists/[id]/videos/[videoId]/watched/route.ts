@@ -1,7 +1,7 @@
 import { and, eq, lte } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { videos } from '@/lib/db/schema'
+import { playlists, videos } from '@/lib/db/schema'
 
 interface RouteParams {
     params: Promise<{ id: string; videoId: string }>
@@ -50,17 +50,32 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
 
         const targetIndex = targetVideo.playlistIndex
 
-        // Mark all videos at or before this index as watched (cascade)
-        const result = await db
-            .update(videos)
-            .set({ isWatched: true, updatedAt: new Date() })
-            .where(
-                and(
-                    eq(videos.playlistId, playlistId),
-                    lte(videos.playlistIndex, targetIndex),
-                ),
-            )
-            .returning({ id: videos.id })
+        // Check if cascade is enabled for this playlist
+        const [playlist] = await db
+            .select({ cascadeWatched: playlists.cascadeWatched })
+            .from(playlists)
+            .where(eq(playlists.id, playlistId))
+            .limit(1)
+
+        const shouldCascade = playlist?.cascadeWatched ?? true
+
+        // Mark video(s) as watched based on cascade setting
+        const result = shouldCascade
+            ? await db
+                  .update(videos)
+                  .set({ isWatched: true, updatedAt: new Date() })
+                  .where(
+                      and(
+                          eq(videos.playlistId, playlistId),
+                          lte(videos.playlistIndex, targetIndex),
+                      ),
+                  )
+                  .returning({ id: videos.id })
+            : await db
+                  .update(videos)
+                  .set({ isWatched: true, updatedAt: new Date() })
+                  .where(eq(videos.id, targetVideoId))
+                  .returning({ id: videos.id })
 
         // Get updated playlist stats
         const allPlaylistVideos = await db
@@ -75,6 +90,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             success: true,
             markedWatched: result.length,
             targetIndex,
+            cascaded: shouldCascade,
             stats: {
                 watchedCount,
                 unwatchedCount,

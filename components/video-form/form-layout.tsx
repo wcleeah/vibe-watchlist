@@ -5,7 +5,6 @@ import { useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { usePlatforms } from '@/hooks/use-platforms'
@@ -84,6 +83,7 @@ export function FormLayout({
     const [isLoadingPreview, setIsLoadingPreview] = useState(false)
     const [isImportingPlaylist, setIsImportingPlaylist] = useState(false)
     const [playlistError, setPlaylistError] = useState<string | null>(null)
+    const [cascadeWatched, setCascadeWatched] = useState(true)
 
     // Coming Soon mode state
     const [comingSoonReleaseDate, setComingSoonReleaseDate] = useState<string>(
@@ -368,6 +368,7 @@ export function FormLayout({
                 body: JSON.stringify({
                     url: formData.url,
                     tagIds: selectedTagIds,
+                    cascadeWatched,
                 }),
             })
 
@@ -379,6 +380,7 @@ export function FormLayout({
             toast.success('Playlist imported successfully!')
             await markComingSoonTransformed()
             setPlaylistPreview(null)
+            setCascadeWatched(true)
             onPlaylistImported?.()
             onReset()
         } catch (error) {
@@ -397,6 +399,7 @@ export function FormLayout({
     const handleCancelPlaylistPreview = () => {
         setPlaylistPreview(null)
         setPlaylistError(null)
+        setCascadeWatched(true)
     }
 
     // Coming Soon submission handler
@@ -546,6 +549,31 @@ export function FormLayout({
                                     {playlistPreview.description}
                                 </p>
                             )}
+                            {/* Cascade watched setting */}
+                            <div className='flex items-start space-x-2 pt-2 border-t border-muted'>
+                                <input
+                                    type='checkbox'
+                                    id='cascade-watched'
+                                    checked={cascadeWatched}
+                                    onChange={(e) =>
+                                        setCascadeWatched(e.target.checked)
+                                    }
+                                    disabled={isImportingPlaylist}
+                                    className='h-4 w-4 rounded border-gray-300 mt-1'
+                                />
+                                <div className='space-y-1'>
+                                    <Label
+                                        htmlFor='cascade-watched'
+                                        className='cursor-pointer'
+                                    >
+                                        Mark previous videos as watched
+                                    </Label>
+                                    <p className='text-xs text-muted-foreground'>
+                                        When marking a video as watched, also
+                                        mark all earlier videos in the playlist
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <div className='p-4 bg-muted/50 rounded-lg'>
@@ -634,18 +662,20 @@ export function FormLayout({
 
                     {/* Auto-advance total episodes checkbox */}
                     <div className='flex items-start space-x-2'>
-                        <Checkbox
+                        <input
+                            type='checkbox'
                             id='auto-advance-episodes'
                             checked={autoAdvanceTotalEpisodes}
                             onChange={(e) =>
                                 setAutoAdvanceTotalEpisodes(e.target.checked)
                             }
                             disabled={isSubmitting || isSubmittingSeries}
+                            className='h-4 w-4 rounded border-gray-300 mt-1'
                         />
                         <div className='space-y-1'>
                             <Label
                                 htmlFor='auto-advance-episodes'
-                                className='text-sm cursor-pointer'
+                                className='cursor-pointer'
                             >
                                 Auto-advance total episodes
                             </Label>
@@ -658,11 +688,13 @@ export function FormLayout({
 
                     {/* Save as default mode checkbox */}
                     <div className='flex items-center space-x-2'>
-                        <Checkbox
+                        <input
+                            type='checkbox'
                             id='save-default'
                             checked={saveAsDefault}
                             onChange={(e) => setSaveAsDefault(e.target.checked)}
                             disabled={isSubmitting || isSubmittingSeries}
+                            className='h-4 w-4 rounded border-gray-300'
                         />
                         <Label
                             htmlFor='save-default'

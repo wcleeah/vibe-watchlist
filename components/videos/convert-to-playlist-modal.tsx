@@ -13,6 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import type { VideoData } from './types'
 
 interface PlaylistPreview {
@@ -41,6 +42,7 @@ export function ConvertToPlaylistModal({
     const [isImporting, setIsImporting] = useState(false)
     const [preview, setPreview] = useState<PlaylistPreview | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [cascadeWatched, setCascadeWatched] = useState(true)
 
     const fetchPreview = useCallback(async () => {
         if (!video?.url) return
@@ -85,6 +87,7 @@ export function ConvertToPlaylistModal({
             // Reset state when modal closes
             setPreview(null)
             setError(null)
+            setCascadeWatched(true)
         }
     }, [open, video?.url, fetchPreview])
 
@@ -97,7 +100,7 @@ export function ConvertToPlaylistModal({
             const importResponse = await fetch('/api/playlists', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: video.url }),
+                body: JSON.stringify({ url: video.url, cascadeWatched }),
             })
 
             const importData = await importResponse.json()
@@ -244,13 +247,39 @@ export function ConvertToPlaylistModal({
 
                     {/* Warning */}
                     {preview && (
-                        <div className='p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg'>
-                            <p className='text-sm text-amber-700 dark:text-amber-400'>
-                                The original video entry will be deleted after
-                                conversion. The playlist will be available on
-                                the Playlists page.
-                            </p>
-                        </div>
+                        <>
+                            <div className='flex items-start space-x-2 p-3 bg-muted/50 rounded-lg'>
+                                <input
+                                    type='checkbox'
+                                    id='convert-cascade-watched'
+                                    checked={cascadeWatched}
+                                    onChange={(e) =>
+                                        setCascadeWatched(e.target.checked)
+                                    }
+                                    disabled={isImporting}
+                                    className='h-4 w-4 rounded border-gray-300 mt-1'
+                                />
+                                <div className='space-y-1'>
+                                    <Label
+                                        htmlFor='convert-cascade-watched'
+                                        className='cursor-pointer'
+                                    >
+                                        Mark previous videos as watched
+                                    </Label>
+                                    <p className='text-xs text-muted-foreground'>
+                                        When marking a video as watched, also
+                                        mark all earlier videos in the playlist
+                                    </p>
+                                </div>
+                            </div>
+                            <div className='p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg'>
+                                <p className='text-sm text-amber-700 dark:text-amber-400'>
+                                    The original video entry will be deleted
+                                    after conversion. The playlist will be
+                                    available on the Playlists page.
+                                </p>
+                            </div>
+                        </>
                     )}
                 </div>
 

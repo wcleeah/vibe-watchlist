@@ -30,6 +30,7 @@ interface PlaylistEditModalProps {
 const editSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     tagIds: z.array(z.number()),
+    cascadeWatched: z.boolean(),
 })
 
 type EditFormData = z.infer<typeof editSchema>
@@ -57,6 +58,7 @@ export function PlaylistEditModal({
         defaultValues: {
             title: '',
             tagIds: [],
+            cascadeWatched: true,
         },
     })
 
@@ -71,6 +73,7 @@ export function PlaylistEditModal({
             reset({
                 title: playlist.title || '',
                 tagIds: playlist.tags?.map((t) => t.id) || [],
+                cascadeWatched: playlist.cascadeWatched ?? true,
             })
             setTagInput('')
         }
@@ -140,6 +143,7 @@ export function PlaylistEditModal({
                 body: JSON.stringify({
                     title: data.title,
                     tagIds: data.tagIds,
+                    cascadeWatched: data.cascadeWatched,
                 }),
             })
 
@@ -218,6 +222,35 @@ export function PlaylistEditModal({
                             {playlist.itemCount} ({playlist.watchedCount}{' '}
                             watched)
                         </p>
+                    </div>
+
+                    {/* Cascade Watched Setting */}
+                    <div className='space-y-2'>
+                        <Label>Watch Behavior</Label>
+                        <div className='flex items-start space-x-2 p-3 bg-muted/50 rounded-lg'>
+                            <input
+                                type='checkbox'
+                                id='edit-cascade-watched'
+                                checked={watch('cascadeWatched')}
+                                onChange={(e) =>
+                                    setValue('cascadeWatched', e.target.checked)
+                                }
+                                disabled={isSubmitting}
+                                className='h-4 w-4 rounded border-gray-300 mt-1'
+                            />
+                            <div className='space-y-1'>
+                                <Label
+                                    htmlFor='edit-cascade-watched'
+                                    className='cursor-pointer'
+                                >
+                                    Mark previous videos as watched
+                                </Label>
+                                <p className='text-xs text-muted-foreground'>
+                                    When marking a video as watched, also mark
+                                    all earlier videos in the playlist
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Tags */}

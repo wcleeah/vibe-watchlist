@@ -75,6 +75,7 @@ export const playlists = pgTable(
         platform: text().notNull().default('youtube'),
         itemCount: integer('item_count').default(0),
         isWatched: boolean('is_watched').default(false),
+        cascadeWatched: boolean('cascade_watched').default(true).notNull(),
         sortOrder: integer('sort_order').default(0).notNull(),
         lastSyncedAt: timestamp('last_synced_at'),
         createdAt: timestamp('created_at').defaultNow(),

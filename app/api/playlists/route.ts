@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
                 platform: playlists.platform,
                 itemCount: playlists.itemCount,
                 isWatched: playlists.isWatched,
+                cascadeWatched: playlists.cascadeWatched,
                 lastSyncedAt: playlists.lastSyncedAt,
                 createdAt: playlists.createdAt,
                 updatedAt: playlists.updatedAt,
@@ -170,7 +171,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { url, tagIds } = body
+        const { url, tagIds, cascadeWatched } = body
 
         if (!url || typeof url !== 'string') {
             return NextResponse.json(
@@ -256,6 +257,8 @@ export async function POST(request: NextRequest) {
                 thumbnailUrl: playlistInfo.thumbnailUrl,
                 channelTitle: playlistInfo.channelTitle,
                 itemCount: playlistItems.length,
+                cascadeWatched:
+                    typeof cascadeWatched === 'boolean' ? cascadeWatched : true,
                 lastSyncedAt: new Date(),
             })
             .returning()
