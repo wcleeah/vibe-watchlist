@@ -84,6 +84,7 @@ export function FormLayout({
     const [isImportingPlaylist, setIsImportingPlaylist] = useState(false)
     const [playlistError, setPlaylistError] = useState<string | null>(null)
     const [cascadeWatched, setCascadeWatched] = useState(true)
+    const [autoComplete, setAutoComplete] = useState(true)
 
     // Coming Soon mode state
     const [comingSoonReleaseDate, setComingSoonReleaseDate] = useState<string>(
@@ -369,6 +370,7 @@ export function FormLayout({
                     url: formData.url,
                     tagIds: selectedTagIds,
                     cascadeWatched,
+                    autoComplete,
                 }),
             })
 
@@ -381,6 +383,7 @@ export function FormLayout({
             await markComingSoonTransformed()
             setPlaylistPreview(null)
             setCascadeWatched(true)
+            setAutoComplete(true)
             onPlaylistImported?.()
             onReset()
         } catch (error) {
@@ -400,6 +403,7 @@ export function FormLayout({
         setPlaylistPreview(null)
         setPlaylistError(null)
         setCascadeWatched(true)
+        setAutoComplete(true)
     }
 
     // Coming Soon submission handler
@@ -571,6 +575,31 @@ export function FormLayout({
                                     <p className='text-xs text-muted-foreground'>
                                         When marking a video as watched, also
                                         mark all earlier videos in the playlist
+                                    </p>
+                                </div>
+                            </div>
+                            {/* Auto-complete setting */}
+                            <div className='flex items-start space-x-2'>
+                                <input
+                                    type='checkbox'
+                                    id='auto-complete'
+                                    checked={autoComplete}
+                                    onChange={(e) =>
+                                        setAutoComplete(e.target.checked)
+                                    }
+                                    disabled={isImportingPlaylist}
+                                    className='h-4 w-4 rounded border-gray-300 mt-1'
+                                />
+                                <div className='space-y-1'>
+                                    <Label
+                                        htmlFor='auto-complete'
+                                        className='cursor-pointer'
+                                    >
+                                        Auto-mark as completed
+                                    </Label>
+                                    <p className='text-xs text-muted-foreground'>
+                                        Automatically mark playlist as completed
+                                        when all videos are watched
                                     </p>
                                 </div>
                             </div>

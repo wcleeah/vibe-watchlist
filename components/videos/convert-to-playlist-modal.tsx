@@ -43,6 +43,7 @@ export function ConvertToPlaylistModal({
     const [preview, setPreview] = useState<PlaylistPreview | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [cascadeWatched, setCascadeWatched] = useState(true)
+    const [autoComplete, setAutoComplete] = useState(true)
 
     const fetchPreview = useCallback(async () => {
         if (!video?.url) return
@@ -88,6 +89,7 @@ export function ConvertToPlaylistModal({
             setPreview(null)
             setError(null)
             setCascadeWatched(true)
+            setAutoComplete(true)
         }
     }, [open, video?.url, fetchPreview])
 
@@ -100,7 +102,11 @@ export function ConvertToPlaylistModal({
             const importResponse = await fetch('/api/playlists', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: video.url, cascadeWatched }),
+                body: JSON.stringify({
+                    url: video.url,
+                    cascadeWatched,
+                    autoComplete,
+                }),
             })
 
             const importData = await importResponse.json()
@@ -269,6 +275,30 @@ export function ConvertToPlaylistModal({
                                     <p className='text-xs text-muted-foreground'>
                                         When marking a video as watched, also
                                         mark all earlier videos in the playlist
+                                    </p>
+                                </div>
+                            </div>
+                            <div className='flex items-start space-x-2 p-3 bg-muted/50 rounded-lg'>
+                                <input
+                                    type='checkbox'
+                                    id='convert-auto-complete'
+                                    checked={autoComplete}
+                                    onChange={(e) =>
+                                        setAutoComplete(e.target.checked)
+                                    }
+                                    disabled={isImporting}
+                                    className='h-4 w-4 rounded border-gray-300 mt-1'
+                                />
+                                <div className='space-y-1'>
+                                    <Label
+                                        htmlFor='convert-auto-complete'
+                                        className='cursor-pointer'
+                                    >
+                                        Auto-mark as completed
+                                    </Label>
+                                    <p className='text-xs text-muted-foreground'>
+                                        Automatically mark playlist as completed
+                                        when all videos are watched
                                     </p>
                                 </div>
                             </div>

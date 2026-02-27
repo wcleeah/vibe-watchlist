@@ -12,8 +12,6 @@ interface UsePlaylistsReturn {
     refetch: () => Promise<void>
     sync: (id: number) => Promise<void>
     deletePlaylist: (id: number) => Promise<void>
-    markCompleted: (id: number) => Promise<void>
-    unmarkCompleted: (id: number) => Promise<void>
     reorderPlaylists: (orderedIds: number[]) => Promise<void>
 }
 
@@ -156,95 +154,6 @@ export function usePlaylists(
         [fetchPlaylists],
     )
 
-    // Mark playlist as completed (all videos watched)
-    const markCompleted = useCallback(
-        async (id: number) => {
-            try {
-                const response = await fetch(
-                    `/api/playlists/${id}/mark-completed`,
-                    {
-                        method: 'POST',
-                    },
-                )
-
-                if (response.ok) {
-                    // Update the playlist in the list
-                    setPlaylists((prev) =>
-                        prev.map((p) =>
-                            p.id === id
-                                ? {
-                                      ...p,
-                                      watchedCount: p.itemCount,
-                                      unwatchedCount: 0,
-                                  }
-                                : p,
-                        ),
-                    )
-                    toast.success('Playlist marked as completed')
-                } else {
-                    const errorData = await response.json()
-                    throw new Error(
-                        errorData.error ||
-                            'Failed to mark playlist as completed',
-                    )
-                }
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : 'Failed to mark playlist as completed',
-                )
-                console.error('Failed to mark playlist as completed:', err)
-                await fetchPlaylists()
-            }
-        },
-        [fetchPlaylists],
-    )
-
-    // Unmark playlist as completed (reset to unwatched)
-    const unmarkCompleted = useCallback(
-        async (id: number) => {
-            try {
-                const response = await fetch(
-                    `/api/playlists/${id}/unmark-completed`,
-                    {
-                        method: 'POST',
-                    },
-                )
-
-                if (response.ok) {
-                    // Update the playlist in the list
-                    setPlaylists((prev) =>
-                        prev.map((p) =>
-                            p.id === id
-                                ? {
-                                      ...p,
-                                      watchedCount: 0,
-                                      unwatchedCount: p.itemCount,
-                                  }
-                                : p,
-                        ),
-                    )
-                    toast.success('Playlist marked as active')
-                } else {
-                    const errorData = await response.json()
-                    throw new Error(
-                        errorData.error || 'Failed to unmark playlist',
-                    )
-                }
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : 'Failed to unmark playlist',
-                )
-                console.error('Failed to unmark playlist:', err)
-                await fetchPlaylists()
-            }
-        },
-        [fetchPlaylists],
-    )
-
     // Reorder playlists - update sortOrder in database
     const reorderPlaylists = useCallback(async (orderedIds: number[]) => {
         const response = await fetch('/api/playlists/reorder', {
@@ -280,8 +189,6 @@ export function usePlaylists(
         refetch: fetchPlaylists,
         sync,
         deletePlaylist,
-        markCompleted,
-        unmarkCompleted,
         reorderPlaylists,
     }
 }

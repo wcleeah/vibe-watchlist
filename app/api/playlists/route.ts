@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
                 channelTitle: playlists.channelTitle,
                 platform: playlists.platform,
                 itemCount: playlists.itemCount,
-                isWatched: playlists.isWatched,
                 cascadeWatched: playlists.cascadeWatched,
+                autoComplete: playlists.autoComplete,
                 lastSyncedAt: playlists.lastSyncedAt,
                 createdAt: playlists.createdAt,
                 updatedAt: playlists.updatedAt,
@@ -133,14 +133,20 @@ export async function GET(request: NextRequest) {
         // Filter by isCompleted (new filter for tabs)
         if (isCompleted !== null) {
             if (isCompleted === 'true') {
-                // Completed = all videos watched (unwatched = 0)
+                // Completed = all videos watched AND autoComplete enabled
                 filteredResult = filteredResult.filter(
-                    (p) => p.unwatchedCount === 0 && (p.itemCount ?? 0) > 0,
+                    (p) =>
+                        p.unwatchedCount === 0 &&
+                        (p.itemCount ?? 0) > 0 &&
+                        p.autoComplete,
                 )
             } else if (isCompleted === 'false') {
-                // Active = has unwatched videos
+                // Active = has unwatched videos, OR autoComplete disabled, OR empty
                 filteredResult = filteredResult.filter(
-                    (p) => p.unwatchedCount > 0 || (p.itemCount ?? 0) === 0,
+                    (p) =>
+                        p.unwatchedCount > 0 ||
+                        (p.itemCount ?? 0) === 0 ||
+                        !p.autoComplete,
                 )
             }
         }
@@ -171,7 +177,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { url, tagIds, cascadeWatched } = body
+        const { url, tagIds, cascadeWatched, autoComplete } = body
 
         if (!url || typeof url !== 'string') {
             return NextResponse.json(
@@ -259,6 +265,8 @@ export async function POST(request: NextRequest) {
                 itemCount: playlistItems.length,
                 cascadeWatched:
                     typeof cascadeWatched === 'boolean' ? cascadeWatched : true,
+                autoComplete:
+                    typeof autoComplete === 'boolean' ? autoComplete : true,
                 lastSyncedAt: new Date(),
             })
             .returning()

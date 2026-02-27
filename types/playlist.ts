@@ -29,8 +29,8 @@ export interface PlaylistSummary {
     itemCount: number
     watchedCount: number
     unwatchedCount: number
-    isWatched: boolean | null
     cascadeWatched: boolean
+    autoComplete: boolean
     sortOrder: number
     lastSyncedAt: Date | null
     createdAt: Date | null

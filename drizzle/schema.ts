@@ -219,7 +219,6 @@ export const playlists = pgTable(
         createdAt: timestamp('created_at', { mode: 'string' }).defaultNow(),
         updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
         platform: text().default('youtube').notNull(),
-        isWatched: boolean('is_watched').default(false),
         sortOrder: integer('sort_order').default(0).notNull(),
     },
     (table) => [

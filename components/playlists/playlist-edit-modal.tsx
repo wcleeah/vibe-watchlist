@@ -31,6 +31,7 @@ const editSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     tagIds: z.array(z.number()),
     cascadeWatched: z.boolean(),
+    autoComplete: z.boolean(),
 })
 
 type EditFormData = z.infer<typeof editSchema>
@@ -59,6 +60,7 @@ export function PlaylistEditModal({
             title: '',
             tagIds: [],
             cascadeWatched: true,
+            autoComplete: true,
         },
     })
 
@@ -74,6 +76,7 @@ export function PlaylistEditModal({
                 title: playlist.title || '',
                 tagIds: playlist.tags?.map((t) => t.id) || [],
                 cascadeWatched: playlist.cascadeWatched ?? true,
+                autoComplete: playlist.autoComplete ?? true,
             })
             setTagInput('')
         }
@@ -144,6 +147,7 @@ export function PlaylistEditModal({
                     title: data.title,
                     tagIds: data.tagIds,
                     cascadeWatched: data.cascadeWatched,
+                    autoComplete: data.autoComplete,
                 }),
             })
 
@@ -248,6 +252,30 @@ export function PlaylistEditModal({
                                 <p className='text-xs text-muted-foreground'>
                                     When marking a video as watched, also mark
                                     all earlier videos in the playlist
+                                </p>
+                            </div>
+                        </div>
+                        <div className='flex items-start space-x-2 p-3 bg-muted/50 rounded-lg'>
+                            <input
+                                type='checkbox'
+                                id='edit-auto-complete'
+                                checked={watch('autoComplete')}
+                                onChange={(e) =>
+                                    setValue('autoComplete', e.target.checked)
+                                }
+                                disabled={isSubmitting}
+                                className='h-4 w-4 rounded border-gray-300 mt-1'
+                            />
+                            <div className='space-y-1'>
+                                <Label
+                                    htmlFor='edit-auto-complete'
+                                    className='cursor-pointer'
+                                >
+                                    Auto-mark as completed
+                                </Label>
+                                <p className='text-xs text-muted-foreground'>
+                                    Automatically mark playlist as completed
+                                    when all videos are watched
                                 </p>
                             </div>
                         </div>
