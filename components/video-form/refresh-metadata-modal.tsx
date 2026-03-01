@@ -11,19 +11,28 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import type { VideoData } from '@/components/videos/types'
 import type { MetadataSuggestion } from '@/lib/types/ai-metadata'
 import { cn } from '@/lib/utils'
 
+/**
+ * Generic media item interface for metadata refresh.
+ * Any entity with a URL, title, and thumbnail can use this modal.
+ */
+export interface RefreshableMediaItem {
+    url: string
+    title?: string | null
+    thumbnailUrl?: string | null
+}
+
 interface RefreshMetadataModalProps {
-    video: VideoData | null
+    item: RefreshableMediaItem | null
     open: boolean
     onOpenChange: (open: boolean) => void
     onUpdate: (title: string, thumbnailUrl: string | null) => Promise<void>
 }
 
 export function RefreshMetadataModal({
-    video,
+    item,
     open,
     onOpenChange,
     onUpdate,
@@ -38,7 +47,7 @@ export function RefreshMetadataModal({
     const [error, setError] = useState<string | null>(null)
 
     const fetchMetadata = useCallback(async () => {
-        if (!video) return
+        if (!item) return
 
         setLoading(true)
         setError(null)
@@ -48,7 +57,7 @@ export function RefreshMetadataModal({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    url: video.url,
+                    url: item.url,
                     force: true,
                 }),
             })
@@ -58,8 +67,8 @@ export function RefreshMetadataModal({
             if (result.success) {
                 setSuggestions(result.suggestions)
                 if (result.suggestions.length > 0) {
-                    // Try to match the current video title, fallback to first suggestion
-                    const currentTitle = video?.title?.trim().toLowerCase()
+                    // Try to match the current title, fallback to first suggestion
+                    const currentTitle = item?.title?.trim().toLowerCase()
                     const matchingSuggestion = currentTitle
                         ? result.suggestions.find(
                               (s: MetadataSuggestion) =>
@@ -79,13 +88,13 @@ export function RefreshMetadataModal({
         } finally {
             setLoading(false)
         }
-    }, [video])
+    }, [item])
 
     useEffect(() => {
-        if (open && video) {
+        if (open && item) {
             fetchMetadata()
         }
-    }, [open, video, fetchMetadata])
+    }, [open, item, fetchMetadata])
 
     const handleUpdate = async () => {
         if (!selectedTitle) return
@@ -95,7 +104,7 @@ export function RefreshMetadataModal({
             await onUpdate(selectedTitle, selectedThumbnail)
             onOpenChange(false)
         } catch (err) {
-            setError('Failed to update video')
+            setError('Failed to update item')
         } finally {
             setUpdating(false)
         }
@@ -113,7 +122,7 @@ export function RefreshMetadataModal({
                     <DialogTitle>Refresh Metadata</DialogTitle>
                     <DialogDescription>
                         Select a title version for &quot;
-                        {video?.title || 'this video'}&quot;
+                        {item?.title || 'this item'}&quot;
                     </DialogDescription>
                 </DialogHeader>
 
@@ -186,7 +195,7 @@ export function RefreshMetadataModal({
                                 Updating...
                             </>
                         ) : (
-                            'Update Video'
+                            'Update'
                         )}
                     </Button>
                 </DialogFooter>

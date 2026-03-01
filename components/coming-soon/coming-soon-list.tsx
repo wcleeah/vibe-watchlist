@@ -14,6 +14,7 @@ interface ComingSoonListProps {
     onEdit?: (item: ComingSoonWithTags) => void
     onDelete?: (id: number) => Promise<void>
     onTransform?: (item: ComingSoonWithTags) => void
+    onRefreshMetadata?: (item: ComingSoonWithTags) => void
     onReorder?: (orderedIds: number[]) => Promise<void>
     emptyState?: {
         title: string
@@ -27,6 +28,7 @@ export function ComingSoonList({
     onEdit,
     onDelete,
     onTransform,
+    onRefreshMetadata,
     onReorder,
     emptyState,
 }: ComingSoonListProps) {
@@ -36,6 +38,9 @@ export function ComingSoonList({
             onEdit={onEdit ? () => onEdit(item) : undefined}
             onDelete={onDelete}
             onTransform={onTransform ? () => onTransform(item) : undefined}
+            onRefreshMetadata={
+                onRefreshMetadata ? () => onRefreshMetadata(item) : undefined
+            }
         />
     )
 

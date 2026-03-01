@@ -2,7 +2,7 @@
 
 import { CheckCircle2, ListVideo } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { NavigationTabs } from '@/components/navigation-tabs'
 import {
@@ -13,8 +13,6 @@ import {
 } from '@/components/shared'
 import { RefreshMetadataModal } from '@/components/video-form/refresh-metadata-modal'
 import { VideoEditModal } from '@/components/video-form/video-edit-modal'
-import { ConvertToPlaylistModal } from '@/components/videos/convert-to-playlist-modal'
-import { ConvertToSeriesModal } from '@/components/videos/convert-to-series-modal'
 import { VideoList } from '@/components/videos/video-list'
 import { usePlatforms } from '@/hooks/use-platforms'
 import { useTags } from '@/hooks/use-tags'
@@ -50,12 +48,6 @@ export default function ListPage() {
     // Modal state
     const [editVideo, setEditVideo] = useState<VideoWithTags | null>(null)
     const [editModalOpen, setEditModalOpen] = useState(false)
-    const [convertVideo, setConvertVideo] = useState<VideoWithTags | null>(null)
-    const [convertModalOpen, setConvertModalOpen] = useState(false)
-    const [convertPlaylistVideo, setConvertPlaylistVideo] =
-        useState<VideoWithTags | null>(null)
-    const [convertPlaylistModalOpen, setConvertPlaylistModalOpen] =
-        useState(false)
     const [refreshMetadataVideo, setRefreshMetadataVideo] =
         useState<VideoWithTags | null>(null)
     const [refreshMetadataModalOpen, setRefreshMetadataModalOpen] =
@@ -165,16 +157,6 @@ export default function ListPage() {
         setEditModalOpen(true)
     }
 
-    const handleConvertToSeries = (video: VideoWithTags) => {
-        setConvertVideo(video)
-        setConvertModalOpen(true)
-    }
-
-    const handleConvertToPlaylist = (video: VideoWithTags) => {
-        setConvertPlaylistVideo(video)
-        setConvertPlaylistModalOpen(true)
-    }
-
     const handleRefreshMetadata = (video: VideoWithTags) => {
         setRefreshMetadataVideo(video)
         setRefreshMetadataModalOpen(true)
@@ -206,27 +188,6 @@ export default function ListPage() {
         activeVideos.refetch()
         watchedVideos.refetch()
     }, [activeVideos, watchedVideos])
-
-    // Compute which videos have YouTube playlist URLs
-    const playlistUrlVideoIds = useMemo(() => {
-        const ids = new Set<number>()
-        for (const video of currentHook.videos) {
-            try {
-                const url = new URL(video.url)
-                const hasPlaylistId = url.searchParams.has('list')
-                const isPlaylistPage = url.pathname.includes('/playlist')
-                if (
-                    video.platform === 'youtube' &&
-                    (hasPlaylistId || isPlaylistPage)
-                ) {
-                    ids.add(video.id)
-                }
-            } catch {
-                // Invalid URL, skip
-            }
-        }
-        return ids
-    }, [currentHook.videos])
 
     // Tab configuration
     const tabs = [
@@ -315,9 +276,6 @@ export default function ListPage() {
                     onDelete={currentHook.deleteVideo}
                     onEdit={handleEdit}
                     onRefreshMetadata={handleRefreshMetadata}
-                    onConvertToSeries={handleConvertToSeries}
-                    onConvertToPlaylist={handleConvertToPlaylist}
-                    playlistUrlVideoIds={playlistUrlVideoIds}
                     onReorder={
                         isCustomOrder
                             ? activeTab === 'active'
@@ -344,20 +302,8 @@ export default function ListPage() {
                     onOpenChange={setEditModalOpen}
                     onSuccess={handleRefresh}
                 />
-                <ConvertToSeriesModal
-                    video={convertVideo}
-                    open={convertModalOpen}
-                    onOpenChange={setConvertModalOpen}
-                    onSuccess={handleRefresh}
-                />
-                <ConvertToPlaylistModal
-                    video={convertPlaylistVideo}
-                    open={convertPlaylistModalOpen}
-                    onOpenChange={setConvertPlaylistModalOpen}
-                    onSuccess={handleRefresh}
-                />
                 <RefreshMetadataModal
-                    video={refreshMetadataVideo}
+                    item={refreshMetadataVideo}
                     open={refreshMetadataModalOpen}
                     onOpenChange={setRefreshMetadataModalOpen}
                     onUpdate={handleUpdateMetadata}

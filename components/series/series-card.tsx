@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, Pencil, Plus, RotateCcw } from 'lucide-react'
+import { Check, Globe, Pencil, Plus, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
 import {
@@ -30,6 +30,7 @@ interface SeriesCardProps {
     onIncrementProgress?: (id: number) => Promise<boolean>
     onDelete?: (id: number) => Promise<void>
     onEdit?: (series: SeriesWithTags) => void
+    onRefreshMetadata?: (series: SeriesWithTags) => void
     className?: string
 }
 
@@ -116,6 +117,7 @@ export function SeriesCard({
     onIncrementProgress,
     onDelete,
     onEdit,
+    onRefreshMetadata,
     className,
 }: SeriesCardProps) {
     const [loadingCatchUp, setLoadingCatchUp] = useState(false)
@@ -202,6 +204,16 @@ export function SeriesCard({
             onClick: () => onEdit(series),
             variant: 'ghost',
             icon: <Pencil className='w-3 h-3' />,
+        })
+    }
+
+    if (onRefreshMetadata) {
+        secondaryActions.push({
+            id: 'refresh-metadata',
+            label: 'refreshMetadata()',
+            onClick: () => onRefreshMetadata(series),
+            variant: 'ghost',
+            icon: <Globe className='w-3 h-3' />,
         })
     }
 

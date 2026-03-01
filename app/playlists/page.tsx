@@ -3,6 +3,7 @@
 import { CheckCircle2, ListMusic } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { PlaylistEditModal } from '@/components/playlists/playlist-edit-modal'
@@ -14,6 +15,10 @@ import {
     type SortOption,
     TabSwitcher,
 } from '@/components/shared'
+import {
+    type RefreshableMediaItem,
+    RefreshMetadataModal,
+} from '@/components/video-form/refresh-metadata-modal'
 import { usePlatforms } from '@/hooks/use-platforms'
 import { usePlaylists } from '@/hooks/use-playlists'
 import { useTags } from '@/hooks/use-tags'
@@ -63,6 +68,14 @@ export default function PlaylistsPage() {
     const [editingPlaylist, setEditingPlaylist] =
         useState<PlaylistSummary | null>(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+    // Refresh metadata modal state
+    const [refreshMetadataItem, setRefreshMetadataItem] =
+        useState<RefreshableMediaItem | null>(null)
+    const [refreshMetadataOpen, setRefreshMetadataOpen] = useState(false)
+    const [refreshMetadataPlaylistId, setRefreshMetadataPlaylistId] = useState<
+        number | null
+    >(null)
 
     // Platform and tag data
     const { platformOptions: platforms } = usePlatforms()
@@ -229,6 +242,36 @@ export default function PlaylistsPage() {
         completedPlaylists.refetch()
     }, [activePlaylists, completedPlaylists])
 
+    const handleRefreshMetadata = (playlist: PlaylistSummary) => {
+        setRefreshMetadataItem({
+            url: `https://www.youtube.com/playlist?list=${playlist.youtubePlaylistId}`,
+            title: playlist.title,
+            thumbnailUrl: playlist.thumbnailUrl,
+        })
+        setRefreshMetadataPlaylistId(playlist.id)
+        setRefreshMetadataOpen(true)
+    }
+
+    const handleMetadataUpdate = useCallback(
+        async (title: string, thumbnailUrl: string | null) => {
+            if (!refreshMetadataPlaylistId) return
+            const response = await fetch(
+                `/api/playlists/${refreshMetadataPlaylistId}`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, thumbnailUrl }),
+                },
+            )
+            if (!response.ok) {
+                throw new Error('Failed to update playlist metadata')
+            }
+            toast.success('Playlist metadata updated')
+            handleRefresh()
+        },
+        [refreshMetadataPlaylistId, handleRefresh],
+    )
+
     // Tab configuration
     const tabs = [
         {
@@ -310,6 +353,7 @@ export default function PlaylistsPage() {
                     onEdit={handleEdit}
                     onSync={currentHook.sync}
                     onDelete={currentHook.deletePlaylist}
+                    onRefreshMetadata={handleRefreshMetadata}
                     onReorder={
                         isCustomOrder
                             ? activeTab === 'active'
@@ -343,6 +387,14 @@ export default function PlaylistsPage() {
                     open={isEditModalOpen}
                     onOpenChange={setIsEditModalOpen}
                     onSuccess={handleRefresh}
+                />
+
+                {/* Refresh Metadata Modal */}
+                <RefreshMetadataModal
+                    item={refreshMetadataItem}
+                    open={refreshMetadataOpen}
+                    onOpenChange={setRefreshMetadataOpen}
+                    onUpdate={handleMetadataUpdate}
                 />
             </main>
         </div>

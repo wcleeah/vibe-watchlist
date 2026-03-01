@@ -1,3 +1,19 @@
+import { inArray } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { userConfig } from '@/lib/db/schema'
+import type { AIModelConfig, AIPromptConfig } from '@/lib/services/ai-config'
+import {
+    CONFIG_KEY_AI_MODEL,
+    CONFIG_KEY_AI_PROMPT_PLATFORM_DETECTION,
+    CONFIG_KEY_AI_PROMPT_TITLE_SUGGESTION,
+    DEFAULT_MODEL_ID,
+    DEFAULT_PLATFORM_DETECTION_SYSTEM_PROMPT,
+    DEFAULT_PLATFORM_DETECTION_USER_PROMPT_TEMPLATE,
+    DEFAULT_TITLE_SUGGESTION_SYSTEM_PROMPT,
+    DEFAULT_TITLE_SUGGESTION_USER_PROMPT_TEMPLATE,
+} from '@/lib/services/ai-config'
+import { APIUsageService } from './api-usage-service'
+
 export interface PlatformSuggestion {
     platform: string
     confidence: number
@@ -17,7 +33,8 @@ export interface TitleSuggestions {
     alternatives: string[]
 }
 
-// JSON Schemas for structured output
+// ── JSON Schemas for structured output ──────────────────────────────────────
+
 const platformSuggestionSchema = {
     type: 'object',
     properties: {
@@ -61,9 +78,7 @@ const titleSuggestionsSchema = {
     additionalProperties: false,
 }
 
-import { APIUsageService } from './api-usage-service'
-
-const MODEL_NAME = 'arcee-ai/trinity-large-preview:free'
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 function extractMessages(body: unknown): string {
     const b = body as { messages?: Array<{ role: string; content: string }> }
@@ -72,6 +87,8 @@ function extractMessages(body: unknown): string {
     }
     return ''
 }
+
+// ── AIService ───────────────────────────────────────────────────────────────
 
 export class AIService {
     private apiKey: string
@@ -86,21 +103,105 @@ export class AIService {
         }
     }
 
+    /**
+     * Fetch all AI-related config from user_config in one query.
+     * Falls back to exported defaults when no DB config exists.
+     */
+    private async getAIConfig(): Promise<{
+        modelId: string
+        platformDetection: AIPromptConfig
+        titleSuggestion: AIPromptConfig
+    }> {
+        const defaults = {
+            modelId: DEFAULT_MODEL_ID,
+            platformDetection: {
+                systemPrompt: DEFAULT_PLATFORM_DETECTION_SYSTEM_PROMPT,
+                userPromptTemplate:
+                    DEFAULT_PLATFORM_DETECTION_USER_PROMPT_TEMPLATE,
+            },
+            titleSuggestion: {
+                systemPrompt: DEFAULT_TITLE_SUGGESTION_SYSTEM_PROMPT,
+                userPromptTemplate:
+                    DEFAULT_TITLE_SUGGESTION_USER_PROMPT_TEMPLATE,
+            },
+        }
+
+        try {
+            const configs = await db
+                .select()
+                .from(userConfig)
+                .where(
+                    inArray(userConfig.configKey, [
+                        CONFIG_KEY_AI_MODEL,
+                        CONFIG_KEY_AI_PROMPT_PLATFORM_DETECTION,
+                        CONFIG_KEY_AI_PROMPT_TITLE_SUGGESTION,
+                    ]),
+                )
+
+            for (const config of configs) {
+                switch (config.configKey) {
+                    case CONFIG_KEY_AI_MODEL: {
+                        const val = config.configValue as AIModelConfig
+                        if (val?.modelId) {
+                            defaults.modelId = val.modelId
+                        }
+                        break
+                    }
+                    case CONFIG_KEY_AI_PROMPT_PLATFORM_DETECTION: {
+                        const val = config.configValue as AIPromptConfig
+                        if (val?.systemPrompt) {
+                            defaults.platformDetection.systemPrompt =
+                                val.systemPrompt
+                        }
+                        if (val?.userPromptTemplate) {
+                            defaults.platformDetection.userPromptTemplate =
+                                val.userPromptTemplate
+                        }
+                        break
+                    }
+                    case CONFIG_KEY_AI_PROMPT_TITLE_SUGGESTION: {
+                        const val = config.configValue as AIPromptConfig
+                        if (val?.systemPrompt) {
+                            defaults.titleSuggestion.systemPrompt =
+                                val.systemPrompt
+                        }
+                        if (val?.userPromptTemplate) {
+                            defaults.titleSuggestion.userPromptTemplate =
+                                val.userPromptTemplate
+                        }
+                        break
+                    }
+                }
+            }
+        } catch {
+            console.warn('AIService: Could not fetch AI config, using defaults')
+        }
+
+        return defaults
+    }
+
     async detectPlatform(url: string): Promise<PlatformSuggestion> {
         try {
-            console.log('🤖 AI PLATFORM DETECTION: Analyzing URL:', url)
+            console.log('AI PLATFORM DETECTION: Analyzing URL:', url)
+
+            const config = await this.getAIConfig()
+            const modelName = config.modelId
+            const userContent =
+                config.platformDetection.userPromptTemplate.replace(
+                    '{url}',
+                    url,
+                )
 
             const requestBody = {
-                model: MODEL_NAME,
+                model: modelName,
                 messages: [
                     {
                         role: 'system',
-                        content:
-                            'You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema.',
+                        content: config.platformDetection.systemPrompt,
                     },
                     {
                         role: 'user',
-                        content: `Analyze this URL and suggest platform details: ${url}`,
+                        content: userContent,
                     },
                 ],
                 provider: {
@@ -129,7 +230,7 @@ export class AIService {
 
             if (!response.ok) {
                 console.log(
-                    '🤖 AI PLATFORM DETECTION: API request failed with status:',
+                    'AI PLATFORM DETECTION: API request failed with status:',
                     response.status,
                     response.statusText,
                 )
@@ -137,12 +238,12 @@ export class AIService {
                 try {
                     const errorBody = await response.text()
                     console.log(
-                        '🤖 AI PLATFORM DETECTION: Error response body:',
+                        'AI PLATFORM DETECTION: Error response body:',
                         errorBody.substring(0, 500),
                     )
                 } catch (bodyError) {
                     console.log(
-                        '🤖 AI PLATFORM DETECTION: Could not read error response body:',
+                        'AI PLATFORM DETECTION: Could not read error response body:',
                         bodyError,
                     )
                 }
@@ -154,7 +255,7 @@ export class AIService {
 
             const data = await response.json()
             console.log(
-                '🤖 AI PLATFORM DETECTION: API response:',
+                'AI PLATFORM DETECTION: API response:',
                 JSON.stringify(data, null, 2),
             )
 
@@ -172,14 +273,14 @@ export class AIService {
                 !Array.isArray(suggestion.patterns)
             ) {
                 console.error(
-                    '🤖 AI PLATFORM DETECTION: Invalid response structure:',
+                    'AI PLATFORM DETECTION: Invalid response structure:',
                     suggestion,
                 )
                 throw new Error('Invalid AI response structure')
             }
 
             console.log(
-                '🤖 AI PLATFORM DETECTION: Successfully parsed structured response:',
+                'AI PLATFORM DETECTION: Successfully parsed structured response:',
                 suggestion,
             )
 
@@ -192,7 +293,7 @@ export class AIService {
                         completion: usage.completion_tokens || 0,
                         total: usage.total_tokens || 0,
                     },
-                    MODEL_NAME,
+                    modelName,
                     extractMessages(requestBody),
                     data.choices[0].message.content,
                     durationMs,
@@ -201,7 +302,7 @@ export class AIService {
 
             return suggestion
         } catch (error) {
-            console.error('🤖 AI PLATFORM DETECTION: Failed:', error)
+            console.error('AI PLATFORM DETECTION: Failed:', error)
             throw error
         }
     }
@@ -222,22 +323,29 @@ export class AIService {
                     : {}),
             }
             console.log(
-                '🤖 AI TITLE SUGGESTIONS: context:',
+                'AI TITLE SUGGESTIONS: context:',
                 JSON.stringify(context, null, 2),
             )
 
+            const aiConfig = await this.getAIConfig()
+            const modelName = aiConfig.modelId
+            const userContent =
+                aiConfig.titleSuggestion.userPromptTemplate.replace(
+                    '{context}',
+                    JSON.stringify(context, null, 2),
+                )
+
             const requestBody = {
-                model: MODEL_NAME,
+                model: modelName,
                 temperature: 0.2,
                 messages: [
                     {
                         role: 'system',
-                        content:
-                            'You are a video title extraction assistant. You analyze video page metadata, HTML tags, and Google search results to determine the actual video title. Metadata titles often contain extra text like site names, platform names, channel names, or decorative markers (e.g. "Video Title - SiteName", "Video Title | ChannelName - Platform"). Your job is to extract the clean video title, stripping away these suffixes and prefixes. When the same video title appears in multiple languages across the provided data, return each language variant as a separate suggestion. Do NOT translate titles — only return language variants you find evidence for in the data. Always respond with valid JSON matching the required schema.',
+                        content: aiConfig.titleSuggestion.systemPrompt,
                     },
                     {
                         role: 'user',
-                        content: `Analyze the context below and extract the actual video title(s).\n\nFor each title found:\n- Extract the clean video title, removing site names, platform suffixes, channel names, and decorative text (e.g. "Video Title - SiteName" should become "Video Title")\n- Identify the language code (e.g. "en", "zh-TW", "ja", "ko", or "unknown" if uncertain)\n- Rate your confidence (0-1) that this is the actual video title\n- Note the source where you found evidence (e.g. "og:title", "google search", "page title")\n\nRules:\n- Cross-reference metadata titles with Google search result titles to identify the common video title portion\n- Strip site names, platform names, channel names, and other suffixes/prefixes that are not part of the video title\n- Do NOT translate or fabricate titles not present in the data\n- Deduplicate titles that are identical after cleaning and trimming\n- If multiple languages are found in the data, return each as a separate suggestion\n- bestGuess should be the most likely clean video title\n\nContext:\n${JSON.stringify(context, null, 2)}`,
+                        content: userContent,
                     },
                 ],
                 provider: {
@@ -270,19 +378,19 @@ export class AIService {
 
             if (!response.ok) {
                 console.log(
-                    '🤖 AI TITLE SUGGESTIONS: API request failed with status:',
+                    'AI TITLE SUGGESTIONS: API request failed with status:',
                     response.status,
                 )
 
                 try {
                     const errorBody = await response.text()
                     console.log(
-                        '🤖 AI TITLE SUGGESTIONS: Error response body:',
+                        'AI TITLE SUGGESTIONS: Error response body:',
                         errorBody.substring(0, 500),
                     )
                 } catch (bodyError) {
                     console.log(
-                        '🤖 AI TITLE SUGGESTIONS: Could not read error response body:',
+                        'AI TITLE SUGGESTIONS: Could not read error response body:',
                         bodyError,
                     )
                 }
@@ -292,7 +400,7 @@ export class AIService {
 
             const data = await response.json()
             console.log(
-                '🤖 AI TITLE SUGGESTIONS: API response:',
+                'AI TITLE SUGGESTIONS: API response:',
                 JSON.stringify(data, null, 2),
             )
 
@@ -310,14 +418,14 @@ export class AIService {
                 suggestions.suggestions.length === 0
             ) {
                 console.error(
-                    '🤖 AI TITLE SUGGESTIONS: Invalid response structure:',
+                    'AI TITLE SUGGESTIONS: Invalid response structure:',
                     suggestions,
                 )
                 throw new Error('Invalid suggestions format')
             }
 
             console.log(
-                '🤖 AI TITLE SUGGESTIONS: Successfully parsed structured response:',
+                'AI TITLE SUGGESTIONS: Successfully parsed structured response:',
                 JSON.stringify(suggestions, null, 2),
             )
 
@@ -330,7 +438,7 @@ export class AIService {
                         completion: usage.completion_tokens || 0,
                         total: usage.total_tokens || 0,
                     },
-                    MODEL_NAME,
+                    modelName,
                     extractMessages(requestBody),
                     data.choices[0].message.content,
                     durationMs,
@@ -339,7 +447,7 @@ export class AIService {
 
             return suggestions
         } catch (error) {
-            console.error('🤖 AI TITLE SUGGESTIONS: Failed:', error)
+            console.error('AI TITLE SUGGESTIONS: Failed:', error)
             return {
                 suggestions: [
                     {

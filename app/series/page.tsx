@@ -16,6 +16,10 @@ import {
     TabSwitcher,
 } from '@/components/shared'
 import { Button } from '@/components/ui/button'
+import {
+    type RefreshableMediaItem,
+    RefreshMetadataModal,
+} from '@/components/video-form/refresh-metadata-modal'
 import { usePlatforms } from '@/hooks/use-platforms'
 import { useSeries } from '@/hooks/use-series'
 import { useTags } from '@/hooks/use-tags'
@@ -71,6 +75,14 @@ export default function SeriesPage() {
     const [editingSeries, setEditingSeries] = useState<SeriesWithTags | null>(
         null,
     )
+
+    // Refresh metadata modal state
+    const [refreshMetadataItem, setRefreshMetadataItem] =
+        useState<RefreshableMediaItem | null>(null)
+    const [refreshMetadataOpen, setRefreshMetadataOpen] = useState(false)
+    const [refreshMetadataSeriesId, setRefreshMetadataSeriesId] = useState<
+        number | null
+    >(null)
 
     // Trigger update loading state
     const [isTriggeringUpdate, setIsTriggeringUpdate] = useState(false)
@@ -223,6 +235,16 @@ export default function SeriesPage() {
         setEditModalOpen(true)
     }
 
+    const handleRefreshMetadata = (series: SeriesWithTags) => {
+        setRefreshMetadataItem({
+            url: series.url,
+            title: series.title,
+            thumbnailUrl: series.thumbnailUrl,
+        })
+        setRefreshMetadataSeriesId(series.id)
+        setRefreshMetadataOpen(true)
+    }
+
     const handleRefresh = useCallback(async () => {
         try {
             await Promise.all([activeSeries.refetch(), watchedSeries.refetch()])
@@ -231,6 +253,26 @@ export default function SeriesPage() {
             toast.error('Failed to refresh series')
         }
     }, [activeSeries, watchedSeries])
+
+    const handleMetadataUpdate = useCallback(
+        async (title: string, thumbnailUrl: string | null) => {
+            if (!refreshMetadataSeriesId) return
+            const response = await fetch(
+                `/api/series/${refreshMetadataSeriesId}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, thumbnailUrl }),
+                },
+            )
+            if (!response.ok) {
+                throw new Error('Failed to update series metadata')
+            }
+            toast.success('Series metadata updated')
+            await handleRefresh()
+        },
+        [refreshMetadataSeriesId, handleRefresh],
+    )
 
     // Handle manual series update trigger
     const handleTriggerUpdate = useCallback(async () => {
@@ -357,6 +399,7 @@ export default function SeriesPage() {
                             : watchedSeries.deleteSeries
                     }
                     onEdit={handleEditSeries}
+                    onRefreshMetadata={handleRefreshMetadata}
                     onReorder={
                         isCustomOrder
                             ? activeTab === 'active'
@@ -372,6 +415,14 @@ export default function SeriesPage() {
                     open={editModalOpen}
                     onOpenChange={setEditModalOpen}
                     onSuccess={handleRefresh}
+                />
+
+                {/* Refresh Metadata Modal */}
+                <RefreshMetadataModal
+                    item={refreshMetadataItem}
+                    open={refreshMetadataOpen}
+                    onOpenChange={setRefreshMetadataOpen}
+                    onUpdate={handleMetadataUpdate}
                 />
             </main>
         </div>

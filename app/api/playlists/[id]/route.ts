@@ -141,12 +141,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         }
 
         const body = await request.json()
-        const { tagIds, title, cascadeWatched, autoComplete } = body
+        const { tagIds, title, thumbnailUrl, cascadeWatched, autoComplete } =
+            body
 
-        // Update title and/or cascadeWatched/autoComplete if provided
+        // Update title, thumbnailUrl, and/or cascadeWatched/autoComplete if provided
         const updateFields: Record<string, unknown> = {}
         if (title !== undefined) {
             updateFields.title = title
+        }
+        if (thumbnailUrl !== undefined) {
+            updateFields.thumbnailUrl = thumbnailUrl
         }
         if (typeof cascadeWatched === 'boolean') {
             updateFields.cascadeWatched = cascadeWatched

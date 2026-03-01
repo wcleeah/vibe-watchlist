@@ -1,6 +1,7 @@
 'use client'
 
 import {
+    Bot,
     Database,
     MonitorSpeaker,
     RefreshCw,
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { NavigationTabs } from '@/components/navigation-tabs'
+import { AISettings } from '@/components/settings/ai-settings'
 import { CacheActions } from '@/components/settings/cache/cache-actions'
 import { CacheEntries } from '@/components/settings/cache/cache-entries'
 import { PlatformForm } from '@/components/settings/platforms/platform-form'
@@ -20,16 +22,17 @@ import { Button } from '@/components/ui/button'
 
 import type { PlatformConfig } from '@/types/platform'
 
-type TabId = 'cache' | 'platforms' | 'tags'
+type TabId = 'ai' | 'cache' | 'platforms' | 'tags'
 
 const tabs = [
+    { id: 'ai' as TabId, label: 'AI', icon: Bot },
     { id: 'cache' as TabId, label: 'Cache', icon: Database },
     { id: 'platforms' as TabId, label: 'Platforms', icon: MonitorSpeaker },
     { id: 'tags' as TabId, label: 'Tags', icon: Tag },
 ]
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<TabId>('cache')
+    const [activeTab, setActiveTab] = useState<TabId>('ai')
     const [platformFormOpen, setPlatformFormOpen] = useState(false)
     const [editingPlatform, setEditingPlatform] =
         useState<PlatformConfig | null>(null)
@@ -66,6 +69,8 @@ export default function SettingsPage() {
 
     const renderTabContent = () => {
         switch (activeTab) {
+            case 'ai':
+                return <AISettings />
             case 'cache':
                 return (
                     <div className='space-y-6' key={cacheRefreshKey}>

@@ -16,6 +16,7 @@ interface SeriesListProps {
     onIncrementProgress?: (id: number) => Promise<boolean>
     onDelete?: (id: number) => Promise<void>
     onEdit?: (series: SeriesWithTags) => void
+    onRefreshMetadata?: (series: SeriesWithTags) => void
     onReorder?: (orderedIds: number[]) => Promise<void>
     loading?: boolean
     emptyState?: {
@@ -32,6 +33,7 @@ export function SeriesList({
     onIncrementProgress,
     onDelete,
     onEdit,
+    onRefreshMetadata,
     onReorder,
     loading = false,
     emptyState,
@@ -45,6 +47,7 @@ export function SeriesList({
             onIncrementProgress={onIncrementProgress}
             onDelete={onDelete}
             onEdit={onEdit}
+            onRefreshMetadata={onRefreshMetadata}
         />
     )
 

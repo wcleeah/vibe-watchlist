@@ -254,7 +254,7 @@ export function PlaylistItemsModal({
                 </div>
             </DialogContent>
             <RefreshMetadataModal
-                video={refreshVideo}
+                item={refreshVideo}
                 open={refreshModalOpen}
                 onOpenChange={setRefreshModalOpen}
                 onUpdate={handleUpdateMetadata}

@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe, ListMusic, Pencil, RefreshCw } from 'lucide-react'
+import { Globe, Pencil } from 'lucide-react'
 import { useState } from 'react'
 
 import { type ActionConfig, ErrorDisplay, MediaCard } from '@/components/shared'
@@ -20,9 +20,6 @@ export function VideoCard({
     onDelete,
     onEdit,
     onRefreshMetadata,
-    onConvertToSeries,
-    onConvertToPlaylist,
-    isPlaylistUrl = false,
     onThumbnailUrlChange,
     onTitleChange,
     onToggleManual: onToggleManualProp,
@@ -147,34 +144,13 @@ export function VideoCard({
         })
     }
 
-    if (onRefreshMetadata && video.platform === 'youtube') {
+    if (onRefreshMetadata) {
         secondaryActions.push({
             id: 'refresh-metadata',
             label: 'refreshMetadata()',
             onClick: () => onRefreshMetadata(video),
             variant: 'ghost',
             icon: <Globe className='w-3 h-3' />,
-        })
-    }
-
-    if (onConvertToSeries) {
-        secondaryActions.push({
-            id: 'to-series',
-            label: 'toSeries()',
-            onClick: () => onConvertToSeries(video),
-            variant: 'ghost',
-            icon: <RefreshCw className='w-3 h-3' />,
-        })
-    }
-
-    if (onConvertToPlaylist && isPlaylistUrl) {
-        secondaryActions.push({
-            id: 'to-playlist',
-            label: 'toPlaylist()',
-            onClick: () => onConvertToPlaylist(video),
-            variant: 'ghost',
-            icon: <ListMusic className='w-3 h-3' />,
-            condition: isPlaylistUrl,
         })
     }
 

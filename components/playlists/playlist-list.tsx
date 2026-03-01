@@ -15,6 +15,7 @@ interface PlaylistListProps {
     onEdit?: (playlist: PlaylistSummary) => void
     onSync?: (playlistId: number) => Promise<void>
     onDelete?: (playlistId: number) => Promise<void>
+    onRefreshMetadata?: (playlist: PlaylistSummary) => void
     onReorder?: (orderedIds: number[]) => Promise<void>
     emptyState?: {
         title: string
@@ -29,6 +30,7 @@ export function PlaylistList({
     onEdit,
     onSync,
     onDelete,
+    onRefreshMetadata,
     onReorder,
     emptyState,
 }: PlaylistListProps) {
@@ -39,6 +41,7 @@ export function PlaylistList({
             onEdit={onEdit}
             onSync={onSync}
             onDelete={onDelete}
+            onRefreshMetadata={onRefreshMetadata}
         />
     )
 

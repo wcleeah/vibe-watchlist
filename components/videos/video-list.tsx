@@ -22,9 +22,6 @@ interface VideoListProps {
     onDelete?: (id: number) => Promise<void>
     onEdit?: (video: VideoWithTags) => void
     onRefreshMetadata?: (video: VideoWithTags) => void
-    onConvertToSeries?: (video: VideoWithTags) => void
-    onConvertToPlaylist?: (video: VideoWithTags) => void
-    playlistUrlVideoIds?: Set<number>
     onReorder?: (orderedIds: number[]) => Promise<void>
     emptyState?: {
         title: string
@@ -39,14 +36,10 @@ export function VideoList({
     onDelete,
     onEdit,
     onRefreshMetadata,
-    onConvertToSeries,
-    onConvertToPlaylist,
-    playlistUrlVideoIds,
     onReorder,
     emptyState,
 }: VideoListProps) {
     const renderCard = (video: VideoWithTags) => {
-        const isPlaylistUrl = playlistUrlVideoIds?.has(video.id) ?? false
         return (
             <VideoCard
                 video={video}
@@ -59,17 +52,6 @@ export function VideoList({
                         ? () => onRefreshMetadata(video)
                         : undefined
                 }
-                onConvertToSeries={
-                    onConvertToSeries
-                        ? () => onConvertToSeries(video)
-                        : undefined
-                }
-                onConvertToPlaylist={
-                    onConvertToPlaylist
-                        ? () => onConvertToPlaylist(video)
-                        : undefined
-                }
-                isPlaylistUrl={isPlaylistUrl}
             />
         )
     }

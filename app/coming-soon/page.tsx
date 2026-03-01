@@ -3,6 +3,7 @@
 import { ArrowRightCircle, Clock } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 import {
     ComingSoonEditModal,
@@ -16,6 +17,10 @@ import {
     type SortOption,
     TabSwitcher,
 } from '@/components/shared'
+import {
+    type RefreshableMediaItem,
+    RefreshMetadataModal,
+} from '@/components/video-form/refresh-metadata-modal'
 import { useComingSoon } from '@/hooks/use-coming-soon'
 import { usePlatforms } from '@/hooks/use-platforms'
 import { useTags } from '@/hooks/use-tags'
@@ -57,6 +62,14 @@ export default function ComingSoonPage() {
     const [transformItem, setTransformItem] =
         useState<ComingSoonWithTags | null>(null)
     const [transformDialogOpen, setTransformDialogOpen] = useState(false)
+
+    // Refresh metadata modal state
+    const [refreshMetadataItem, setRefreshMetadataItem] =
+        useState<RefreshableMediaItem | null>(null)
+    const [refreshMetadataOpen, setRefreshMetadataOpen] = useState(false)
+    const [refreshMetadataItemId, setRefreshMetadataItemId] = useState<
+        number | null
+    >(null)
 
     // Platform and tag data
     const { platformOptions: platforms } = usePlatforms()
@@ -174,6 +187,36 @@ export default function ComingSoonPage() {
         transformedItems.refetch()
     }, [notTransformedItems, transformedItems])
 
+    const handleRefreshMetadata = (item: ComingSoonWithTags) => {
+        setRefreshMetadataItem({
+            url: item.url,
+            title: item.title,
+            thumbnailUrl: item.thumbnailUrl,
+        })
+        setRefreshMetadataItemId(item.id)
+        setRefreshMetadataOpen(true)
+    }
+
+    const handleMetadataUpdate = useCallback(
+        async (title: string, thumbnailUrl: string | null) => {
+            if (!refreshMetadataItemId) return
+            const response = await fetch(
+                `/api/coming-soon/${refreshMetadataItemId}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, thumbnailUrl }),
+                },
+            )
+            if (!response.ok) {
+                throw new Error('Failed to update coming soon metadata')
+            }
+            toast.success('Coming soon metadata updated')
+            handleRefresh()
+        },
+        [refreshMetadataItemId, handleRefresh],
+    )
+
     // Tab configuration
     const tabs = [
         {
@@ -256,6 +299,7 @@ export default function ComingSoonPage() {
                     onEdit={handleEdit}
                     onDelete={currentHook.deleteItem}
                     onTransform={handleTransform}
+                    onRefreshMetadata={handleRefreshMetadata}
                     onReorder={
                         isCustomOrder
                             ? activeTab === 'not-transformed'
@@ -286,6 +330,14 @@ export default function ComingSoonPage() {
                     item={transformItem}
                     open={transformDialogOpen}
                     onOpenChange={setTransformDialogOpen}
+                />
+
+                {/* Refresh Metadata Modal */}
+                <RefreshMetadataModal
+                    item={refreshMetadataItem}
+                    open={refreshMetadataOpen}
+                    onOpenChange={setRefreshMetadataOpen}
+                    onUpdate={handleMetadataUpdate}
                 />
             </main>
         </div>

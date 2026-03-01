@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, Pencil, RefreshCw, Trash2 } from 'lucide-react'
+import { ExternalLink, Globe, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import {
@@ -17,6 +17,7 @@ interface PlaylistCardProps {
     onEdit?: (playlist: PlaylistSummary) => void
     onSync?: (playlistId: number) => Promise<void>
     onDelete?: (playlistId: number) => Promise<void>
+    onRefreshMetadata?: (playlist: PlaylistSummary) => void
 }
 
 export function PlaylistCard({
@@ -25,6 +26,7 @@ export function PlaylistCard({
     onEdit,
     onSync,
     onDelete,
+    onRefreshMetadata,
 }: PlaylistCardProps) {
     const [isSyncing, setIsSyncing] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -100,6 +102,16 @@ export function PlaylistCard({
             onClick: () => onEdit(playlist),
             variant: 'ghost',
             icon: <Pencil className='w-3 h-3' />,
+        })
+    }
+
+    if (onRefreshMetadata) {
+        secondaryActions.push({
+            id: 'refresh-metadata',
+            label: 'refreshMetadata()',
+            onClick: () => onRefreshMetadata(playlist),
+            variant: 'ghost',
+            icon: <Globe className='w-3 h-3' />,
         })
     }
 

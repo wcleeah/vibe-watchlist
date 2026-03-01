@@ -24,9 +24,6 @@ export interface PreviewCardProps {
     onDelete?: (id: number) => Promise<void>
     onEdit?: (video: VideoData) => void
     onRefreshMetadata?: (video: VideoData) => void
-    onConvertToSeries?: (video: VideoData) => void
-    onConvertToPlaylist?: (video: VideoData) => void
-    isPlaylistUrl?: boolean
     onTitleChange?: (title: string) => void
     onThumbnailUrlChange?: (url: string) => void
     onToggleManual?: () => void

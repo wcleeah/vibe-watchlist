@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRightCircle, Pencil } from 'lucide-react'
+import { ArrowRightCircle, Globe, Pencil } from 'lucide-react'
 import { useState } from 'react'
 
 import { type ActionConfig, MediaCard } from '@/components/shared'
@@ -13,6 +13,7 @@ interface ComingSoonCardProps {
     onEdit?: (item: ComingSoonWithTags) => void
     onDelete?: (id: number) => Promise<void>
     onTransform?: (item: ComingSoonWithTags) => void
+    onRefreshMetadata?: (item: ComingSoonWithTags) => void
 }
 
 /**
@@ -24,6 +25,7 @@ export function ComingSoonCard({
     onEdit,
     onDelete,
     onTransform,
+    onRefreshMetadata,
 }: ComingSoonCardProps) {
     const [loadingDelete, setLoadingDelete] = useState(false)
 
@@ -108,6 +110,16 @@ export function ComingSoonCard({
             onClick: () => onEdit(item),
             variant: 'ghost',
             icon: <Pencil className='w-3 h-3' />,
+        })
+    }
+
+    if (onRefreshMetadata) {
+        secondaryActions.push({
+            id: 'refresh-metadata',
+            label: 'refreshMetadata()',
+            onClick: () => onRefreshMetadata(item),
+            variant: 'ghost',
+            icon: <Globe className='w-3 h-3' />,
         })
     }
 
