@@ -11,6 +11,7 @@ export interface TitleSuggestions {
         title: string
         confidence: number
         source: string
+        language: string
     }>
     bestGuess: string
     alternatives: string[]
@@ -41,8 +42,13 @@ const titleSuggestionsSchema = {
                     title: { type: 'string' },
                     confidence: { type: 'number', minimum: 0, maximum: 1 },
                     source: { type: 'string' },
+                    language: {
+                        type: 'string',
+                        description:
+                            'Language code of the title, e.g. "en", "zh-TW", "ja", "ko", or "unknown"',
+                    },
                 },
-                required: ['title', 'confidence', 'source'],
+                required: ['title', 'confidence', 'source', 'language'],
                 additionalProperties: false,
             },
             minItems: 1,
@@ -203,6 +209,7 @@ export class AIService {
     async generateTitleSuggestions(
         metadata: { url?: string; title?: string; platform?: string },
         searchResults: unknown[] = [],
+        languages?: string[],
     ): Promise<TitleSuggestions> {
         try {
             const context = {
@@ -210,6 +217,9 @@ export class AIService {
                 existingTitle: metadata.title,
                 searchResults: searchResults,
                 platform: metadata.platform,
+                ...(languages && languages.length > 0
+                    ? { searchLanguages: languages }
+                    : {}),
             }
             console.log(
                 '🤖 AI TITLE SUGGESTIONS: context:',
@@ -218,15 +228,16 @@ export class AIService {
 
             const requestBody = {
                 model: MODEL_NAME,
+                temperature: 0.2,
                 messages: [
                     {
                         role: 'system',
                         content:
-                            'You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema.',
+                            'You are a video title extraction assistant. You analyze video page metadata, HTML tags, and Google search results to determine the actual video title. Metadata titles often contain extra text like site names, platform names, channel names, or decorative markers (e.g. "Video Title - SiteName", "Video Title | ChannelName - Platform"). Your job is to extract the clean video title, stripping away these suffixes and prefixes. When the same video title appears in multiple languages across the provided data, return each language variant as a separate suggestion. Do NOT translate titles — only return language variants you find evidence for in the data. Always respond with valid JSON matching the required schema.',
                     },
                     {
                         role: 'user',
-                        content: `Analyze this video metadata and suggeest the actual titles:\n\n${JSON.stringify(context, null, 2)}`,
+                        content: `Analyze the context below and extract the actual video title(s).\n\nFor each title found:\n- Extract the clean video title, removing site names, platform suffixes, channel names, and decorative text (e.g. "Video Title - SiteName" should become "Video Title")\n- Identify the language code (e.g. "en", "zh-TW", "ja", "ko", or "unknown" if uncertain)\n- Rate your confidence (0-1) that this is the actual video title\n- Note the source where you found evidence (e.g. "og:title", "google search", "page title")\n\nRules:\n- Cross-reference metadata titles with Google search result titles to identify the common video title portion\n- Strip site names, platform names, channel names, and other suffixes/prefixes that are not part of the video title\n- Do NOT translate or fabricate titles not present in the data\n- Deduplicate titles that are identical after cleaning and trimming\n- If multiple languages are found in the data, return each as a separate suggestion\n- bestGuess should be the most likely clean video title\n\nContext:\n${JSON.stringify(context, null, 2)}`,
                     },
                 ],
                 provider: {
@@ -335,6 +346,7 @@ export class AIService {
                         title: metadata.title || 'Untitled Video',
                         confidence: 0.5,
                         source: 'fallback',
+                        language: 'unknown',
                     },
                 ],
                 bestGuess: metadata.title || 'Untitled Video',

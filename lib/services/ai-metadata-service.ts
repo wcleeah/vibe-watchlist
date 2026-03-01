@@ -532,9 +532,15 @@ export class AIMetadataService {
         try {
             logger.log('🧠 AI ANALYSIS: Preparing context for AI analysis')
             // Prepare context for AI analysis
+            // Extract HTML lang attribute if present
+            const htmlLangMatch = htmlContent.match(
+                /<html[^>]*\slang=["']([^"']+)["']/i,
+            )
+            const htmlLang = htmlLangMatch?.[1] || undefined
+
             const context = {
                 url,
-                searchResults: searchResults.slice(0, 2).map((r) => ({
+                searchResults: searchResults.slice(0, 4).map((r) => ({
                     title: r.title,
                     snippet: r.snippet,
                     hasImage: !!r.pagemap?.cse_image?.[0]?.src,
@@ -542,12 +548,15 @@ export class AIMetadataService {
                 htmlSnippet: htmlContent.slice(0, 2000), // First 2KB of HTML
                 extractedMetadata: {
                     title: extractedMetadata.title,
+                    ogTitle: extractedMetadata.ogTitle,
+                    twitterTitle: extractedMetadata.twitterTitle,
                     description: extractedMetadata.description,
                     hasImage: !!(
                         extractedMetadata.ogImage ||
                         extractedMetadata.twitterImage
                     ),
                 },
+                ...(htmlLang ? { htmlLanguage: htmlLang } : {}),
             }
 
             logger.log(
@@ -598,8 +607,10 @@ export class AIMetadataService {
                     {
                         url,
                         title: extractedMetadata.title,
+                        platform,
                     },
                     searchResults,
+                    ['en', 'zh-TW'],
                 )
 
             logger.log(
@@ -632,9 +643,18 @@ export class AIMetadataService {
                         extractedMetadata,
                     )
 
+                    // Build reasoning string with language info
+                    const langLabel = this.getLanguageDisplayName(
+                        suggestion.language,
+                    )
+                    const reasoning = langLabel
+                        ? `AI Analysis (${langLabel}) — ${suggestion.source}`
+                        : `AI Analysis — ${suggestion.source}`
+
                     logger.log('🧠 AI ANALYSIS: Converting suggestion:', {
                         title: `${suggestion.title.substring(0, 50)}...`,
                         confidence: suggestion.confidence,
+                        language: suggestion.language,
                         inferredPlatform: platform,
                         hasThumbnail: !!thumbnailUrl,
                     })
@@ -643,8 +663,9 @@ export class AIMetadataService {
                         title: suggestion.title,
                         platform: platformInfer,
                         confidence: suggestion.confidence,
-                        reasoning: suggestion.source,
+                        reasoning,
                         thumbnailUrl: thumbnailUrl,
+                        language: suggestion.language || undefined,
                     }
                 }),
             )
@@ -653,7 +674,7 @@ export class AIMetadataService {
                 '🧠 AI ANALYSIS: Total suggestions before limiting:',
                 suggestions.length,
             )
-            const limitedSuggestions = suggestions.slice(0, 3) // Limit to 3 suggestions
+            const limitedSuggestions = suggestions.slice(0, 5) // Limit to 5 suggestions (allow multi-language variants)
             logger.log(
                 '🧠 AI ANALYSIS: Returning',
                 limitedSuggestions.length,
@@ -685,7 +706,8 @@ export class AIMetadataService {
         const aggregatedResults: GoogleSearchResult[] = []
 
         try {
-            for (const lr in ['lang_en', 'lang_zh-TW']) {
+            const languages = ['lang_en', 'lang_zh-TW']
+            for (const lr of languages) {
                 const urlObj = new URL(url)
                 const domain = urlObj.hostname
                 const path = urlObj.pathname.slice(1, 50) // first 50 chars of path
@@ -695,13 +717,17 @@ export class AIMetadataService {
                     domain,
                     'path:',
                     path,
+                    'language:',
+                    lr,
                 )
 
                 // Create smart search query
                 const query = `site:${domain} ${path}`.trim()
                 logger.log('🔍 GOOGLE SEARCH: Generated search query:', query)
 
-                const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?key=${this.config.googleSearchApiKey}&gl=HK&cx=${this.config.googleSearchEngineId}&q=${encodeURIComponent(query)}&num=3&hl=${lr.split('_'[0])}&lr=${lr}`
+                // Extract hl param: 'lang_en' -> 'en', 'lang_zh-TW' -> 'zh-TW'
+                const hl = lr.replace('lang_', '')
+                const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?key=${this.config.googleSearchApiKey}&gl=HK&cx=${this.config.googleSearchEngineId}&q=${encodeURIComponent(query)}&num=3&hl=${hl}&lr=${lr}`
                 logger.log(
                     '🔍 GOOGLE SEARCH: Making API request to Google Custom Search',
                 )
@@ -868,6 +894,34 @@ export class AIMetadataService {
             )
             return ''
         }
+    }
+
+    /**
+     * Map language code to display name
+     */
+    private getLanguageDisplayName(language?: string): string | undefined {
+        if (!language) return undefined
+        const languageNames: Record<string, string | undefined> = {
+            en: 'English',
+            'zh-TW': '繁體中文',
+            'zh-HK': '繁體中文 (HK)',
+            'zh-Hant': '繁體中文',
+            'zh-CN': '简体中文',
+            'zh-Hans': '简体中文',
+            zh: '中文',
+            ja: '日本語',
+            ko: '한국어',
+            es: 'Español',
+            fr: 'Français',
+            de: 'Deutsch',
+            pt: 'Português',
+            ru: 'Русский',
+            th: 'ไทย',
+            vi: 'Tiếng Việt',
+            original: 'Original',
+            unknown: undefined,
+        }
+        return languageNames[language] ?? language
     }
 
     /**

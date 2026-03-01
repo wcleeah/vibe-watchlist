@@ -7,6 +7,7 @@ export const MetadataSuggestionSchema = z.object({
     platform: z.string(),
     confidence: z.number().min(0).max(1),
     reasoning: z.string().optional(),
+    language: z.string().optional(),
 })
 
 export const MetadataExtractionResponseSchema = z.object({

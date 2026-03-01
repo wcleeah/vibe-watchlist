@@ -177,13 +177,13 @@ export function MetadataSelector({
                             )}
                         </div>
                         {selectedSuggestion && (
-                            <div className='text-xs text-gray-500 flex items-center gap-2'>
-                                <span className='capitalize'>
+                            <div className='text-xs text-gray-500 flex items-center gap-2 min-w-0'>
+                                <span className='capitalize flex-shrink-0'>
                                     {selectedSuggestion.platform}
                                 </span>
                                 {selectedSuggestion.reasoning && (
                                     <span
-                                        className='truncate max-w-32'
+                                        className='truncate min-w-0'
                                         title={selectedSuggestion.reasoning}
                                     >
                                         • {selectedSuggestion.reasoning}
@@ -258,13 +258,13 @@ export function MetadataSelector({
                                             <Check className='w-3 h-3 text-blue-600' />
                                         )}
                                     </div>
-                                    <div className='text-xs text-gray-500 flex items-center gap-2'>
-                                        <span className='capitalize'>
+                                    <div className='text-xs text-gray-500 flex items-center gap-2 min-w-0'>
+                                        <span className='capitalize flex-shrink-0'>
                                             {suggestion.platform}
                                         </span>
                                         {suggestion.reasoning && (
                                             <span
-                                                className='truncate max-w-24'
+                                                className='truncate min-w-0'
                                                 title={suggestion.reasoning}
                                             >
                                                 • {suggestion.reasoning}
