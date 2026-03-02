@@ -185,6 +185,7 @@ export const series = pgTable(
         autoAdvanceTotalEpisodes: boolean('auto_advance_total_episodes')
             .default(false)
             .notNull(),
+        hasSeasons: boolean('has_seasons').default(false).notNull(),
         sortOrder: integer('sort_order').default(0).notNull(),
         createdAt: timestamp('created_at').defaultNow(),
         updatedAt: timestamp('updated_at').defaultNow(),
@@ -197,6 +198,49 @@ export const series = pgTable(
         }).onDelete('restrict'),
         index('series_is_active_idx').on(table.isActive),
         index('series_next_episode_idx').on(table.nextEpisodeAt),
+    ],
+)
+
+// Seasons table for multi-season series
+export const seasons = pgTable(
+    'seasons',
+    {
+        id: serial('id').primaryKey(),
+        seriesId: integer('series_id').notNull(),
+        seasonNumber: integer('season_number').notNull(),
+        title: text(),
+        url: text(),
+        scheduleType: text('schedule_type').notNull(),
+        scheduleValue: jsonb('schedule_value').notNull(),
+        startDate: timestamp('start_date').notNull(),
+        endDate: timestamp('end_date'),
+        lastWatchedAt: timestamp('last_watched_at'),
+        missedPeriods: integer('missed_periods').default(0).notNull(),
+        nextEpisodeAt: timestamp('next_episode_at').notNull(),
+        isActive: boolean('is_active').default(true).notNull(),
+        totalEpisodes: integer('total_episodes'),
+        watchedEpisodes: integer('watched_episodes').default(0).notNull(),
+        isWatched: boolean('is_watched').default(false).notNull(),
+        autoAdvanceTotalEpisodes: boolean('auto_advance_total_episodes')
+            .default(false)
+            .notNull(),
+        sortOrder: integer('sort_order').default(0).notNull(),
+        createdAt: timestamp('created_at').defaultNow(),
+        updatedAt: timestamp('updated_at').defaultNow(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.seriesId],
+            foreignColumns: [series.id],
+            name: 'seasons_series_id_series_id_fk',
+        }).onDelete('cascade'),
+        unique('seasons_series_id_season_number_unique').on(
+            table.seriesId,
+            table.seasonNumber,
+        ),
+        index('seasons_series_id_idx').on(table.seriesId),
+        index('seasons_is_active_idx').on(table.isActive),
+        index('seasons_next_episode_idx').on(table.nextEpisodeAt),
     ],
 )
 
@@ -357,6 +401,14 @@ export const videoTagsRelations = relations(videoTags, ({ one }) => ({
 
 export const seriesRelations = relations(series, ({ many }) => ({
     seriesTags: many(seriesTags),
+    seasons: many(seasons),
+}))
+
+export const seasonsRelations = relations(seasons, ({ one }) => ({
+    series: one(series, {
+        fields: [seasons.seriesId],
+        references: [series.id],
+    }),
 }))
 
 export const seriesTagsRelations = relations(seriesTags, ({ one }) => ({
@@ -423,3 +475,5 @@ export type ComingSoon = typeof comingSoon.$inferSelect
 export type NewComingSoon = typeof comingSoon.$inferInsert
 export type ComingSoonTag = typeof comingSoonTags.$inferSelect
 export type NewComingSoonTag = typeof comingSoonTags.$inferInsert
+export type Season = typeof seasons.$inferSelect
+export type NewSeason = typeof seasons.$inferInsert

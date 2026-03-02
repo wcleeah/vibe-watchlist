@@ -1,8 +1,8 @@
-import { eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
-import { series, seriesTags, tags } from '@/lib/db/schema'
+import { seasons, series, seriesTags, tags } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
 import {
     formatDateToHKTString,
@@ -10,6 +10,7 @@ import {
     parseToHKT,
 } from '@/lib/utils/hkt-date'
 import type {
+    BulkSeasonData,
     ScheduleType,
     ScheduleValue,
     UpdateSeriesRequest,
@@ -41,6 +42,9 @@ async function fetchSeriesWithTags(seriesId: number) {
             totalEpisodes: series.totalEpisodes,
             watchedEpisodes: series.watchedEpisodes,
             isWatched: series.isWatched,
+            autoAdvanceTotalEpisodes: series.autoAdvanceTotalEpisodes,
+            hasSeasons: series.hasSeasons,
+            sortOrder: series.sortOrder,
             createdAt: series.createdAt,
             updatedAt: series.updatedAt,
         })
@@ -83,6 +87,97 @@ async function fetchSeriesWithTags(seriesId: number) {
     }
 }
 
+/**
+ * Sync seasons for a series: create new, update existing, delete removed.
+ * Diffs the incoming array against DB rows by id.
+ */
+async function syncSeasons(seriesId: number, seasonsData: BulkSeasonData[]) {
+    // Fetch existing seasons from DB
+    const existing = await db
+        .select()
+        .from(seasons)
+        .where(eq(seasons.seriesId, seriesId))
+
+    const existingIds = existing.map((s) => s.id)
+    const incomingIds = seasonsData
+        .filter((s) => s.id !== undefined)
+        .map((s) => s.id as number)
+
+    // Delete seasons that are in DB but not in incoming array
+    const toDelete = existingIds.filter((id) => !incomingIds.includes(id))
+    if (toDelete.length > 0) {
+        await db
+            .delete(seasons)
+            .where(
+                and(
+                    eq(seasons.seriesId, seriesId),
+                    inArray(seasons.id, toDelete),
+                ),
+            )
+    }
+
+    // Process each incoming season
+    for (let i = 0; i < seasonsData.length; i++) {
+        const s = seasonsData[i]
+        const parsedStartDate = parseToHKT(s.startDate)
+        const parsedEndDate = s.endDate ? getEndOfHKTDay(s.endDate) : null
+
+        const effectiveScheduleValue =
+            s.scheduleType === 'none' ? {} : (s.scheduleValue ?? {})
+
+        const nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
+            s.scheduleType,
+            effectiveScheduleValue as ScheduleValue,
+            parsedStartDate,
+        )
+
+        if (s.id && existingIds.includes(s.id)) {
+            // Update existing season
+            await db
+                .update(seasons)
+                .set({
+                    seasonNumber: s.seasonNumber,
+                    title: s.title || null,
+                    url: s.url || null,
+                    scheduleType: s.scheduleType,
+                    scheduleValue: effectiveScheduleValue,
+                    startDate: parsedStartDate,
+                    endDate: parsedEndDate,
+                    nextEpisodeAt,
+                    isActive: s.isActive ?? true,
+                    totalEpisodes: s.totalEpisodes ?? null,
+                    watchedEpisodes: s.watchedEpisodes ?? 0,
+                    missedPeriods: s.missedPeriods ?? 0,
+                    autoAdvanceTotalEpisodes:
+                        s.autoAdvanceTotalEpisodes ?? false,
+                    sortOrder: i,
+                    updatedAt: new Date(),
+                })
+                .where(eq(seasons.id, s.id))
+        } else {
+            // Create new season
+            await db.insert(seasons).values({
+                seriesId,
+                seasonNumber: s.seasonNumber,
+                title: s.title || null,
+                url: s.url || null,
+                scheduleType: s.scheduleType,
+                scheduleValue: effectiveScheduleValue,
+                startDate: parsedStartDate,
+                endDate: parsedEndDate,
+                nextEpisodeAt,
+                missedPeriods: s.missedPeriods ?? 0,
+                isActive: s.isActive ?? true,
+                totalEpisodes: s.totalEpisodes ?? null,
+                watchedEpisodes: s.watchedEpisodes ?? 0,
+                isWatched: false,
+                autoAdvanceTotalEpisodes: s.autoAdvanceTotalEpisodes ?? false,
+                sortOrder: i,
+            })
+        }
+    }
+}
+
 // GET /api/series/[id] - Get a single series
 export async function GET(_request: NextRequest, { params }: RouteParams) {
     try {
@@ -103,6 +198,30 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
                 { success: false, error: 'Series not found' },
                 { status: 404 },
             )
+        }
+
+        // If series has seasons, include them in the response
+        if (seriesWithTags.hasSeasons) {
+            const seasonsResult = await db
+                .select()
+                .from(seasons)
+                .where(eq(seasons.seriesId, seriesId))
+                .orderBy(asc(seasons.sortOrder), asc(seasons.seasonNumber))
+
+            const formattedSeasons = seasonsResult.map((s) => ({
+                ...s,
+                startDate: formatDateToHKTString(s.startDate),
+                endDate: formatDateToHKTString(s.endDate),
+                scheduleValue: ScheduleService.parseScheduleValue(
+                    s.scheduleType as ScheduleType,
+                    s.scheduleValue,
+                ),
+            }))
+
+            return NextResponse.json({
+                success: true,
+                series: { ...seriesWithTags, seasons: formattedSeasons },
+            })
         }
 
         return NextResponse.json({ success: true, series: seriesWithTags })
@@ -144,6 +263,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             isWatched,
             missedPeriods,
             autoAdvanceTotalEpisodes,
+            hasSeasons,
+            seasons: seasonsData,
         } = body
 
         // Check if series exists
@@ -178,6 +299,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             updateData.missedPeriods = missedPeriods
         if (autoAdvanceTotalEpisodes !== undefined)
             updateData.autoAdvanceTotalEpisodes = autoAdvanceTotalEpisodes
+        if (hasSeasons !== undefined) updateData.hasSeasons = hasSeasons
 
         // Handle schedule changes
         if (scheduleType) {
@@ -271,6 +393,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
                 await db.insert(seriesTags).values(seriesTagInserts)
             }
+        }
+
+        // Handle bulk seasons sync if provided
+        if (seasonsData !== undefined) {
+            await syncSeasons(seriesId, seasonsData)
+        } else if (hasSeasons === false) {
+            // hasSeasons set to false without explicit seasons array — delete all
+            await db.delete(seasons).where(eq(seasons.seriesId, seriesId))
         }
 
         // Fetch updated series with tags

@@ -261,6 +261,7 @@ export const series = pgTable(
         autoAdvanceTotalEpisodes: boolean('auto_advance_total_episodes')
             .default(false)
             .notNull(),
+        hasSeasons: boolean('has_seasons').default(false).notNull(),
     },
     (table) => [
         index('series_is_active_idx').using(
@@ -276,5 +277,58 @@ export const series = pgTable(
             foreignColumns: [platformConfigs.platformId],
             name: 'series_platform_fkey',
         }).onDelete('restrict'),
+    ],
+)
+
+export const seasons = pgTable(
+    'seasons',
+    {
+        id: serial().primaryKey().notNull(),
+        seriesId: integer('series_id').notNull(),
+        seasonNumber: integer('season_number').notNull(),
+        title: text(),
+        url: text(),
+        scheduleType: text('schedule_type').notNull(),
+        scheduleValue: jsonb('schedule_value').notNull(),
+        startDate: timestamp('start_date', { mode: 'string' }).notNull(),
+        endDate: timestamp('end_date', { mode: 'string' }),
+        lastWatchedAt: timestamp('last_watched_at', { mode: 'string' }),
+        missedPeriods: integer('missed_periods').default(0).notNull(),
+        nextEpisodeAt: timestamp('next_episode_at', {
+            mode: 'string',
+        }).notNull(),
+        isActive: boolean('is_active').default(true).notNull(),
+        totalEpisodes: integer('total_episodes'),
+        watchedEpisodes: integer('watched_episodes').default(0).notNull(),
+        isWatched: boolean('is_watched').default(false).notNull(),
+        autoAdvanceTotalEpisodes: boolean('auto_advance_total_episodes')
+            .default(false)
+            .notNull(),
+        sortOrder: integer('sort_order').default(0).notNull(),
+        createdAt: timestamp('created_at', { mode: 'string' }).defaultNow(),
+        updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.seriesId],
+            foreignColumns: [series.id],
+            name: 'seasons_series_id_series_id_fk',
+        }).onDelete('cascade'),
+        unique('seasons_series_id_season_number_unique').on(
+            table.seriesId,
+            table.seasonNumber,
+        ),
+        index('seasons_series_id_idx').using(
+            'btree',
+            table.seriesId.asc().nullsLast().op('int4_ops'),
+        ),
+        index('seasons_is_active_idx').using(
+            'btree',
+            table.isActive.asc().nullsLast().op('bool_ops'),
+        ),
+        index('seasons_next_episode_idx').using(
+            'btree',
+            table.nextEpisodeAt.asc().nullsLast().op('timestamp_ops'),
+        ),
     ],
 )

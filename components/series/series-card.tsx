@@ -85,8 +85,18 @@ function buildMetadata(series: SeriesWithTags): MediaMetadataItem[] {
     const metadata: MediaMetadataItem[] = [
         { key: 'ID', value: series.id, color: 'cyan' },
         { key: 'PLATFORM', value: series.platform, color: 'green' },
-        { key: 'SCHEDULE', value: scheduleDisplay, color: 'orange' },
     ]
+
+    // Show "Multi-Season" type indicator for series with seasons
+    if (series.hasSeasons) {
+        metadata.push({ key: 'TYPE', value: 'Multi-Season', color: 'purple' })
+    }
+
+    metadata.push({
+        key: 'SCHEDULE',
+        value: scheduleDisplay,
+        color: 'orange',
+    })
 
     // Show MISSED only for recurring series
     if (!isBacklog) {

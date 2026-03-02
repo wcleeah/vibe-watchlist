@@ -3,6 +3,7 @@ import {
     platformConfigs,
     playlists,
     playlistTags,
+    seasons,
     series,
     seriesTags,
     tags,
@@ -70,9 +71,17 @@ export const seriesTagsRelations = relations(seriesTags, ({ one }) => ({
 
 export const seriesRelations = relations(series, ({ one, many }) => ({
     seriesTags: many(seriesTags),
+    seasons: many(seasons),
     platformConfig: one(platformConfigs, {
         fields: [series.platform],
         references: [platformConfigs.platformId],
+    }),
+}))
+
+export const seasonsRelations = relations(seasons, ({ one }) => ({
+    series: one(series, {
+        fields: [seasons.seriesId],
+        references: [series.id],
     }),
 }))
 

@@ -32,6 +32,7 @@ export async function fetchSeriesWithTags(seriesId: number) {
             watchedEpisodes: series.watchedEpisodes,
             isWatched: series.isWatched,
             autoAdvanceTotalEpisodes: series.autoAdvanceTotalEpisodes,
+            hasSeasons: series.hasSeasons,
             createdAt: series.createdAt,
             updatedAt: series.updatedAt,
         })

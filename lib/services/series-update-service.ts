@@ -1,7 +1,7 @@
-import { and, eq, lte, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { series, userConfig } from '@/lib/db/schema'
+import { seasons, series, userConfig } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
 import { getEndOfHKTDay, isHKTAfter, nowHKT, toHKT } from '@/lib/utils/hkt-date'
 import type { ScheduleType, ScheduleValue } from '@/types/series'
@@ -11,11 +11,15 @@ export interface SeriesUpdateResult {
     updated: number
     deactivated: number
     errors: number
+    seasonsProcessed: number
+    seasonsUpdated: number
+    seasonsDeactivated: number
+    seasonsErrors: number
 }
 
 export class SeriesUpdateService {
     /**
-     * Updates all active series schedules
+     * Updates all active series and season schedules
      * This method can be called from:
      * - Trigger.dev scheduled tasks
      * - Manual API endpoints
@@ -27,20 +31,58 @@ export class SeriesUpdateService {
         const timezone = await SeriesUpdateService.getTimezone()
         const now = nowHKT()
 
-        // Query series where nextEpisodeAt is due (in HKT)
-        // Use SQL to ensure proper timezone comparison at the database level
+        // 1. Update standalone series (hasSeasons=false) — existing logic
+        const standaloneResult =
+            await SeriesUpdateService.updateStandaloneSeries(now, timezone)
+
+        // 2. Update active seasons
+        const seasonResult = await SeriesUpdateService.updateActiveSeasons(
+            now,
+            timezone,
+        )
+
+        console.log(
+            `SeriesUpdateService: Completed. Series — Updated: ${standaloneResult.updated}, Deactivated: ${standaloneResult.deactivated}, Errors: ${standaloneResult.errors}. Seasons — Updated: ${seasonResult.updated}, Deactivated: ${seasonResult.deactivated}, Errors: ${seasonResult.errors}`,
+        )
+
+        return {
+            processed: standaloneResult.processed,
+            updated: standaloneResult.updated,
+            deactivated: standaloneResult.deactivated,
+            errors: standaloneResult.errors,
+            seasonsProcessed: seasonResult.processed,
+            seasonsUpdated: seasonResult.updated,
+            seasonsDeactivated: seasonResult.deactivated,
+            seasonsErrors: seasonResult.errors,
+        }
+    }
+
+    /**
+     * Update standalone series (hasSeasons=false) that have due episodes
+     */
+    private static async updateStandaloneSeries(
+        now: Date,
+        timezone: string,
+    ): Promise<{
+        processed: number
+        updated: number
+        deactivated: number
+        errors: number
+    }> {
+        // Query active standalone series where nextEpisodeAt is due
         const activeSeries = await db
             .select()
             .from(series)
             .where(
                 and(
                     eq(series.isActive, true),
+                    eq(series.hasSeasons, false),
                     sql`${series.nextEpisodeAt} <= ${now}`,
                 ),
             )
 
         console.log(
-            `SeriesUpdateService: Found ${activeSeries.length} series to update`,
+            `SeriesUpdateService: Found ${activeSeries.length} standalone series to update`,
         )
 
         let updatedCount = 0
@@ -91,7 +133,6 @@ export class SeriesUpdateService {
                 // Calculate new total episodes if auto-advance is enabled
                 let newTotalEpisodes = s.totalEpisodes
                 if (s.autoAdvanceTotalEpisodes && missedPeriods > 0) {
-                    // If totalEpisodes is null/undefined, treat as 0
                     const currentTotal = s.totalEpisodes ?? 0
                     newTotalEpisodes = currentTotal + missedPeriods
                 }
@@ -126,12 +167,122 @@ export class SeriesUpdateService {
             }
         }
 
-        console.log(
-            `SeriesUpdateService: Completed. Updated: ${updatedCount}, Deactivated: ${deactivatedCount}, Errors: ${errorCount}`,
-        )
-
         return {
             processed: activeSeries.length,
+            updated: updatedCount,
+            deactivated: deactivatedCount,
+            errors: errorCount,
+        }
+    }
+
+    /**
+     * Update active seasons that have due episodes
+     */
+    private static async updateActiveSeasons(
+        now: Date,
+        timezone: string,
+    ): Promise<{
+        processed: number
+        updated: number
+        deactivated: number
+        errors: number
+    }> {
+        // Query active seasons where nextEpisodeAt is due
+        const activeSeasons = await db
+            .select()
+            .from(seasons)
+            .where(
+                and(
+                    eq(seasons.isActive, true),
+                    sql`${seasons.nextEpisodeAt} <= ${now}`,
+                ),
+            )
+
+        console.log(
+            `SeriesUpdateService: Found ${activeSeasons.length} seasons to update`,
+        )
+
+        let updatedCount = 0
+        let deactivatedCount = 0
+        let errorCount = 0
+
+        for (const s of activeSeasons) {
+            try {
+                const scheduleType = s.scheduleType as ScheduleType
+
+                // Skip backlog seasons
+                if (scheduleType === 'none') {
+                    continue
+                }
+
+                const scheduleValue = ScheduleService.parseScheduleValue(
+                    scheduleType,
+                    s.scheduleValue,
+                )
+
+                const missedPeriods = ScheduleService.calculateMissedPeriods(
+                    s.nextEpisodeAt,
+                    now,
+                    scheduleType,
+                    scheduleValue as ScheduleValue,
+                    timezone,
+                )
+
+                // Calculate next episode date (ensuring it's in the future)
+                let nextEpisodeAt = toHKT(now)
+                do {
+                    nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
+                        scheduleType,
+                        scheduleValue as ScheduleValue,
+                        nextEpisodeAt,
+                        timezone,
+                    )
+                    nextEpisodeAt = toHKT(nextEpisodeAt)
+                } while (nextEpisodeAt.getTime() <= now.getTime())
+
+                // Check if season has ended
+                const hasEnded =
+                    s.endDate && isHKTAfter(now, getEndOfHKTDay(s.endDate))
+
+                // Calculate new total episodes if auto-advance is enabled
+                let newTotalEpisodes = s.totalEpisodes
+                if (s.autoAdvanceTotalEpisodes && missedPeriods > 0) {
+                    const currentTotal = s.totalEpisodes ?? 0
+                    newTotalEpisodes = currentTotal + missedPeriods
+                }
+
+                await db
+                    .update(seasons)
+                    .set({
+                        missedPeriods: s.missedPeriods + missedPeriods,
+                        nextEpisodeAt,
+                        isActive: !hasEnded,
+                        updatedAt: now,
+                        ...(s.autoAdvanceTotalEpisodes && missedPeriods > 0
+                            ? { totalEpisodes: newTotalEpisodes }
+                            : {}),
+                    })
+                    .where(eq(seasons.id, s.id))
+
+                if (hasEnded) {
+                    deactivatedCount++
+                    console.log(
+                        `SeriesUpdateService: Deactivated season ${s.id} (series ${s.seriesId}, ended)`,
+                    )
+                } else {
+                    updatedCount++
+                }
+            } catch (error) {
+                errorCount++
+                console.error(
+                    `SeriesUpdateService: Error updating season ${s.id}:`,
+                    error,
+                )
+            }
+        }
+
+        return {
+            processed: activeSeasons.length,
             updated: updatedCount,
             deactivated: deactivatedCount,
             errors: errorCount,

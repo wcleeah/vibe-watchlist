@@ -15,7 +15,11 @@ export const updateSeriesSchedules = schedules.task({
 
         const result = await SeriesUpdateService.updateSeriesSchedules()
 
-        console.log('Trigger.dev: Series schedule update completed', result)
+        console.log(
+            `Trigger.dev: Series schedule update completed. ` +
+                `Series — Processed: ${result.processed}, Updated: ${result.updated}, Deactivated: ${result.deactivated}, Errors: ${result.errors}. ` +
+                `Seasons — Processed: ${result.seasonsProcessed}, Updated: ${result.seasonsUpdated}, Deactivated: ${result.seasonsDeactivated}, Errors: ${result.seasonsErrors}.`,
+        )
 
         return {
             ...result,
