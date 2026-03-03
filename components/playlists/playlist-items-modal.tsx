@@ -196,9 +196,9 @@ export function PlaylistItemsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className='sm:max-w-6xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col'>
+            <DialogContent className='sm:max-w-6xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-3 sm:p-6'>
                 <DialogHeader>
-                    <DialogTitle className='font-mono'>
+                    <DialogTitle className='font-mono truncate pr-6'>
                         {playlist?.title || 'Playlist Items'}
                     </DialogTitle>
                     {playlistData && (
@@ -284,61 +284,64 @@ function PlaylistItemRow({
 }: PlaylistItemRowProps) {
     return (
         <div
-            className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+            className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-colors ${
                 video.isWatched
                     ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                     : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700'
             }`}
         >
-            {/* Index */}
-            <div className='w-8 text-center font-mono text-sm text-gray-500 dark:text-gray-400 flex-shrink-0'>
-                {video.playlistIndex + 1}
-            </div>
+            {/* Top row: index + thumbnail + title + watched indicator */}
+            <div className='flex items-center gap-2 sm:gap-3 min-w-0 flex-1'>
+                {/* Index */}
+                <div className='w-6 sm:w-8 text-center font-mono text-sm text-gray-500 dark:text-gray-400 flex-shrink-0'>
+                    {video.playlistIndex + 1}
+                </div>
 
-            {/* Thumbnail */}
-            <div className='w-24 h-14 flex-shrink-0 relative rounded overflow-hidden bg-gray-100 dark:bg-gray-800'>
-                {video.thumbnailUrl ? (
-                    <Image
-                        src={video.thumbnailUrl}
-                        alt={video.title || 'Video thumbnail'}
-                        fill
-                        className='object-cover'
-                    />
-                ) : (
-                    <div className='w-full h-full flex items-center justify-center text-gray-400'>
-                        <span className='text-xs'>No img</span>
+                {/* Thumbnail */}
+                <div className='w-16 h-9 sm:w-24 sm:h-14 flex-shrink-0 relative rounded overflow-hidden bg-gray-100 dark:bg-gray-800'>
+                    {video.thumbnailUrl ? (
+                        <Image
+                            src={video.thumbnailUrl}
+                            alt={video.title || 'Video thumbnail'}
+                            fill
+                            className='object-cover'
+                        />
+                    ) : (
+                        <div className='w-full h-full flex items-center justify-center text-gray-400'>
+                            <span className='text-xs'>No img</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Title */}
+                <div className='flex-1 min-w-0'>
+                    <p
+                        className={`text-sm font-medium line-clamp-2 ${
+                            video.isWatched
+                                ? 'text-gray-500 dark:text-gray-400'
+                                : 'text-gray-900 dark:text-gray-100'
+                        }`}
+                        title={video.title || 'Untitled'}
+                    >
+                        {video.title || 'Untitled'}
+                    </p>
+                </div>
+
+                {/* Watched indicator */}
+                {video.isWatched && (
+                    <div className='flex-shrink-0'>
+                        <Check className='w-5 h-5 text-green-500' />
                     </div>
                 )}
             </div>
 
-            {/* Title */}
-            <div className='flex-1 min-w-0'>
-                <p
-                    className={`text-sm font-medium line-clamp-2 ${
-                        video.isWatched
-                            ? 'text-gray-500 dark:text-gray-400'
-                            : 'text-gray-900 dark:text-gray-100'
-                    }`}
-                    title={video.title || 'Untitled'}
-                >
-                    {video.title || 'Untitled'}
-                </p>
-            </div>
-
-            {/* Watched indicator */}
-            {video.isWatched && (
-                <div className='flex-shrink-0'>
-                    <Check className='w-5 h-5 text-green-500' />
-                </div>
-            )}
-
-            {/* Actions */}
-            <div className='flex gap-2 flex-shrink-0'>
+            {/* Bottom row on mobile, inline on desktop: Actions */}
+            <div className='flex gap-1.5 sm:gap-2 flex-shrink-0 pl-8 sm:pl-0'>
                 <a
                     href={watchUrl}
                     target='_blank'
                     rel='noopener noreferrer'
-                    className='px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors flex items-center gap-1'
+                    className='px-2 sm:px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors flex items-center gap-1'
                     title='Watch on YouTube'
                 >
                     <ExternalLink className='w-3 h-3' />
@@ -349,7 +352,7 @@ function PlaylistItemRow({
                         type='button'
                         onClick={onUnmarkWatched}
                         disabled={isLoading}
-                        className='px-3 py-1.5 text-xs bg-yellow-500 text-white hover:bg-yellow-600 disabled:opacity-50 rounded transition-colors flex items-center gap-1'
+                        className='px-2 sm:px-3 py-1.5 text-xs bg-yellow-500 text-white hover:bg-yellow-600 disabled:opacity-50 rounded transition-colors flex items-center gap-1'
                         title='Mark as unwatched'
                     >
                         {isLoading ? (
@@ -363,7 +366,7 @@ function PlaylistItemRow({
                         type='button'
                         onClick={onMarkWatched}
                         disabled={isLoading}
-                        className='px-3 py-1.5 text-xs bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded transition-colors flex items-center gap-1'
+                        className='px-2 sm:px-3 py-1.5 text-xs bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 rounded transition-colors flex items-center gap-1'
                         title={
                             cascadeWatched
                                 ? 'Mark watched up to this video'
