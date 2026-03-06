@@ -57,14 +57,34 @@ export type ScheduleValue =
 // Content mode for the add form
 export type ContentMode = 'video' | 'series' | 'playlist' | 'coming-soon'
 
-// Series with typed schedule value
-export interface Series
-    extends Omit<DbSeries, 'scheduleValue' | 'startDate' | 'endDate'> {
+// ============================================================
+// Config fields — shared shape for series_config rows & season rows
+// These fields exist on series_config (single-mode) or are
+// aggregated from seasons (multi-season mode).
+// ============================================================
+
+/** The schedule/episode fields that live on series_config or seasons. */
+export interface SeriesConfigFields {
+    scheduleType: ScheduleType
     scheduleValue: ScheduleValue
     startDate: string // ISO date string
     endDate: string | null
-    hasSeasons: boolean
+    lastWatchedAt: Date | null
+    nextEpisodeAt: Date
+    isActive: boolean
+    episodesAired: number
+    episodesRemaining: number | null
+    episodesWatched: number
 }
+
+/**
+ * Flattened Series type — combines DB metadata with config fields.
+ *
+ * For single-mode (hasSeasons=false): config comes from `series_config`.
+ * For multi-season (hasSeasons=true): config is aggregated from seasons
+ * at the DB-helper layer, so consumers always see a flat shape.
+ */
+export interface Series extends DbSeries, SeriesConfigFields {}
 
 // Series with tags included
 export interface SeriesWithTags extends Series {

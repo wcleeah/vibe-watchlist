@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
-import { series } from '@/lib/db/schema'
+import { series, seriesConfig } from '@/lib/db/schema'
 import { fetchSeriesWithTags } from '@/lib/db/series-helpers'
 import type { UpdateProgressRequest } from '@/types/series'
 
@@ -52,7 +52,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             )
         }
 
-        const currentSeries = existingSeries[0]
+        // Fetch the series_config row (episode data)
+        const configRows = await db
+            .select()
+            .from(seriesConfig)
+            .where(eq(seriesConfig.seriesId, seriesId))
+            .limit(1)
+
+        if (configRows.length === 0) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'No config found for this series. Multi-season series should update progress per-season.',
+                },
+                { status: 400 },
+            )
+        }
+
+        const config = configRows[0]
         const now = new Date()
 
         // Calculate new watched episodes count
@@ -62,23 +79,29 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         } else {
             newWatchedEpisodes = Math.max(
                 0,
-                currentSeries.episodesWatched + (increment ?? 0),
+                config.episodesWatched + (increment ?? 0),
             )
         }
 
         // Don't exceed episodes aired
-        if (newWatchedEpisodes > currentSeries.episodesAired) {
-            newWatchedEpisodes = currentSeries.episodesAired
+        if (newWatchedEpisodes > config.episodesAired) {
+            newWatchedEpisodes = config.episodesAired
         }
 
-        // Update series
+        // Update seriesConfig
         await db
-            .update(series)
+            .update(seriesConfig)
             .set({
                 episodesWatched: newWatchedEpisodes,
                 lastWatchedAt: now,
                 updatedAt: now,
             })
+            .where(eq(seriesConfig.seriesId, seriesId))
+
+        // Also update series.updatedAt
+        await db
+            .update(series)
+            .set({ updatedAt: now })
             .where(eq(series.id, seriesId))
 
         // Fetch updated series with tags

@@ -2,7 +2,13 @@ import { and, asc, eq, gt, ilike, inArray, or, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
-import { platformConfigs, series, seriesTags, tags } from '@/lib/db/schema'
+import {
+    platformConfigs,
+    series,
+    seriesConfig,
+    seriesTags,
+    tags,
+} from '@/lib/db/schema'
 import { aggregateSeasonCounts } from '@/lib/db/series-helpers'
 import { ScheduleService } from '@/lib/services/schedule-service'
 import {
@@ -36,29 +42,10 @@ export async function GET(request: NextRequest) {
             whereConditions.push(eq(series.isWatched, false))
         }
 
-        // Filter by status (only applies to active/unwatched series)
-        if (status === 'behind') {
-            // Behind = episodesAired > episodesWatched (for scheduled series)
-            whereConditions.push(
-                and(
-                    eq(series.isActive, true),
-                    sql`${series.episodesAired} > ${series.episodesWatched}`,
-                    sql`${series.scheduleType} != 'none'`,
-                ),
-            )
-        } else if (status === 'caught-up') {
-            // Caught up = episodesAired <= episodesWatched (for scheduled series)
-            whereConditions.push(
-                and(
-                    eq(series.isActive, true),
-                    sql`${series.episodesAired} <= ${series.episodesWatched}`,
-                    sql`${series.scheduleType} != 'none'`,
-                ),
-            )
-        } else if (status === 'backlog') {
-            whereConditions.push(sql`${series.scheduleType} = 'none'`)
-        }
-        // 'all' doesn't add any status filter
+        // Status filters now need to operate via seriesConfig for single-mode series.
+        // For simplicity, we fetch all rows and filter in-memory after flattening,
+        // since status depends on config (single) or season aggregation (multi).
+        // NOTE: We could push filters to SQL via a subquery later if perf matters.
 
         // Filter by platform
         if (platform) {
@@ -71,59 +58,23 @@ export async function GET(request: NextRequest) {
             whereConditions.push(ilike(series.title, searchPattern))
         }
 
-        // episodesBehind is computed as (episodesAired - episodesWatched)
-        const episodesBehindExpr = sql`(${series.episodesAired} - ${series.episodesWatched})`
-
-        // Fetch series
-        const seriesResult = await db
+        // Fetch series with LEFT JOIN on seriesConfig
+        const rows = await db
             .select({
-                id: series.id,
-                url: series.url,
-                title: series.title,
-                platform: series.platform,
-                thumbnailUrl: series.thumbnailUrl,
-                scheduleType: series.scheduleType,
-                scheduleValue: series.scheduleValue,
-                startDate: series.startDate,
-                endDate: series.endDate,
-                lastWatchedAt: series.lastWatchedAt,
-                nextEpisodeAt: series.nextEpisodeAt,
-                isActive: series.isActive,
-                episodesAired: series.episodesAired,
-                episodesRemaining: series.episodesRemaining,
-                episodesWatched: series.episodesWatched,
-                isWatched: series.isWatched,
-                hasSeasons: series.hasSeasons,
-                createdAt: series.createdAt,
-                updatedAt: series.updatedAt,
+                series: series,
+                config: seriesConfig,
             })
             .from(series)
+            .leftJoin(seriesConfig, eq(series.id, seriesConfig.seriesId))
             .where(
                 whereConditions.length > 0
                     ? and(...whereConditions)
                     : undefined,
             )
-            .orderBy(
-                // Use sortOrder column only for custom order, otherwise use selected column
-                sortBy === 'custom' || !sortBy
-                    ? sql`${series.sortOrder} ASC, ${episodesBehindExpr} DESC, ${series.nextEpisodeAt} ASC`
-                    : sortBy === 'episodesBehind'
-                      ? sortOrder === 'asc'
-                          ? sql`${episodesBehindExpr} ASC, ${series.nextEpisodeAt} DESC`
-                          : sql`${episodesBehindExpr} DESC, ${series.nextEpisodeAt} ASC`
-                      : sortBy === 'title'
-                        ? sortOrder === 'asc'
-                            ? sql`${series.title} ASC`
-                            : sql`${series.title} DESC`
-                        : sortBy === 'createdAt'
-                          ? sortOrder === 'asc'
-                              ? sql`${series.createdAt} ASC`
-                              : sql`${series.createdAt} DESC`
-                          : sql`${series.sortOrder} ASC, ${episodesBehindExpr} DESC`,
-            )
+            .orderBy(asc(series.sortOrder))
 
         // Fetch all tags for the series in one query
-        const seriesIds = seriesResult.map((s) => s.id)
+        const seriesIds = rows.map((r) => r.series.id)
         const tagsResult =
             seriesIds.length > 0
                 ? await db
@@ -155,32 +106,114 @@ export async function GET(request: NextRequest) {
         }
 
         // Aggregate season episode counts for multi-season series
-        const multiSeasonIds = seriesResult
-            .filter((s) => s.hasSeasons)
-            .map((s) => s.id)
+        const multiSeasonIds = rows
+            .filter((r) => r.series.hasSeasons)
+            .map((r) => r.series.id)
         const seasonAggregates = await aggregateSeasonCounts(multiSeasonIds)
 
-        // Merge series with their tags and format dates to HKT
-        const seriesWithTags = seriesResult.map((s) => {
+        // Build flattened series list
+        const seriesWithTags = rows.map((row) => {
+            const s = row.series
+            const config = row.config
             const agg = s.hasSeasons ? seasonAggregates.get(s.id) : undefined
+
+            // Config fields come from series_config (single) or defaults + aggregation (multi)
+            const scheduleType = config
+                ? (config.scheduleType as ScheduleType)
+                : ('none' as ScheduleType)
+            const scheduleValue = config
+                ? ScheduleService.parseScheduleValue(
+                      config.scheduleType as ScheduleType,
+                      config.scheduleValue,
+                  )
+                : ({} as ScheduleValue)
+            const startDate = config
+                ? formatDateToHKTString(config.startDate)
+                : new Date().toISOString()
+            const endDate = config
+                ? formatDateToHKTString(config.endDate)
+                : null
+            const lastWatchedAt = config?.lastWatchedAt ?? null
+            const nextEpisodeAt = config?.nextEpisodeAt ?? new Date(0)
+            const isActive = config?.isActive ?? true
+            const episodesAired =
+                agg?.episodesAired ?? config?.episodesAired ?? 0
+            const episodesRemaining =
+                agg?.episodesRemaining ?? config?.episodesRemaining ?? null
+            const episodesWatched =
+                agg?.episodesWatched ?? config?.episodesWatched ?? 0
+
             return {
                 ...s,
-                ...(agg && {
-                    episodesAired: agg.episodesAired,
-                    episodesWatched: agg.episodesWatched,
-                    episodesRemaining: agg.episodesRemaining,
-                }),
-                startDate: formatDateToHKTString(s.startDate),
-                endDate: formatDateToHKTString(s.endDate),
-                scheduleValue: ScheduleService.parseScheduleValue(
-                    s.scheduleType as ScheduleType,
-                    s.scheduleValue,
-                ),
+                scheduleType,
+                scheduleValue,
+                startDate,
+                endDate,
+                lastWatchedAt,
+                nextEpisodeAt,
+                isActive,
+                episodesAired,
+                episodesRemaining,
+                episodesWatched,
                 tags: tagsBySeries.get(s.id) || [],
             }
         })
 
-        return NextResponse.json({ success: true, series: seriesWithTags })
+        // Apply status filter in-memory (since config fields are now joined/aggregated)
+        let filtered = seriesWithTags
+        if (status === 'behind') {
+            filtered = seriesWithTags.filter(
+                (s) =>
+                    s.isActive &&
+                    s.episodesAired > s.episodesWatched &&
+                    s.scheduleType !== 'none',
+            )
+        } else if (status === 'caught-up') {
+            filtered = seriesWithTags.filter(
+                (s) =>
+                    s.isActive &&
+                    s.episodesAired <= s.episodesWatched &&
+                    s.scheduleType !== 'none',
+            )
+        } else if (status === 'backlog') {
+            filtered = seriesWithTags.filter((s) => s.scheduleType === 'none')
+        }
+
+        // Apply sorting
+        filtered.sort((a, b) => {
+            if (sortBy === 'episodesBehind') {
+                const aBehind = a.episodesAired - a.episodesWatched
+                const bBehind = b.episodesAired - b.episodesWatched
+                const cmp =
+                    sortOrder === 'asc' ? aBehind - bBehind : bBehind - aBehind
+                if (cmp !== 0) return cmp
+                // Secondary: nextEpisodeAt (opposite direction)
+                const aNext = a.nextEpisodeAt?.getTime?.() ?? 0
+                const bNext = b.nextEpisodeAt?.getTime?.() ?? 0
+                return sortOrder === 'asc' ? bNext - aNext : aNext - bNext
+            }
+            if (sortBy === 'title') {
+                const aTitle = a.title ?? ''
+                const bTitle = b.title ?? ''
+                return sortOrder === 'asc'
+                    ? aTitle.localeCompare(bTitle)
+                    : bTitle.localeCompare(aTitle)
+            }
+            if (sortBy === 'createdAt') {
+                const aDate = a.createdAt?.getTime?.() ?? 0
+                const bDate = b.createdAt?.getTime?.() ?? 0
+                return sortOrder === 'asc' ? aDate - bDate : bDate - aDate
+            }
+            // Default: custom sort order, then episodes behind desc
+            if (a.sortOrder !== b.sortOrder) {
+                return a.sortOrder - b.sortOrder
+            }
+            const aBehind = a.episodesAired - a.episodesWatched
+            const bBehind = b.episodesAired - b.episodesWatched
+            return bBehind - aBehind
+        })
+
+        return NextResponse.json({ success: true, series: filtered })
     } catch (error) {
         console.error('Error fetching series:', error)
         return NextResponse.json(
@@ -226,7 +259,9 @@ export async function POST(request: NextRequest) {
 
         if (
             !scheduleType ||
-            !['daily', 'weekly', 'custom', 'none'].includes(scheduleType)
+            !['daily', 'weekly', 'custom', 'dates', 'none'].includes(
+                scheduleType,
+            )
         ) {
             return NextResponse.json(
                 { success: false, error: 'Valid schedule type is required' },
@@ -306,7 +341,7 @@ export async function POST(request: NextRequest) {
             parsedStartDate,
         )
 
-        // Insert series with HKT dates
+        // Insert series (metadata only)
         const newSeries = await db
             .insert(series)
             .values({
@@ -314,22 +349,36 @@ export async function POST(request: NextRequest) {
                 title: title || null,
                 platform,
                 thumbnailUrl: thumbnailUrl || null,
-                scheduleType,
-                scheduleValue: effectiveScheduleValue,
-                startDate: parsedStartDate,
-                endDate: parsedEndDate,
-                nextEpisodeAt,
-                episodesAired: episodesAired ?? 0,
-                episodesRemaining: episodesRemaining ?? null,
-                episodesWatched: episodesWatched ?? 0,
-                isActive: true,
                 isWatched: false,
             })
             .returning()
 
+        // Insert series_config (schedule + episode data)
+        await db.insert(seriesConfig).values({
+            seriesId: newSeries[0].id,
+            scheduleType,
+            scheduleValue: effectiveScheduleValue,
+            startDate: parsedStartDate,
+            endDate: parsedEndDate,
+            nextEpisodeAt,
+            episodesAired: episodesAired ?? 0,
+            episodesRemaining: episodesRemaining ?? null,
+            episodesWatched: episodesWatched ?? 0,
+            isActive: true,
+        })
+
         const seriesWithTags = {
             ...newSeries[0],
+            scheduleType,
             scheduleValue: effectiveScheduleValue as ScheduleValue,
+            startDate: formatDateToHKTString(parsedStartDate),
+            endDate: formatDateToHKTString(parsedEndDate),
+            lastWatchedAt: null,
+            nextEpisodeAt,
+            isActive: true,
+            episodesAired: episodesAired ?? 0,
+            episodesRemaining: episodesRemaining ?? null,
+            episodesWatched: episodesWatched ?? 0,
             tags: [] as Array<{
                 id: number
                 name: string

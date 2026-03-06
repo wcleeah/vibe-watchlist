@@ -1,9 +1,15 @@
 import { eq, inArray } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { seasons, series, seriesTags, tags } from '@/lib/db/schema'
+import {
+    seasons,
+    series,
+    seriesConfig,
+    seriesTags,
+    tags,
+} from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
-import type { ScheduleType } from '@/types/series'
+import type { ScheduleType, ScheduleValue, Series } from '@/types/series'
 
 /**
  * Aggregate season episode counts for one or more series.
@@ -68,45 +74,93 @@ export async function aggregateSeasonCounts(seriesIds: number[]): Promise<
     return result
 }
 
+/** Default config values for multi-season series (no series_config row). */
+const MULTI_SEASON_CONFIG_DEFAULTS: Omit<
+    Series,
+    keyof typeof series.$inferSelect | 'tags'
+> = {
+    scheduleType: 'none' as ScheduleType,
+    scheduleValue: {} as ScheduleValue,
+    startDate: new Date().toISOString(),
+    endDate: null,
+    lastWatchedAt: null,
+    nextEpisodeAt: new Date(0),
+    isActive: true,
+    episodesAired: 0,
+    episodesRemaining: null,
+    episodesWatched: 0,
+}
+
 /**
- * Fetch a single series with its tags
+ * Build a flattened Series object from a series row + optional config row.
+ *
+ * For single-mode (hasSeasons=false): merges series metadata + series_config.
+ * For multi-season (hasSeasons=true): uses defaults, then overlays season aggregation.
+ */
+function flattenSeriesRow(
+    s: typeof series.$inferSelect,
+    config: typeof seriesConfig.$inferSelect | null,
+    seasonAggregation?: {
+        episodesAired: number
+        episodesWatched: number
+        episodesRemaining: number | null
+    } | null,
+): Omit<Series, 'tags'> {
+    if (config) {
+        // Single-mode: use series_config
+        return {
+            ...s,
+            scheduleType: config.scheduleType as ScheduleType,
+            scheduleValue: ScheduleService.parseScheduleValue(
+                config.scheduleType as ScheduleType,
+                config.scheduleValue,
+            ),
+            startDate:
+                config.startDate?.toISOString() ?? new Date().toISOString(),
+            endDate: config.endDate?.toISOString() ?? null,
+            lastWatchedAt: config.lastWatchedAt,
+            nextEpisodeAt: config.nextEpisodeAt,
+            isActive: config.isActive,
+            episodesAired: config.episodesAired,
+            episodesRemaining: config.episodesRemaining,
+            episodesWatched: config.episodesWatched,
+        }
+    }
+
+    // Multi-season: use defaults, overlay aggregated episode counts
+    return {
+        ...s,
+        ...MULTI_SEASON_CONFIG_DEFAULTS,
+        ...(seasonAggregation && {
+            episodesAired: seasonAggregation.episodesAired,
+            episodesWatched: seasonAggregation.episodesWatched,
+            episodesRemaining: seasonAggregation.episodesRemaining,
+        }),
+    }
+}
+
+/**
+ * Fetch a single series with its tags (and config / season aggregation).
  * @param seriesId - The ID of the series to fetch
- * @returns The series with tags, or null if not found
+ * @returns The flattened series with tags, or null if not found
  */
 export async function fetchSeriesWithTags(seriesId: number) {
-    // Fetch series
-    const seriesResult = await db
+    // Fetch series + LEFT JOIN series_config
+    const rows = await db
         .select({
-            id: series.id,
-            url: series.url,
-            title: series.title,
-            platform: series.platform,
-            thumbnailUrl: series.thumbnailUrl,
-            scheduleType: series.scheduleType,
-            scheduleValue: series.scheduleValue,
-            startDate: series.startDate,
-            endDate: series.endDate,
-            lastWatchedAt: series.lastWatchedAt,
-            nextEpisodeAt: series.nextEpisodeAt,
-            isActive: series.isActive,
-            episodesAired: series.episodesAired,
-            episodesRemaining: series.episodesRemaining,
-            episodesWatched: series.episodesWatched,
-            isWatched: series.isWatched,
-            hasSeasons: series.hasSeasons,
-            sortOrder: series.sortOrder,
-            createdAt: series.createdAt,
-            updatedAt: series.updatedAt,
+            series: series,
+            config: seriesConfig,
         })
         .from(series)
+        .leftJoin(seriesConfig, eq(series.id, seriesConfig.seriesId))
         .where(eq(series.id, seriesId))
         .limit(1)
 
-    if (seriesResult.length === 0) {
+    if (rows.length === 0) {
         return null
     }
 
-    const s = seriesResult[0]
+    const { series: s, config } = rows[0]
 
     // Fetch tags for this series
     const tagsResult = await db
@@ -126,7 +180,7 @@ export async function fetchSeriesWithTags(seriesId: number) {
     }))
 
     // Aggregate season counts if series has seasons
-    let episodeOverrides: {
+    let seasonAggregation: {
         episodesAired: number
         episodesWatched: number
         episodesRemaining: number | null
@@ -134,20 +188,41 @@ export async function fetchSeriesWithTags(seriesId: number) {
 
     if (s.hasSeasons) {
         const aggregated = await aggregateSeasonCounts([s.id])
-        episodeOverrides = aggregated.get(s.id) ?? null
+        seasonAggregation = aggregated.get(s.id) ?? null
     }
 
     return {
-        ...s,
-        ...(episodeOverrides && {
-            episodesAired: episodeOverrides.episodesAired,
-            episodesWatched: episodeOverrides.episodesWatched,
-            episodesRemaining: episodeOverrides.episodesRemaining,
-        }),
-        scheduleValue: ScheduleService.parseScheduleValue(
-            s.scheduleType as ScheduleType,
-            s.scheduleValue,
-        ),
+        ...flattenSeriesRow(s, config, seasonAggregation),
         tags: parsedTags,
     }
+}
+
+/**
+ * Fetch multiple series with their configs (for list queries).
+ * Returns a Map of seriesId → flattened series data (no tags).
+ */
+export async function fetchSeriesWithConfigs(seriesIds: number[]) {
+    if (seriesIds.length === 0) return new Map<number, Omit<Series, 'tags'>>()
+
+    const rows = await db
+        .select({
+            series: series,
+            config: seriesConfig,
+        })
+        .from(series)
+        .leftJoin(seriesConfig, eq(series.id, seriesConfig.seriesId))
+        .where(inArray(series.id, seriesIds))
+
+    // Aggregate season counts for multi-season series
+    const multiSeasonIds = rows
+        .filter((r) => r.series.hasSeasons)
+        .map((r) => r.series.id)
+    const seasonAggs = await aggregateSeasonCounts(multiSeasonIds)
+
+    const result = new Map<number, Omit<Series, 'tags'>>()
+    for (const { series: s, config } of rows) {
+        const agg = s.hasSeasons ? (seasonAggs.get(s.id) ?? null) : null
+        result.set(s.id, flattenSeriesRow(s, config, agg))
+    }
+    return result
 }

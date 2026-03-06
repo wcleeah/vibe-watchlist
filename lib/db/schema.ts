@@ -160,7 +160,7 @@ export const videoTags = pgTable(
     ],
 )
 
-// Series table for tracking recurring/episodic content
+// Series table for tracking recurring/episodic content (metadata only)
 export const series = pgTable(
     'series',
     {
@@ -169,17 +169,6 @@ export const series = pgTable(
         title: text(),
         platform: text().notNull(),
         thumbnailUrl: text('thumbnail_url'),
-        scheduleType: text('schedule_type').notNull(), // 'daily' | 'weekly' | 'custom' | 'dates' | 'none'
-        scheduleValue: jsonb('schedule_value').notNull(), // { interval: number } or { days: string[], time?: string } or {}
-        startDate: timestamp('start_date').notNull(),
-        endDate: timestamp('end_date'),
-        lastWatchedAt: timestamp('last_watched_at'),
-        nextEpisodeAt: timestamp('next_episode_at').notNull(),
-        isActive: boolean('is_active').default(true).notNull(),
-        // Episode progress tracking
-        episodesAired: integer('episodes_aired').default(0).notNull(),
-        episodesRemaining: integer('episodes_remaining'), // nullable - undefined means unknown
-        episodesWatched: integer('episodes_watched').default(0).notNull(),
         isWatched: boolean('is_watched').default(false).notNull(), // marks series as finished
         hasSeasons: boolean('has_seasons').default(false).notNull(),
         sortOrder: integer('sort_order').default(0).notNull(),
@@ -192,8 +181,38 @@ export const series = pgTable(
             foreignColumns: [platformConfigs.platformId],
             name: 'series_platform_fkey',
         }).onDelete('restrict'),
-        index('series_is_active_idx').on(table.isActive),
-        index('series_next_episode_idx').on(table.nextEpisodeAt),
+    ],
+)
+
+// Series config table — schedule & episode data for single-mode series (1:1 with series)
+export const seriesConfig = pgTable(
+    'series_config',
+    {
+        id: serial('id').primaryKey(),
+        seriesId: integer('series_id').notNull(),
+        scheduleType: text('schedule_type').notNull(), // 'daily' | 'weekly' | 'custom' | 'dates' | 'none'
+        scheduleValue: jsonb('schedule_value').notNull(), // { interval: number } or { days: string[], time?: string } or {}
+        startDate: timestamp('start_date').notNull(),
+        endDate: timestamp('end_date'),
+        lastWatchedAt: timestamp('last_watched_at'),
+        nextEpisodeAt: timestamp('next_episode_at').notNull(),
+        isActive: boolean('is_active').default(true).notNull(),
+        // Episode progress tracking
+        episodesAired: integer('episodes_aired').default(0).notNull(),
+        episodesRemaining: integer('episodes_remaining'), // nullable - undefined means unknown
+        episodesWatched: integer('episodes_watched').default(0).notNull(),
+        createdAt: timestamp('created_at').defaultNow(),
+        updatedAt: timestamp('updated_at').defaultNow(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.seriesId],
+            foreignColumns: [series.id],
+            name: 'series_config_series_id_series_id_fk',
+        }).onDelete('cascade'),
+        unique('series_config_series_id_unique').on(table.seriesId),
+        index('series_config_is_active_idx').on(table.isActive),
+        index('series_config_next_episode_idx').on(table.nextEpisodeAt),
     ],
 )
 
@@ -392,9 +411,20 @@ export const videoTagsRelations = relations(videoTags, ({ one }) => ({
     }),
 }))
 
-export const seriesRelations = relations(series, ({ many }) => ({
+export const seriesRelations = relations(series, ({ one, many }) => ({
     seriesTags: many(seriesTags),
     seasons: many(seasons),
+    config: one(seriesConfig, {
+        fields: [series.id],
+        references: [seriesConfig.seriesId],
+    }),
+}))
+
+export const seriesConfigRelations = relations(seriesConfig, ({ one }) => ({
+    series: one(series, {
+        fields: [seriesConfig.seriesId],
+        references: [series.id],
+    }),
 }))
 
 export const seasonsRelations = relations(seasons, ({ one }) => ({
@@ -458,6 +488,8 @@ export type APIUsageStat = typeof apiUsageStats.$inferSelect
 export type NewAPIUsageStat = typeof apiUsageStats.$inferInsert
 export type Series = typeof series.$inferSelect
 export type NewSeries = typeof series.$inferInsert
+export type SeriesConfig = typeof seriesConfig.$inferSelect
+export type NewSeriesConfig = typeof seriesConfig.$inferInsert
 export type SeriesTag = typeof seriesTags.$inferSelect
 export type NewSeriesTag = typeof seriesTags.$inferInsert
 export type Playlist = typeof playlists.$inferSelect

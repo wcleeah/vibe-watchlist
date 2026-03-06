@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
-import { series } from '@/lib/db/schema'
+import { series, seriesConfig } from '@/lib/db/schema'
 import { fetchSeriesWithTags } from '@/lib/db/series-helpers'
 import { ScheduleService } from '@/lib/services/schedule-service'
 import { nowHKT } from '@/lib/utils/hkt-date'
@@ -40,10 +40,27 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             )
         }
 
-        const currentSeries = existingSeries[0]
+        // Fetch the series_config row (schedule/episode data)
+        const configRows = await db
+            .select()
+            .from(seriesConfig)
+            .where(eq(seriesConfig.seriesId, seriesId))
+            .limit(1)
+
+        if (configRows.length === 0) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'No config found for this series. Multi-season series should catch up per-season.',
+                },
+                { status: 400 },
+            )
+        }
+
+        const config = configRows[0]
 
         // Backlog series (scheduleType: 'none') shouldn't use catch-up
-        if (currentSeries.scheduleType === 'none') {
+        if (config.scheduleType === 'none') {
             return NextResponse.json(
                 {
                     success: false,
@@ -56,10 +73,10 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         const now = nowHKT()
 
         // Calculate next episode date from now
-        const scheduleType = currentSeries.scheduleType as ScheduleType
+        const scheduleType = config.scheduleType as ScheduleType
         const scheduleValue = ScheduleService.parseScheduleValue(
             scheduleType,
-            currentSeries.scheduleValue,
+            config.scheduleValue,
         )
         const nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
             scheduleType,
@@ -67,15 +84,21 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             now,
         )
 
-        // Update series: set episodesWatched = episodesAired, update lastWatchedAt, calculate new nextEpisodeAt
+        // Update seriesConfig: set episodesWatched = episodesAired, update lastWatchedAt, calculate new nextEpisodeAt
         await db
-            .update(series)
+            .update(seriesConfig)
             .set({
-                episodesWatched: currentSeries.episodesAired,
+                episodesWatched: config.episodesAired,
                 lastWatchedAt: now,
                 nextEpisodeAt,
                 updatedAt: now,
             })
+            .where(eq(seriesConfig.seriesId, seriesId))
+
+        // Also update series.updatedAt
+        await db
+            .update(series)
+            .set({ updatedAt: now })
             .where(eq(series.id, seriesId))
 
         // Fetch updated series with tags

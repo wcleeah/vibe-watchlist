@@ -87,3 +87,40 @@ Regarding series:
   - Grep for removed field references — all clean
   - `bun run check` — no new errors (pre-existing `.open-next/` issues only)
   - TypeScript `tsc --noEmit` — zero errors
+
+---
+
+## Series Config Extraction
+
+Extract schedule/episode tracking fields from `series` table into a dedicated `series_config` table (1:1 relationship). Eliminates column duplication between `series` and `seasons`.
+
+### Architecture
+
+| Mode | Config source | On save |
+|------|-------------|---------|
+| **Single** (`hasSeasons=false`) | `series_config` row (1:1) | Write to `series_config` |
+| **Seasons** (`hasSeasons=true`) | `seasons` rows (1:N) | Write to `seasons`, aggregate on read |
+
+**Mode switching uses hard delete:**
+- Single → Seasons: DELETE `series_config` row, create season rows
+- Seasons → Single: DELETE all season rows, create `series_config` row
+
+### Columns moved to `series_config`
+
+`scheduleType`, `scheduleValue`, `startDate`, `endDate`, `lastWatchedAt`, `nextEpisodeAt`, `isActive`, `episodesAired`, `episodesRemaining`, `episodesWatched`
+
+### `series` table retains only
+
+`id`, `url`, `title`, `platform`, `thumbnailUrl`, `isWatched`, `hasSeasons`, `sortOrder`, `createdAt`, `updatedAt`
+
+### Phase Tracker
+
+- [x] **Phase 1** — DB schema (`lib/db/schema.ts`): slimmed `series`, new `seriesConfig` table
+- [x] **Phase 2** — Migration SQL (`drizzle/0013_extract_series_config.sql`)
+- [x] **Phase 3** — Types (`types/series.ts`): `SeriesConfigFields` interface, `Series extends DbSeries, SeriesConfigFields`
+- [x] **Phase 4** — DB helpers (`lib/db/series-helpers.ts`): LEFT JOIN + `flattenSeriesRow()`
+- [x] **Phase 5** — API routes: all 6 routes updated to read/write `seriesConfig`
+- [x] **Phase 6** — Cron service (`series-update-service.ts`): queries `seriesConfig` INNER JOIN `series`
+- [x] **Phase 7** — UI components: confirmed no changes needed (insulated by `SeriesWithTags` type)
+- [x] **Phase 8** — Mode switching: hard delete logic in PUT handler for Single↔Seasons transitions
+- [x] **Phase 9** — Mirror `drizzle/schema.ts`, type checks pass, biome checks pass (pre-existing issues only)
