@@ -11,7 +11,7 @@ interface RouteParams {
 }
 
 // POST /api/series/[id]/update-progress - Update episode progress
-// Can either set absolute watchedEpisodes or increment by a value
+// Can either set absolute episodesWatched or increment by a value
 export async function POST(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params

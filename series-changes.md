@@ -50,38 +50,40 @@ Regarding series:
 
 ### Phase Tracker
 
-- [ ] **Phase 1** — Database schema & migration
+- [x] **Phase 1** — Database schema & migration
   - Add `episodesAired`, `episodesRemaining` columns
   - Migrate data: `episodesAired = watchedEpisodes + missedPeriods`, `episodesRemaining = totalEpisodes - episodesAired`
   - Rename `watchedEpisodes` -> `episodesWatched`
   - Drop `description`, `missedPeriods`, `totalEpisodes`, `autoAdvanceTotalEpisodes`
   - Apply to both `series` and `seasons` tables
-- [ ] **Phase 2** — Types & computed fields
+- [x] **Phase 2** — Types & computed fields
   - Update `types/series.ts` with new DB fields
   - Add `SeriesComputed` enriched type + `enrichSeries()` utility
   - Update `getSeriesStatus()` to return array (behind + ended can coexist)
   - Remove `missedPeriods`/`autoAdvanceTotalEpisodes` types and helpers
-- [ ] **Phase 3** — Service layer
+- [x] **Phase 3** — Service layer
   - `ScheduleService`: Remove `calculateMissedPeriods()`, add aired episode counting
   - `SeriesUpdateService`: Cron increments `episodesAired`, decrements `episodesRemaining`
   - `SeriesService` (client): Update payloads
-- [ ] **Phase 4** — API routes
+- [x] **Phase 4** — API routes
   - Update all series + season CRUD for new fields
   - `catch-up`: Set `episodesWatched = episodesAired`
   - `update-progress`: Cap at `episodesAired`
   - Remove `description`/`autoAdvanceTotalEpisodes` from all routes
-- [ ] **Phase 5** — Scheduling enhancements
+- [x] **Phase 5** — Scheduling enhancements
   - Add time-of-day to `scheduleValue` types (HKT)
   - Update `ScheduleSelector` with time picker
   - Update `calculateNextEpisodeDate()` for time support
+  - Update `calculateNewEpisodesSinceDate()` for time-of-day awareness
+  - Update `formatScheduleDisplay()` to show time-of-day
   - Change cron to `*/5 * * * *`
-- [ ] **Phase 6** — UI components
+- [x] **Phase 6** — UI components
   - Multi-badge (behind + ended) in `series-card.tsx`
   - +1 button for all non-watched series
   - Updated progress display with computed fields
   - Edit modal / creation form field changes
   - Remove `description` from UI
-- [ ] **Phase 7** — Cleanup & verify
-  - Grep for removed field references
-  - `bun run check`
-  - `bun run db:generate`
+- [x] **Phase 7** — Cleanup & verify
+  - Grep for removed field references — all clean
+  - `bun run check` — no new errors (pre-existing `.open-next/` issues only)
+  - TypeScript `tsc --noEmit` — zero errors
