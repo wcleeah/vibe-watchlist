@@ -446,8 +446,8 @@ export function formatProgress(series: Series | SeriesEnriched): string | null {
         return null
     }
     if (series.episodesRemaining === null) {
-        // No known total — show watched/aired
-        return `${series.episodesWatched}/${series.episodesAired} Aired`
+        // No known total — show watched vs aired
+        return `${series.episodesWatched}/${series.episodesAired} Episodes`
     }
     return `${series.episodesWatched}/${episodesTotal} Episodes`
 }

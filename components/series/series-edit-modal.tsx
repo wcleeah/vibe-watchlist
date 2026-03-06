@@ -31,7 +31,7 @@ import type {
     Season,
     SeriesWithTags,
 } from '@/types/series'
-import { getDefaultScheduleValue } from '@/types/series'
+import { computeEpisodeFields, getDefaultScheduleValue } from '@/types/series'
 
 interface SeriesEditModalProps {
     series: SeriesWithTags | null
@@ -143,6 +143,57 @@ const MODE_TABS = [
     { id: 'single', label: 'Single' },
     { id: 'seasons', label: 'Seasons' },
 ]
+
+/**
+ * Read-only computed episode fields display.
+ * Renders Total / Unwatched / Behind from the given stored fields.
+ */
+function ComputedEpisodeFields({
+    aired,
+    remaining,
+    watched,
+}: {
+    aired: string
+    remaining: string
+    watched: string
+}) {
+    const a = parseInt(aired, 10) || 0
+    const r = remaining !== '' ? parseInt(remaining, 10) : null
+    const w = parseInt(watched, 10) || 0
+    const { episodesTotal, episodesUnwatched, episodesBehind } =
+        computeEpisodeFields({
+            episodesAired: a,
+            episodesRemaining: r !== null && !Number.isNaN(r) ? r : null,
+            episodesWatched: w,
+        })
+
+    return (
+        <div className='grid grid-cols-3 gap-4 pt-2'>
+            <div className='space-y-1'>
+                <Label className='text-xs text-muted-foreground'>
+                    Total (computed)
+                </Label>
+                <p className='text-sm font-medium'>{episodesTotal}</p>
+            </div>
+            <div className='space-y-1'>
+                <Label className='text-xs text-muted-foreground'>
+                    Unwatched (computed)
+                </Label>
+                <p className='text-sm font-medium'>{episodesUnwatched}</p>
+            </div>
+            <div className='space-y-1'>
+                <Label className='text-xs text-muted-foreground'>
+                    Behind (computed)
+                </Label>
+                <p
+                    className={`text-sm font-medium ${episodesBehind > 0 ? 'text-red-500' : 'text-green-500'}`}
+                >
+                    {episodesBehind}
+                </p>
+            </div>
+        </div>
+    )
+}
 
 export function SeriesEditModal({
     series,
@@ -410,7 +461,7 @@ export function SeriesEditModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
+            <DialogContent className='max-w-4xl max-h-[90vh] overflow-y-auto'>
                 <DialogHeader>
                     <DialogTitle>Edit Series</DialogTitle>
                 </DialogHeader>
@@ -587,6 +638,11 @@ export function SeriesEditModal({
                                         />
                                     </div>
                                 </div>
+                                <ComputedEpisodeFields
+                                    aired={watch('episodesAired') || '0'}
+                                    remaining={watch('episodesRemaining') || ''}
+                                    watched={watch('episodesWatched') || '0'}
+                                />
                             </div>
                         </>
                     )}
@@ -853,6 +909,13 @@ export function SeriesEditModal({
                                             />
                                         </div>
                                     </div>
+                                    <ComputedEpisodeFields
+                                        aired={selectedSeason.episodesAired}
+                                        remaining={
+                                            selectedSeason.episodesRemaining
+                                        }
+                                        watched={selectedSeason.episodesWatched}
+                                    />
                                 </div>
                             ) : (
                                 <div className='p-4 bg-muted/50 rounded-lg text-center'>

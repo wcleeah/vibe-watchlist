@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
 import { platformConfigs, series, seriesTags, tags } from '@/lib/db/schema'
+import { aggregateSeasonCounts } from '@/lib/db/series-helpers'
 import { ScheduleService } from '@/lib/services/schedule-service'
 import {
     formatDateToHKTString,
@@ -153,17 +154,31 @@ export async function GET(request: NextRequest) {
             })
         }
 
+        // Aggregate season episode counts for multi-season series
+        const multiSeasonIds = seriesResult
+            .filter((s) => s.hasSeasons)
+            .map((s) => s.id)
+        const seasonAggregates = await aggregateSeasonCounts(multiSeasonIds)
+
         // Merge series with their tags and format dates to HKT
-        const seriesWithTags = seriesResult.map((s) => ({
-            ...s,
-            startDate: formatDateToHKTString(s.startDate),
-            endDate: formatDateToHKTString(s.endDate),
-            scheduleValue: ScheduleService.parseScheduleValue(
-                s.scheduleType as ScheduleType,
-                s.scheduleValue,
-            ),
-            tags: tagsBySeries.get(s.id) || [],
-        }))
+        const seriesWithTags = seriesResult.map((s) => {
+            const agg = s.hasSeasons ? seasonAggregates.get(s.id) : undefined
+            return {
+                ...s,
+                ...(agg && {
+                    episodesAired: agg.episodesAired,
+                    episodesWatched: agg.episodesWatched,
+                    episodesRemaining: agg.episodesRemaining,
+                }),
+                startDate: formatDateToHKTString(s.startDate),
+                endDate: formatDateToHKTString(s.endDate),
+                scheduleValue: ScheduleService.parseScheduleValue(
+                    s.scheduleType as ScheduleType,
+                    s.scheduleValue,
+                ),
+                tags: tagsBySeries.get(s.id) || [],
+            }
+        })
 
         return NextResponse.json({ success: true, series: seriesWithTags })
     } catch (error) {
