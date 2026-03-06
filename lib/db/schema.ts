@@ -167,24 +167,20 @@ export const series = pgTable(
         id: serial('id').primaryKey(),
         url: text().notNull(),
         title: text(),
-        description: text(),
         platform: text().notNull(),
         thumbnailUrl: text('thumbnail_url'),
-        scheduleType: text('schedule_type').notNull(), // 'daily' | 'weekly' | 'custom' | 'none'
-        scheduleValue: jsonb('schedule_value').notNull(), // { interval: number } or { days: string[] } or {}
+        scheduleType: text('schedule_type').notNull(), // 'daily' | 'weekly' | 'custom' | 'dates' | 'none'
+        scheduleValue: jsonb('schedule_value').notNull(), // { interval: number } or { days: string[], time?: string } or {}
         startDate: timestamp('start_date').notNull(),
         endDate: timestamp('end_date'),
         lastWatchedAt: timestamp('last_watched_at'),
-        missedPeriods: integer('missed_periods').default(0).notNull(),
         nextEpisodeAt: timestamp('next_episode_at').notNull(),
         isActive: boolean('is_active').default(true).notNull(),
         // Episode progress tracking
-        totalEpisodes: integer('total_episodes'), // nullable - not all series have known totals
-        watchedEpisodes: integer('watched_episodes').default(0).notNull(),
+        episodesAired: integer('episodes_aired').default(0).notNull(),
+        episodesRemaining: integer('episodes_remaining'), // nullable - undefined means unknown
+        episodesWatched: integer('episodes_watched').default(0).notNull(),
         isWatched: boolean('is_watched').default(false).notNull(), // marks series as finished
-        autoAdvanceTotalEpisodes: boolean('auto_advance_total_episodes')
-            .default(false)
-            .notNull(),
         hasSeasons: boolean('has_seasons').default(false).notNull(),
         sortOrder: integer('sort_order').default(0).notNull(),
         createdAt: timestamp('created_at').defaultNow(),
@@ -215,15 +211,12 @@ export const seasons = pgTable(
         startDate: timestamp('start_date').notNull(),
         endDate: timestamp('end_date'),
         lastWatchedAt: timestamp('last_watched_at'),
-        missedPeriods: integer('missed_periods').default(0).notNull(),
         nextEpisodeAt: timestamp('next_episode_at').notNull(),
         isActive: boolean('is_active').default(true).notNull(),
-        totalEpisodes: integer('total_episodes'),
-        watchedEpisodes: integer('watched_episodes').default(0).notNull(),
+        episodesAired: integer('episodes_aired').default(0).notNull(),
+        episodesRemaining: integer('episodes_remaining'),
+        episodesWatched: integer('episodes_watched').default(0).notNull(),
         isWatched: boolean('is_watched').default(false).notNull(),
-        autoAdvanceTotalEpisodes: boolean('auto_advance_total_episodes')
-            .default(false)
-            .notNull(),
         sortOrder: integer('sort_order').default(0).notNull(),
         createdAt: timestamp('created_at').defaultNow(),
         updatedAt: timestamp('updated_at').defaultNow(),
