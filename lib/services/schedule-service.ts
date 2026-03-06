@@ -1,5 +1,6 @@
 import {
     addHKTDays,
+    createDateInHKT,
     createSentinelDate,
     getHKTDayOfWeek,
     parseToHKT,
@@ -42,7 +43,59 @@ const DAY_NAMES: DayOfWeek[] = [
  */
 export class ScheduleService {
     /**
-     * Calculate the next episode date based on schedule
+     * Parse HKT time string (e.g. "20:00") into hours and minutes.
+     * Returns null if the time string is missing or invalid.
+     */
+    private static parseTimeOfDay(
+        scheduleValue: ScheduleValue,
+    ): { hour: number; minute: number } | null {
+        const time = (scheduleValue as { time?: string }).time
+        if (!time || !/^\d{2}:\d{2}$/.test(time)) return null
+        const [hour, minute] = time.split(':').map(Number)
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null
+        return { hour, minute }
+    }
+
+    /**
+     * Apply time-of-day to a date computed by schedule logic.
+     * If `scheduleValue` has a `time` field (HKT), the returned date's
+     * HKT hours/minutes are set to that time. Otherwise returns as-is.
+     */
+    private static applyTimeOfDay(
+        date: Date,
+        scheduleValue: ScheduleValue,
+    ): Date {
+        const tod = ScheduleService.parseTimeOfDay(scheduleValue)
+        if (!tod) return date
+
+        // Extract HKT date parts from `date`, then rebuild with the specified time
+        const hkt = toHKT(date)
+        // Get year/month/day from the HKT representation
+        const fmt = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Hong_Kong',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour12: false,
+        })
+        const parts = fmt.formatToParts(hkt)
+        const get = (type: string): number =>
+            parseInt(parts.find((p) => p.type === type)?.value || '0', 10)
+        return createDateInHKT(
+            get('year'),
+            get('month'),
+            get('day'),
+            tod.hour,
+            tod.minute,
+            0,
+            0,
+        )
+    }
+
+    /**
+     * Calculate the next episode date based on schedule.
+     * When the schedule includes a `time` field (HKT time-of-day),
+     * the returned date is set to that specific time.
      */
     static calculateNextEpisodeDate(
         scheduleType: ScheduleType,
@@ -58,31 +111,40 @@ export class ScheduleService {
         // Convert to HKT timezone
         const localDate = toHKT(fromDate)
 
+        let result: Date
         switch (scheduleType) {
             case 'daily':
             case 'custom': {
                 const interval = (scheduleValue as DailySchedule).interval
-                return addHKTDays(localDate, interval)
+                result = addHKTDays(localDate, interval)
+                break
             }
             case 'weekly': {
                 const days = (scheduleValue as WeeklySchedule).days
-                return ScheduleService.getNextWeeklyDate(localDate, days)
+                result = ScheduleService.getNextWeeklyDate(localDate, days)
+                break
             }
             case 'dates': {
                 const entries = (scheduleValue as DatesSchedule).entries
-                return ScheduleService.getNextDatesScheduleDate(
+                result = ScheduleService.getNextDatesScheduleDate(
                     localDate,
                     entries,
                 )
+                break
             }
             default:
                 throw new Error(`Unknown schedule type: ${scheduleType}`)
         }
+
+        // Apply time-of-day if specified
+        return ScheduleService.applyTimeOfDay(result, scheduleValue)
     }
 
     /**
      * Calculate how many new episodes have aired since a given date.
      * Used by the cron job to increment episodesAired.
+     * When the schedule has a `time` field, episodes only count as aired
+     * after that HKT time on the scheduled day.
      */
     static calculateNewEpisodesSinceDate(
         sinceDate: Date,
@@ -104,6 +166,7 @@ export class ScheduleService {
             return 0
         }
 
+        const tod = ScheduleService.parseTimeOfDay(scheduleValue)
         const diffMs = localNow.getTime() - localSince.getTime()
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
@@ -111,7 +174,27 @@ export class ScheduleService {
             case 'daily':
             case 'custom': {
                 const interval = (scheduleValue as DailySchedule).interval
-                return Math.floor(diffDays / interval) + 1
+                if (!tod) {
+                    return Math.floor(diffDays / interval) + 1
+                }
+                // With time-of-day: count scheduled dates whose HKT time has passed
+                let count = 0
+                let dayOffset = 0
+                while (dayOffset <= diffDays + 1) {
+                    const checkDate = addHKTDays(localSince, dayOffset)
+                    const withTime = ScheduleService.applyTimeOfDay(
+                        checkDate,
+                        scheduleValue,
+                    )
+                    if (
+                        withTime.getTime() >= localSince.getTime() &&
+                        withTime.getTime() <= localNow.getTime()
+                    ) {
+                        count++
+                    }
+                    dayOffset += interval
+                }
+                return count
             }
             case 'weekly': {
                 const days = (scheduleValue as WeeklySchedule).days
@@ -123,7 +206,18 @@ export class ScheduleService {
                     if (checkDate.getTime() > localNow.getTime()) break
                     const dayName = DAY_NAMES[getHKTDayOfWeek(checkDate)]
                     if (days.includes(dayName)) {
-                        count++
+                        if (tod) {
+                            // Only count if the specific time has passed
+                            const withTime = ScheduleService.applyTimeOfDay(
+                                checkDate,
+                                scheduleValue,
+                            )
+                            if (withTime.getTime() <= localNow.getTime()) {
+                                count++
+                            }
+                        } else {
+                            count++
+                        }
                     }
                     i++
                 }
@@ -134,7 +228,13 @@ export class ScheduleService {
                 // Count total episodes from dates that have passed
                 let count = 0
                 for (const entry of entries) {
-                    const entryDate = parseToHKT(entry.date)
+                    let entryDate = parseToHKT(entry.date)
+                    if (tod) {
+                        entryDate = ScheduleService.applyTimeOfDay(
+                            entryDate,
+                            scheduleValue,
+                        )
+                    }
                     if (
                         entryDate.getTime() <= localNow.getTime() &&
                         entryDate.getTime() >= localSince.getTime()
@@ -150,47 +250,56 @@ export class ScheduleService {
     }
 
     /**
-     * Format schedule for display
+     * Format schedule for display.
+     * Appends "at HH:MM HKT" when a time-of-day is set.
      */
     static formatScheduleDisplay(
         scheduleType: ScheduleType,
         scheduleValue: ScheduleValue,
     ): string {
+        const tod = ScheduleService.parseTimeOfDay(scheduleValue)
+        const timeSuffix = tod
+            ? ` at ${String(tod.hour).padStart(2, '0')}:${String(tod.minute).padStart(2, '0')} HKT`
+            : ''
+
         switch (scheduleType) {
             case 'none':
                 return 'No schedule'
             case 'daily': {
                 const interval = (scheduleValue as DailySchedule).interval
                 if (interval === 1) {
-                    return 'Every day'
+                    return `Every day${timeSuffix}`
                 }
-                return `Every ${interval} days`
+                return `Every ${interval} days${timeSuffix}`
             }
             case 'weekly': {
                 const days = (scheduleValue as WeeklySchedule).days
                 const capitalizedDays = days.map(
                     (d) => d.charAt(0).toUpperCase() + d.slice(1),
                 )
+                let base: string
                 if (days.length === 1) {
-                    return `Every ${capitalizedDays[0]}`
+                    base = `Every ${capitalizedDays[0]}`
+                } else if (days.length === 2) {
+                    base = `Every ${capitalizedDays[0]} and ${capitalizedDays[1]}`
+                } else {
+                    base = `Every ${capitalizedDays.slice(0, -1).join(', ')}, and ${capitalizedDays[capitalizedDays.length - 1]}`
                 }
-                if (days.length === 2) {
-                    return `Every ${capitalizedDays[0]} and ${capitalizedDays[1]}`
-                }
-                return `Every ${capitalizedDays.slice(0, -1).join(', ')}, and ${capitalizedDays[capitalizedDays.length - 1]}`
+                return `${base}${timeSuffix}`
             }
             case 'custom': {
                 const interval = (scheduleValue as DailySchedule).interval
+                let base: string
                 if (interval === 7) {
-                    return 'Every week'
+                    base = 'Every week'
+                } else if (interval === 14) {
+                    base = 'Every 2 weeks'
+                } else if (interval % 7 === 0) {
+                    base = `Every ${interval / 7} weeks`
+                } else {
+                    base = `Every ${interval} days`
                 }
-                if (interval === 14) {
-                    return 'Every 2 weeks'
-                }
-                if (interval % 7 === 0) {
-                    return `Every ${interval / 7} weeks`
-                }
-                return `Every ${interval} days`
+                return `${base}${timeSuffix}`
             }
             case 'dates': {
                 const entries = (scheduleValue as DatesSchedule).entries
@@ -201,7 +310,7 @@ export class ScheduleService {
                     (sum, e) => sum + e.episodes,
                     0,
                 )
-                return `${entries.length} dates (${totalEpisodes} episodes)`
+                return `${entries.length} dates (${totalEpisodes} episodes)${timeSuffix}`
             }
             default:
                 return 'Unknown schedule'

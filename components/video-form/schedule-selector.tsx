@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, CalendarDays, Plus, Trash2 } from 'lucide-react'
+import { Archive, CalendarDays, Clock, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -55,11 +55,33 @@ export function ScheduleSelector({
 
     const handleIntervalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const interval = Math.max(1, parseInt(e.target.value, 10) || 1)
-        onValueChange({ interval })
+        const currentTime = (scheduleValue as { time?: string }).time
+        onValueChange({
+            interval,
+            ...(currentTime ? { time: currentTime } : {}),
+        })
+    }
+
+    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const time = e.target.value // "HH:MM" or ""
+        if (time) {
+            // Spread current value and add time — safe because this is only
+            // shown for non-backlog types (DailySchedule | WeeklySchedule | etc.)
+            const updated = { ...scheduleValue, time } as ScheduleValue
+            onValueChange(updated)
+        } else {
+            // Remove time field
+            const { time: _removed, ...rest } = scheduleValue as Record<
+                string,
+                unknown
+            >
+            onValueChange(rest as ScheduleValue)
+        }
     }
 
     const handleDayToggle = (day: DayOfWeek) => {
         const currentDays = (scheduleValue as WeeklySchedule).days || []
+        const currentTime = (scheduleValue as { time?: string }).time
         let newDays: DayOfWeek[]
 
         if (currentDays.includes(day)) {
@@ -73,7 +95,10 @@ export function ScheduleSelector({
             newDays = [...currentDays, day]
         }
 
-        onValueChange({ days: newDays })
+        onValueChange({
+            days: newDays,
+            ...(currentTime ? { time: currentTime } : {}),
+        })
     }
 
     // Handlers for dates schedule
@@ -363,6 +388,51 @@ export function ScheduleSelector({
                             ))}
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Time of day picker - shown for all non-backlog schedule types */}
+            {scheduleType !== 'none' && (
+                <div className='space-y-2'>
+                    <Label
+                        htmlFor='schedule-time'
+                        className='flex items-center gap-1.5'
+                    >
+                        <Clock className='w-3.5 h-3.5' />
+                        Air time (HKT)
+                    </Label>
+                    <div className='flex items-center gap-2'>
+                        <Input
+                            id='schedule-time'
+                            type='time'
+                            value={
+                                (scheduleValue as { time?: string }).time || ''
+                            }
+                            onChange={handleTimeChange}
+                            disabled={disabled}
+                            className='w-32 h-9'
+                        />
+                        {(scheduleValue as { time?: string }).time && (
+                            <Button
+                                type='button'
+                                variant='ghost'
+                                size='sm'
+                                onClick={() =>
+                                    handleTimeChange({
+                                        target: { value: '' },
+                                    } as React.ChangeEvent<HTMLInputElement>)
+                                }
+                                disabled={disabled}
+                                className='h-9 px-2 text-xs text-muted-foreground'
+                            >
+                                Clear
+                            </Button>
+                        )}
+                    </div>
+                    <p className='text-xs text-muted-foreground'>
+                        Optional. When set, episodes count as aired at this
+                        specific time.
+                    </p>
                 </div>
             )}
 
