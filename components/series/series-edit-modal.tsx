@@ -42,14 +42,12 @@ interface SeriesEditModalProps {
 
 const editSchema = z.object({
     title: z.string().min(1, 'Title is required'),
-    description: z.string().optional(),
     thumbnailUrl: z.string().optional(),
     tagIds: z.array(z.number()),
     isActive: z.boolean(),
-    totalEpisodes: z.string().optional(),
-    watchedEpisodes: z.string().optional(),
-    missedPeriods: z.string().optional(),
-    autoAdvanceTotalEpisodes: z.boolean(),
+    episodesAired: z.string().optional(),
+    episodesRemaining: z.string().optional(),
+    episodesWatched: z.string().optional(),
 })
 
 type EditFormData = z.infer<typeof editSchema>
@@ -66,10 +64,9 @@ interface LocalSeason {
     startDate: string
     endDate: string | undefined
     isActive: boolean
-    totalEpisodes: string
-    watchedEpisodes: string
-    missedPeriods: string
-    autoAdvanceTotalEpisodes: boolean
+    episodesAired: string
+    episodesRemaining: string
+    episodesWatched: string
 }
 
 function makeBlankSeason(seasonNumber: number): LocalSeason {
@@ -82,10 +79,9 @@ function makeBlankSeason(seasonNumber: number): LocalSeason {
         startDate: new Date().toISOString().split('T')[0],
         endDate: undefined,
         isActive: true,
-        totalEpisodes: '',
-        watchedEpisodes: '0',
-        missedPeriods: '0',
-        autoAdvanceTotalEpisodes: false,
+        episodesAired: '0',
+        episodesRemaining: '',
+        episodesWatched: '0',
     }
 }
 
@@ -100,22 +96,22 @@ function apiSeasonToLocal(s: Season): LocalSeason {
         startDate: s.startDate?.split('T')[0] || '',
         endDate: s.endDate?.split('T')[0],
         isActive: s.isActive,
-        totalEpisodes: s.totalEpisodes != null ? String(s.totalEpisodes) : '',
-        watchedEpisodes: String(s.watchedEpisodes ?? 0),
-        missedPeriods: String(s.missedPeriods ?? 0),
-        autoAdvanceTotalEpisodes: s.autoAdvanceTotalEpisodes ?? false,
+        episodesAired: String(s.episodesAired ?? 0),
+        episodesRemaining:
+            s.episodesRemaining != null ? String(s.episodesRemaining) : '',
+        episodesWatched: String(s.episodesWatched ?? 0),
     }
 }
 
 function localSeasonToBulk(s: LocalSeason): BulkSeasonData {
-    const totalEpisodes = s.totalEpisodes
-        ? parseInt(s.totalEpisodes, 10)
+    const episodesAired = s.episodesAired
+        ? parseInt(s.episodesAired, 10)
         : undefined
-    const watchedEpisodes = s.watchedEpisodes
-        ? parseInt(s.watchedEpisodes, 10)
+    const episodesRemaining = s.episodesRemaining
+        ? parseInt(s.episodesRemaining, 10)
         : undefined
-    const missedPeriods = s.missedPeriods
-        ? parseInt(s.missedPeriods, 10)
+    const episodesWatched = s.episodesWatched
+        ? parseInt(s.episodesWatched, 10)
         : undefined
 
     return {
@@ -128,19 +124,18 @@ function localSeasonToBulk(s: LocalSeason): BulkSeasonData {
         startDate: s.startDate,
         endDate: s.endDate || null,
         isActive: s.isActive,
-        totalEpisodes:
-            totalEpisodes !== undefined && !Number.isNaN(totalEpisodes)
-                ? totalEpisodes
+        episodesAired:
+            episodesAired !== undefined && !Number.isNaN(episodesAired)
+                ? episodesAired
+                : 0,
+        episodesRemaining:
+            episodesRemaining !== undefined && !Number.isNaN(episodesRemaining)
+                ? episodesRemaining
                 : null,
-        watchedEpisodes:
-            watchedEpisodes !== undefined && !Number.isNaN(watchedEpisodes)
-                ? watchedEpisodes
+        episodesWatched:
+            episodesWatched !== undefined && !Number.isNaN(episodesWatched)
+                ? episodesWatched
                 : 0,
-        missedPeriods:
-            missedPeriods !== undefined && !Number.isNaN(missedPeriods)
-                ? missedPeriods
-                : 0,
-        autoAdvanceTotalEpisodes: s.autoAdvanceTotalEpisodes,
     }
 }
 
@@ -177,11 +172,6 @@ export function SeriesEditModal({
     )
     const [endDate, setEndDate] = useState<string | undefined>(undefined)
 
-    // Store original values when modal opens (baseline for auto-advance calculations)
-    const [originalTotal, setOriginalTotal] = useState<number>(0)
-    const [originalWatched, setOriginalWatched] = useState<number>(0)
-    const [originalMissed, setOriginalMissed] = useState<number>(0)
-
     const {
         register,
         handleSubmit,
@@ -193,14 +183,12 @@ export function SeriesEditModal({
         resolver: zodResolver(editSchema),
         defaultValues: {
             title: '',
-            description: '',
             thumbnailUrl: '',
             tagIds: [],
             isActive: true,
-            totalEpisodes: '',
-            watchedEpisodes: '',
-            missedPeriods: '0',
-            autoAdvanceTotalEpisodes: false,
+            episodesAired: '0',
+            episodesRemaining: '',
+            episodesWatched: '0',
         },
     })
 
@@ -209,62 +197,27 @@ export function SeriesEditModal({
         formTagIds.includes(tag.id),
     )
 
-    // Handle missed periods change - updates total and watched episodes
-    const handleMissedPeriodsChange = (value: string) => {
-        if (!series) return
-
-        const newMissed = parseInt(value || '0', 10)
-
-        // Always update the missed periods value
-        setValue('missedPeriods', value)
-
-        // Update total episodes (only when above original)
-        if (newMissed > originalMissed) {
-            const newTotal = originalTotal + (newMissed - originalMissed)
-            setValue('totalEpisodes', String(newTotal))
-        } else {
-            setValue('totalEpisodes', String(originalTotal))
-        }
-
-        // Update watched episodes (only when below original)
-        if (newMissed < originalMissed) {
-            const newWatched = originalWatched + (originalMissed - newMissed)
-            setValue('watchedEpisodes', String(newWatched))
-        } else {
-            setValue('watchedEpisodes', String(originalWatched))
-        }
-    }
-
     // Reset form when series changes
     useEffect(() => {
         if (series && open) {
             // Set series-level fields
             reset({
                 title: series.title || '',
-                description: series.description || '',
                 thumbnailUrl: series.thumbnailUrl || '',
                 tagIds: series.tags?.map((t) => t.id) || [],
                 isActive: series.isActive,
-                totalEpisodes:
-                    series.totalEpisodes != null
-                        ? String(series.totalEpisodes)
+                episodesAired: String(series.episodesAired ?? 0),
+                episodesRemaining:
+                    series.episodesRemaining != null
+                        ? String(series.episodesRemaining)
                         : '',
-                watchedEpisodes:
-                    series.watchedEpisodes != null
-                        ? String(series.watchedEpisodes)
-                        : '',
-                missedPeriods: String(series.missedPeriods ?? 0),
-                autoAdvanceTotalEpisodes:
-                    series.autoAdvanceTotalEpisodes ?? false,
+                episodesWatched: String(series.episodesWatched ?? 0),
             })
             setScheduleType(series.scheduleType as ScheduleType)
             setScheduleValue(series.scheduleValue)
             setStartDate(series.startDate?.split('T')[0])
             setEndDate(series.endDate?.split('T')[0])
             setTagInput('')
-            setOriginalTotal(series.totalEpisodes ?? 0)
-            setOriginalWatched(series.watchedEpisodes ?? 0)
-            setOriginalMissed(series.missedPeriods ?? 0)
 
             // Set active tab based on current series state
             setActiveTab(series.hasSeasons ? 'seasons' : 'single')
@@ -391,19 +344,18 @@ export function SeriesEditModal({
         try {
             if (activeTab === 'single') {
                 // Single mode: save everything to series, clear seasons
-                const totalEpisodes = data.totalEpisodes
-                    ? parseInt(data.totalEpisodes, 10)
-                    : null
-                const watchedEpisodes = data.watchedEpisodes
-                    ? parseInt(data.watchedEpisodes, 10)
-                    : null
-                const missedPeriods = data.missedPeriods
-                    ? parseInt(data.missedPeriods, 10)
-                    : null
+                const episodesAired = data.episodesAired
+                    ? parseInt(data.episodesAired, 10)
+                    : undefined
+                const episodesRemaining = data.episodesRemaining
+                    ? parseInt(data.episodesRemaining, 10)
+                    : undefined
+                const episodesWatched = data.episodesWatched
+                    ? parseInt(data.episodesWatched, 10)
+                    : undefined
 
                 await SeriesService.update(series.id, {
                     title: data.title,
-                    description: data.description || undefined,
                     thumbnailUrl: data.thumbnailUrl || undefined,
                     scheduleType,
                     scheduleValue,
@@ -411,27 +363,27 @@ export function SeriesEditModal({
                     endDate: endDate || null,
                     tagIds: data.tagIds,
                     isActive: data.isActive,
-                    totalEpisodes:
-                        totalEpisodes !== null && !Number.isNaN(totalEpisodes)
-                            ? totalEpisodes
+                    episodesAired:
+                        episodesAired !== undefined &&
+                        !Number.isNaN(episodesAired)
+                            ? episodesAired
                             : undefined,
-                    watchedEpisodes:
-                        watchedEpisodes !== null &&
-                        !Number.isNaN(watchedEpisodes)
-                            ? watchedEpisodes
+                    episodesRemaining:
+                        episodesRemaining !== undefined &&
+                        !Number.isNaN(episodesRemaining)
+                            ? episodesRemaining
+                            : null,
+                    episodesWatched:
+                        episodesWatched !== undefined &&
+                        !Number.isNaN(episodesWatched)
+                            ? episodesWatched
                             : undefined,
-                    missedPeriods:
-                        missedPeriods !== null && !Number.isNaN(missedPeriods)
-                            ? missedPeriods
-                            : undefined,
-                    autoAdvanceTotalEpisodes: data.autoAdvanceTotalEpisodes,
                     hasSeasons: false,
                 })
             } else {
                 // Seasons mode: save series-level fields + bulk seasons
                 await SeriesService.update(series.id, {
                     title: data.title,
-                    description: data.description || undefined,
                     thumbnailUrl: data.thumbnailUrl || undefined,
                     tagIds: data.tagIds,
                     hasSeasons: localSeasons.length > 0,
@@ -480,17 +432,6 @@ export function SeriesEditModal({
                         )}
                     </div>
 
-                    {/* Description */}
-                    <div className='space-y-2'>
-                        <Label htmlFor='description'>Description</Label>
-                        <Input
-                            id='description'
-                            {...register('description')}
-                            placeholder='Enter series description (optional)'
-                            disabled={isSubmitting}
-                        />
-                    </div>
-
                     {/* Thumbnail URL */}
                     <div className='space-y-2'>
                         <Label htmlFor='thumbnailUrl'>Thumbnail URL</Label>
@@ -525,7 +466,7 @@ export function SeriesEditModal({
                         onTabChange={setActiveTab}
                     />
 
-                    {/* ===== Single tab — existing form, untouched ===== */}
+                    {/* ===== Single tab ===== */}
                     {activeTab === 'single' && (
                         <>
                             <div className='space-y-4 p-4 bg-muted/50 rounded-lg'>
@@ -537,7 +478,7 @@ export function SeriesEditModal({
                                     onValueChange={setScheduleValue}
                                     onEndDateChange={setEndDate}
                                     onTotalEpisodesChange={(value) =>
-                                        setValue('totalEpisodes', value)
+                                        setValue('episodesRemaining', value)
                                     }
                                     disabled={isSubmitting}
                                 />
@@ -599,98 +540,51 @@ export function SeriesEditModal({
                                 </h3>
                                 <p className='text-sm text-muted-foreground'>
                                     Track your progress through the series
-                                    (optional)
                                 </p>
-                                <div className='grid grid-cols-2 gap-4'>
+                                <div className='grid grid-cols-3 gap-4'>
                                     <div className='space-y-2'>
-                                        <Label htmlFor='watchedEpisodes'>
-                                            Watched Episodes
+                                        <Label htmlFor='episodesAired'>
+                                            Episodes Aired
                                         </Label>
                                         <Input
-                                            id='watchedEpisodes'
+                                            id='episodesAired'
                                             type='number'
                                             min='0'
-                                            {...register('watchedEpisodes')}
+                                            {...register('episodesAired')}
                                             placeholder='0'
                                             disabled={isSubmitting}
                                         />
                                     </div>
                                     <div className='space-y-2'>
-                                        <Label htmlFor='totalEpisodes'>
-                                            {scheduleType === 'dates'
-                                                ? 'Total Episodes (Auto)'
-                                                : 'Total Episodes'}
+                                        <Label htmlFor='episodesWatched'>
+                                            Episodes Watched
                                         </Label>
                                         <Input
-                                            id='totalEpisodes'
+                                            id='episodesWatched'
                                             type='number'
                                             min='0'
-                                            {...register('totalEpisodes')}
-                                            placeholder={
-                                                scheduleType === 'dates'
-                                                    ? 'Calculated from dates'
-                                                    : 'Unknown'
-                                            }
+                                            {...register('episodesWatched')}
+                                            placeholder='0'
+                                            disabled={isSubmitting}
+                                        />
+                                    </div>
+                                    <div className='space-y-2'>
+                                        <Label htmlFor='episodesRemaining'>
+                                            {scheduleType === 'dates'
+                                                ? 'Remaining (Auto)'
+                                                : 'Remaining'}
+                                        </Label>
+                                        <Input
+                                            id='episodesRemaining'
+                                            type='number'
+                                            min='0'
+                                            {...register('episodesRemaining')}
+                                            placeholder='Unknown'
                                             disabled={
                                                 isSubmitting ||
                                                 scheduleType === 'dates'
                                             }
                                         />
-                                    </div>
-                                </div>
-
-                                {/* Missed Periods - only for scheduled series */}
-                                {scheduleType !== 'none' && (
-                                    <div className='space-y-2'>
-                                        <Label htmlFor='missedPeriods'>
-                                            Missed Episodes
-                                        </Label>
-                                        <Input
-                                            id='missedPeriods'
-                                            type='number'
-                                            min='0'
-                                            value={watch('missedPeriods')}
-                                            onChange={(e) =>
-                                                handleMissedPeriodsChange(
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder='0'
-                                            disabled={isSubmitting}
-                                        />
-                                        <p className='text-xs text-muted-foreground'>
-                                            Number of episodes behind schedule
-                                        </p>
-                                        <p className='text-xs text-amber-600 dark:text-amber-400'>
-                                            Changing this will override Total
-                                            and Watched episodes
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Auto Advance Total Episodes */}
-                                <div className='flex items-start space-x-2 pt-2'>
-                                    <input
-                                        type='checkbox'
-                                        id='autoAdvanceTotalEpisodes'
-                                        {...register(
-                                            'autoAdvanceTotalEpisodes',
-                                        )}
-                                        disabled={isSubmitting}
-                                        className='h-4 w-4 rounded border-gray-300 mt-1'
-                                    />
-                                    <div className='space-y-1'>
-                                        <Label
-                                            htmlFor='autoAdvanceTotalEpisodes'
-                                            className='cursor-pointer'
-                                        >
-                                            Auto-advance total episodes
-                                        </Label>
-                                        <p className='text-xs text-muted-foreground'>
-                                            Automatically increase total
-                                            episodes when new episodes are
-                                            released
-                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -844,7 +738,7 @@ export function SeriesEditModal({
                                         }
                                         onTotalEpisodesChange={(val) =>
                                             updateSelectedSeason({
-                                                totalEpisodes: val,
+                                                episodesRemaining: val,
                                             })
                                         }
                                         disabled={isSubmitting}
@@ -905,18 +799,18 @@ export function SeriesEditModal({
                                     </div>
 
                                     {/* Episode Progress */}
-                                    <div className='grid grid-cols-2 gap-3'>
+                                    <div className='grid grid-cols-3 gap-3'>
                                         <div className='space-y-2'>
-                                            <Label>Total Episodes</Label>
+                                            <Label>Episodes Aired</Label>
                                             <Input
                                                 type='number'
                                                 min='0'
                                                 value={
-                                                    selectedSeason.totalEpisodes
+                                                    selectedSeason.episodesAired
                                                 }
                                                 onChange={(e) =>
                                                     updateSelectedSeason({
-                                                        totalEpisodes:
+                                                        episodesAired:
                                                             e.target.value,
                                                     })
                                                 }
@@ -924,74 +818,39 @@ export function SeriesEditModal({
                                             />
                                         </div>
                                         <div className='space-y-2'>
-                                            <Label>Watched Episodes</Label>
+                                            <Label>Watched</Label>
                                             <Input
                                                 type='number'
                                                 min='0'
                                                 value={
-                                                    selectedSeason.watchedEpisodes
+                                                    selectedSeason.episodesWatched
                                                 }
                                                 onChange={(e) =>
                                                     updateSelectedSeason({
-                                                        watchedEpisodes:
+                                                        episodesWatched:
                                                             e.target.value,
                                                     })
                                                 }
                                                 disabled={isSubmitting}
                                             />
                                         </div>
-                                    </div>
-
-                                    {/* Missed Periods */}
-                                    {selectedSeason.scheduleType !== 'none' && (
                                         <div className='space-y-2'>
-                                            <Label>Missed Episodes</Label>
+                                            <Label>Remaining</Label>
                                             <Input
                                                 type='number'
                                                 min='0'
                                                 value={
-                                                    selectedSeason.missedPeriods
+                                                    selectedSeason.episodesRemaining
                                                 }
                                                 onChange={(e) =>
                                                     updateSelectedSeason({
-                                                        missedPeriods:
+                                                        episodesRemaining:
                                                             e.target.value,
                                                     })
                                                 }
+                                                placeholder='Unknown'
                                                 disabled={isSubmitting}
                                             />
-                                        </div>
-                                    )}
-
-                                    {/* Auto Advance */}
-                                    <div className='flex items-start space-x-2 pt-2'>
-                                        <input
-                                            type='checkbox'
-                                            id={`season-autoadvance-${selectedSeasonIdx}`}
-                                            checked={
-                                                selectedSeason.autoAdvanceTotalEpisodes
-                                            }
-                                            onChange={(e) =>
-                                                updateSelectedSeason({
-                                                    autoAdvanceTotalEpisodes:
-                                                        e.target.checked,
-                                                })
-                                            }
-                                            disabled={isSubmitting}
-                                            className='h-4 w-4 rounded border-gray-300 mt-1'
-                                        />
-                                        <div className='space-y-1'>
-                                            <Label
-                                                htmlFor={`season-autoadvance-${selectedSeasonIdx}`}
-                                                className='cursor-pointer'
-                                            >
-                                                Auto-advance total episodes
-                                            </Label>
-                                            <p className='text-xs text-muted-foreground'>
-                                                Automatically increase total
-                                                episodes when new episodes are
-                                                released
-                                            </p>
                                         </div>
                                     </div>
                                 </div>

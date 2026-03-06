@@ -16,8 +16,10 @@ import type {
     SeriesWithTags,
 } from '@/types/series'
 import {
+    computeEpisodeFields,
     formatProgress,
     getSeriesStatus,
+    getSeriesStatuses,
     isBacklogSeries,
     isSeriesComplete,
 } from '@/types/series'
@@ -35,37 +37,38 @@ interface SeriesCardProps {
 }
 
 /**
- * Get status badge configuration for series
+ * Get status badge configuration for series.
+ * A series can show multiple statuses (e.g. ended + behind).
  */
 function getStatusBadge(series: SeriesWithTags): StatusBadgeConfig {
-    const status = getSeriesStatus(series)
+    const statuses = getSeriesStatuses(series)
     const isComplete = isSeriesComplete(series)
     const progress = formatProgress(series)
+    const { episodesBehind } = computeEpisodeFields(series)
 
-    // Determine badge variant
+    // Determine badge variant based on primary status
     let variant: StatusBadgeConfig['variant']
-    if (status === 'ended') {
-        variant = 'neutral'
-    } else if (status === 'backlog') {
-        variant = isComplete ? 'success' : 'info'
-    } else if (status === 'behind') {
+    if (statuses.includes('behind')) {
         variant = 'error'
+    } else if (statuses.includes('ended')) {
+        variant = 'neutral'
+    } else if (statuses.includes('backlog')) {
+        variant = isComplete ? 'success' : 'info'
     } else {
         variant = 'success'
     }
 
     // Determine display text
     let text: string
-    if (status === 'ended') {
-        text = 'Ended'
-    } else if (status === 'backlog') {
+    if (statuses.includes('backlog')) {
         text = isComplete ? 'Complete' : progress || 'Backlog'
+    } else if (episodesBehind > 0) {
+        const suffix = statuses.includes('ended') ? ' (Ended)' : ''
+        text = `${episodesBehind} Behind${suffix}`
+    } else if (statuses.includes('ended')) {
+        text = 'Ended'
     } else {
-        text = ScheduleService.formatMissedPeriods(
-            series.missedPeriods,
-            series.scheduleType as ScheduleType,
-            series.scheduleValue as ScheduleValue,
-        )
+        text = 'Caught Up'
     }
 
     return { text, variant }
@@ -77,6 +80,7 @@ function getStatusBadge(series: SeriesWithTags): StatusBadgeConfig {
 function buildMetadata(series: SeriesWithTags): MediaMetadataItem[] {
     const isBacklog = isBacklogSeries(series)
     const progress = formatProgress(series)
+    const { episodesBehind } = computeEpisodeFields(series)
     const scheduleDisplay = ScheduleService.formatScheduleDisplay(
         series.scheduleType as ScheduleType,
         series.scheduleValue as ScheduleValue,
@@ -98,12 +102,12 @@ function buildMetadata(series: SeriesWithTags): MediaMetadataItem[] {
         color: 'orange',
     })
 
-    // Show MISSED only for recurring series
+    // Show BEHIND only for recurring series
     if (!isBacklog) {
         metadata.push({
-            key: 'MISSED',
-            value: series.missedPeriods,
-            color: series.missedPeriods > 0 ? 'red' : 'green',
+            key: 'BEHIND',
+            value: episodesBehind,
+            color: episodesBehind > 0 ? 'red' : 'green',
         })
     }
 
@@ -185,8 +189,8 @@ export function SeriesCard({
         })
     }
 
-    // Increment progress for backlog series
-    if (onIncrementProgress && isBacklog && !series.isWatched) {
+    // Increment progress for any non-watched series (per spec: available for ALL)
+    if (onIncrementProgress && !series.isWatched) {
         primaryActions.push({
             id: 'increment',
             label: '+1 Episode',
@@ -227,8 +231,9 @@ export function SeriesCard({
         })
     }
 
-    // Catch up for recurring series with missed periods
+    // Catch up for recurring series that are behind
     if (onCatchUp && !isBacklog && status !== 'ended' && !series.isWatched) {
+        const { episodesBehind } = computeEpisodeFields(series)
         secondaryActions.push({
             id: 'catch-up',
             label: 'catchUp()',
@@ -242,7 +247,7 @@ export function SeriesCard({
             },
             variant: 'ghost',
             loading: loadingCatchUp,
-            condition: series.missedPeriods > 0,
+            condition: episodesBehind > 0,
         })
     }
 
@@ -265,12 +270,12 @@ export function SeriesCard({
         : undefined
 
     // Calculate progress for series with known episode count
+    const computed = computeEpisodeFields(series)
     const showProgress =
-        series.totalEpisodes !== null &&
-        series.totalEpisodes !== undefined &&
-        series.totalEpisodes > 0
-    const progressCurrent = series.watchedEpisodes || 0
-    const progressTotal = series.totalEpisodes || 0
+        computed.episodesTotal > 0 ||
+        (series.episodesAired > 0 && series.episodesRemaining !== null)
+    const progressCurrent = series.episodesWatched
+    const progressTotal = computed.episodesTotal
 
     return (
         <MediaCard

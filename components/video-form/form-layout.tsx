@@ -70,10 +70,8 @@ export function FormLayout({
         new Date().toISOString().split('T')[0],
     )
     const [endDate, setEndDate] = useState<string | undefined>(undefined)
-    const [totalEpisodes, setTotalEpisodes] = useState<string>('')
+    const [episodesRemaining, setEpisodesRemaining] = useState<string>('')
     const [saveAsDefault, setSaveAsDefault] = useState(false)
-    const [autoAdvanceTotalEpisodes, setAutoAdvanceTotalEpisodes] =
-        useState(false)
     const [seriesError, setSeriesError] = useState<string | null>(null)
     const [isSubmittingSeries, setIsSubmittingSeries] = useState(false)
 
@@ -256,10 +254,9 @@ export function FormLayout({
                 startDate,
                 endDate,
                 tagIds: selectedTagIds,
-                totalEpisodes: totalEpisodes
-                    ? parseInt(totalEpisodes, 10)
+                episodesRemaining: episodesRemaining
+                    ? parseInt(episodesRemaining, 10)
                     : undefined,
-                autoAdvanceTotalEpisodes,
             })
 
             // Save as default mode for platform if checked
@@ -625,7 +622,7 @@ export function FormLayout({
                         onTypeChange={setScheduleType}
                         onValueChange={setScheduleValue}
                         onEndDateChange={setEndDate}
-                        onTotalEpisodesChange={setTotalEpisodes}
+                        onTotalEpisodesChange={setEpisodesRemaining}
                         disabled={isSubmitting || isSubmittingSeries}
                     />
 
@@ -660,59 +657,35 @@ export function FormLayout({
                         />
                     </div>
 
-                    {/* Episode Count */}
+                    {/* Episodes Remaining */}
                     <div className='space-y-1.5'>
                         <Label
-                            htmlFor='series-total-episodes'
+                            htmlFor='series-episodes-remaining'
                             className='text-sm'
                         >
                             {scheduleType === 'dates'
-                                ? 'Total Episodes (Auto)'
-                                : 'Total Episodes (Optional)'}
+                                ? 'Episodes Remaining (Auto)'
+                                : 'Episodes Remaining (Optional)'}
                         </Label>
                         <Input
-                            id='series-total-episodes'
+                            id='series-episodes-remaining'
                             type='number'
-                            min='1'
+                            min='0'
                             placeholder={
                                 scheduleType === 'dates'
                                     ? 'Calculated from dates'
                                     : 'e.g., 12 - leave empty if unknown'
                             }
-                            value={totalEpisodes}
-                            onChange={(e) => setTotalEpisodes(e.target.value)}
+                            value={episodesRemaining}
+                            onChange={(e) =>
+                                setEpisodesRemaining(e.target.value)
+                            }
                             disabled={
                                 isSubmitting ||
                                 isSubmittingSeries ||
                                 scheduleType === 'dates'
                             }
                         />
-                    </div>
-
-                    {/* Auto-advance total episodes checkbox */}
-                    <div className='flex items-start space-x-2'>
-                        <input
-                            type='checkbox'
-                            id='auto-advance-episodes'
-                            checked={autoAdvanceTotalEpisodes}
-                            onChange={(e) =>
-                                setAutoAdvanceTotalEpisodes(e.target.checked)
-                            }
-                            disabled={isSubmitting || isSubmittingSeries}
-                            className='h-4 w-4 rounded border-gray-300 mt-1'
-                        />
-                        <div className='space-y-1'>
-                            <Label
-                                htmlFor='auto-advance-episodes'
-                                className='cursor-pointer'
-                            >
-                                Auto-advance total episodes
-                            </Label>
-                            <p className='text-xs text-muted-foreground'>
-                                Automatically increase total episodes when new
-                                episodes are released
-                            </p>
-                        </div>
                     </div>
 
                     {/* Save as default mode checkbox */}

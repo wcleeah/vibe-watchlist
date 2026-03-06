@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { SeriesService } from '@/lib/services/series-service'
 import type { SeriesFilters, SeriesWithTags } from '@/types/series'
+import { computeEpisodeFields } from '@/types/series'
 
 interface UseSeriesReturn {
     series: SeriesWithTags[]
@@ -51,7 +52,7 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
         }
     }, [filters])
 
-    // Catch up - reset missed periods for recurring series
+    // Catch up - set watched = aired for recurring series
     const catchUp = useCallback(
         async (id: number) => {
             try {
@@ -62,7 +63,7 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
                         s.id === id
                             ? {
                                   ...s,
-                                  missedPeriods: 0,
+                                  episodesWatched: s.episodesAired,
                                   lastWatchedAt: new Date(),
                               }
                             : s,
@@ -131,16 +132,16 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
                         s.id === id
                             ? {
                                   ...s,
-                                  watchedEpisodes: result.watchedEpisodes,
+                                  episodesWatched: result.episodesWatched,
                               }
                             : s,
                     ),
                 )
                 // Return whether series is now complete
-                const seriesItem = series.find((s) => s.id === id)
+                const { episodesTotal } = computeEpisodeFields(result)
                 if (
-                    seriesItem?.totalEpisodes &&
-                    result.watchedEpisodes >= seriesItem.totalEpisodes
+                    episodesTotal > 0 &&
+                    result.episodesWatched >= episodesTotal
                 ) {
                     return true
                 }
@@ -156,7 +157,7 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
                 return false
             }
         },
-        [fetchSeries, series],
+        [fetchSeries],
     )
 
     const deleteSeries = useCallback(
