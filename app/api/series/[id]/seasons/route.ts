@@ -128,9 +128,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             scheduleValue,
             startDate,
             endDate,
-            totalEpisodes,
-            watchedEpisodes,
-            autoAdvanceTotalEpisodes,
+            episodesAired,
+            episodesRemaining,
+            episodesWatched,
         } = body
 
         // Validation
@@ -239,12 +239,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 startDate: parsedStartDate,
                 endDate: parsedEndDate,
                 nextEpisodeAt,
-                missedPeriods: 0,
                 isActive: true,
-                totalEpisodes: totalEpisodes ?? null,
-                watchedEpisodes: watchedEpisodes ?? 0,
+                episodesAired: episodesAired ?? 0,
+                episodesRemaining: episodesRemaining ?? null,
+                episodesWatched: episodesWatched ?? 0,
                 isWatched: false,
-                autoAdvanceTotalEpisodes: autoAdvanceTotalEpisodes ?? false,
                 sortOrder: maxSortOrder + 1,
             })
             .returning()

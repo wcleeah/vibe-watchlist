@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         const platform = searchParams.get('platform')
         const search = searchParams.get('search')
         const isWatchedParam = searchParams.get('isWatched') // 'true' or 'false'
-        const sortBy = searchParams.get('sortBy') // 'custom', 'missedPeriods', 'createdAt', 'title'
+        const sortBy = searchParams.get('sortBy') // 'custom', 'episodesBehind', 'createdAt', 'title'
         const sortOrder = searchParams.get('sortOrder') || 'desc' // 'asc' or 'desc'
 
         const whereConditions = []
@@ -37,18 +37,20 @@ export async function GET(request: NextRequest) {
 
         // Filter by status (only applies to active/unwatched series)
         if (status === 'behind') {
+            // Behind = episodesAired > episodesWatched (for scheduled series)
             whereConditions.push(
                 and(
                     eq(series.isActive, true),
-                    gt(series.missedPeriods, 0),
+                    sql`${series.episodesAired} > ${series.episodesWatched}`,
                     sql`${series.scheduleType} != 'none'`,
                 ),
             )
         } else if (status === 'caught-up') {
+            // Caught up = episodesAired <= episodesWatched (for scheduled series)
             whereConditions.push(
                 and(
                     eq(series.isActive, true),
-                    eq(series.missedPeriods, 0),
+                    sql`${series.episodesAired} <= ${series.episodesWatched}`,
                     sql`${series.scheduleType} != 'none'`,
                 ),
             )
@@ -62,24 +64,21 @@ export async function GET(request: NextRequest) {
             whereConditions.push(eq(series.platform, platform))
         }
 
-        // Search in title and description
+        // Search in title
         if (search?.trim()) {
             const searchPattern = `%${search.trim()}%`
-            whereConditions.push(
-                or(
-                    ilike(series.title, searchPattern),
-                    ilike(series.description, searchPattern),
-                ),
-            )
+            whereConditions.push(ilike(series.title, searchPattern))
         }
 
-        // Fetch series without joins
+        // episodesBehind is computed as (episodesAired - episodesWatched)
+        const episodesBehindExpr = sql`(${series.episodesAired} - ${series.episodesWatched})`
+
+        // Fetch series
         const seriesResult = await db
             .select({
                 id: series.id,
                 url: series.url,
                 title: series.title,
-                description: series.description,
                 platform: series.platform,
                 thumbnailUrl: series.thumbnailUrl,
                 scheduleType: series.scheduleType,
@@ -87,13 +86,12 @@ export async function GET(request: NextRequest) {
                 startDate: series.startDate,
                 endDate: series.endDate,
                 lastWatchedAt: series.lastWatchedAt,
-                missedPeriods: series.missedPeriods,
                 nextEpisodeAt: series.nextEpisodeAt,
                 isActive: series.isActive,
-                totalEpisodes: series.totalEpisodes,
-                watchedEpisodes: series.watchedEpisodes,
+                episodesAired: series.episodesAired,
+                episodesRemaining: series.episodesRemaining,
+                episodesWatched: series.episodesWatched,
                 isWatched: series.isWatched,
-                autoAdvanceTotalEpisodes: series.autoAdvanceTotalEpisodes,
                 hasSeasons: series.hasSeasons,
                 createdAt: series.createdAt,
                 updatedAt: series.updatedAt,
@@ -107,11 +105,11 @@ export async function GET(request: NextRequest) {
             .orderBy(
                 // Use sortOrder column only for custom order, otherwise use selected column
                 sortBy === 'custom' || !sortBy
-                    ? sql`${series.sortOrder} ASC, ${series.missedPeriods} DESC, ${series.nextEpisodeAt} ASC`
-                    : sortBy === 'missedPeriods'
+                    ? sql`${series.sortOrder} ASC, ${episodesBehindExpr} DESC, ${series.nextEpisodeAt} ASC`
+                    : sortBy === 'episodesBehind'
                       ? sortOrder === 'asc'
-                          ? sql`${series.missedPeriods} ASC, ${series.nextEpisodeAt} DESC`
-                          : sql`${series.missedPeriods} DESC, ${series.nextEpisodeAt} ASC`
+                          ? sql`${episodesBehindExpr} ASC, ${series.nextEpisodeAt} DESC`
+                          : sql`${episodesBehindExpr} DESC, ${series.nextEpisodeAt} ASC`
                       : sortBy === 'title'
                         ? sortOrder === 'asc'
                             ? sql`${series.title} ASC`
@@ -120,7 +118,7 @@ export async function GET(request: NextRequest) {
                           ? sortOrder === 'asc'
                               ? sql`${series.createdAt} ASC`
                               : sql`${series.createdAt} DESC`
-                          : sql`${series.sortOrder} ASC, ${series.missedPeriods} DESC`,
+                          : sql`${series.sortOrder} ASC, ${episodesBehindExpr} DESC`,
             )
 
         // Fetch all tags for the series in one query
@@ -184,7 +182,6 @@ export async function POST(request: NextRequest) {
         const {
             url,
             title,
-            description,
             platform,
             thumbnailUrl,
             scheduleType,
@@ -192,9 +189,9 @@ export async function POST(request: NextRequest) {
             startDate,
             endDate,
             tagIds,
-            totalEpisodes,
-            watchedEpisodes,
-            autoAdvanceTotalEpisodes,
+            episodesAired,
+            episodesRemaining,
+            episodesWatched,
         } = body
 
         // Validation
@@ -300,7 +297,6 @@ export async function POST(request: NextRequest) {
             .values({
                 url,
                 title: title || null,
-                description: description || null,
                 platform,
                 thumbnailUrl: thumbnailUrl || null,
                 scheduleType,
@@ -308,12 +304,11 @@ export async function POST(request: NextRequest) {
                 startDate: parsedStartDate,
                 endDate: parsedEndDate,
                 nextEpisodeAt,
-                missedPeriods: 0,
+                episodesAired: episodesAired ?? 0,
+                episodesRemaining: episodesRemaining ?? null,
+                episodesWatched: episodesWatched ?? 0,
                 isActive: true,
-                totalEpisodes: totalEpisodes ?? null,
-                watchedEpisodes: watchedEpisodes ?? 0,
                 isWatched: false,
-                autoAdvanceTotalEpisodes: autoAdvanceTotalEpisodes ?? false,
             })
             .returning()
 

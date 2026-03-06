@@ -98,7 +98,7 @@ export class SeasonService {
     }
 
     /**
-     * Catch up on a season (reset missed periods)
+     * Catch up on a season (set episodesWatched = episodesAired)
      */
     static async catchUp(seriesId: number, seasonId: number): Promise<Season> {
         const response = await fetch(

@@ -28,7 +28,6 @@ async function fetchSeriesWithTags(seriesId: number) {
             id: series.id,
             url: series.url,
             title: series.title,
-            description: series.description,
             platform: series.platform,
             thumbnailUrl: series.thumbnailUrl,
             scheduleType: series.scheduleType,
@@ -36,13 +35,12 @@ async function fetchSeriesWithTags(seriesId: number) {
             startDate: series.startDate,
             endDate: series.endDate,
             lastWatchedAt: series.lastWatchedAt,
-            missedPeriods: series.missedPeriods,
             nextEpisodeAt: series.nextEpisodeAt,
             isActive: series.isActive,
-            totalEpisodes: series.totalEpisodes,
-            watchedEpisodes: series.watchedEpisodes,
+            episodesAired: series.episodesAired,
+            episodesRemaining: series.episodesRemaining,
+            episodesWatched: series.episodesWatched,
             isWatched: series.isWatched,
-            autoAdvanceTotalEpisodes: series.autoAdvanceTotalEpisodes,
             hasSeasons: series.hasSeasons,
             sortOrder: series.sortOrder,
             createdAt: series.createdAt,
@@ -145,11 +143,9 @@ async function syncSeasons(seriesId: number, seasonsData: BulkSeasonData[]) {
                     endDate: parsedEndDate,
                     nextEpisodeAt,
                     isActive: s.isActive ?? true,
-                    totalEpisodes: s.totalEpisodes ?? null,
-                    watchedEpisodes: s.watchedEpisodes ?? 0,
-                    missedPeriods: s.missedPeriods ?? 0,
-                    autoAdvanceTotalEpisodes:
-                        s.autoAdvanceTotalEpisodes ?? false,
+                    episodesAired: s.episodesAired ?? 0,
+                    episodesRemaining: s.episodesRemaining ?? null,
+                    episodesWatched: s.episodesWatched ?? 0,
                     sortOrder: i,
                     updatedAt: new Date(),
                 })
@@ -166,12 +162,11 @@ async function syncSeasons(seriesId: number, seasonsData: BulkSeasonData[]) {
                 startDate: parsedStartDate,
                 endDate: parsedEndDate,
                 nextEpisodeAt,
-                missedPeriods: s.missedPeriods ?? 0,
                 isActive: s.isActive ?? true,
-                totalEpisodes: s.totalEpisodes ?? null,
-                watchedEpisodes: s.watchedEpisodes ?? 0,
+                episodesAired: s.episodesAired ?? 0,
+                episodesRemaining: s.episodesRemaining ?? null,
+                episodesWatched: s.episodesWatched ?? 0,
                 isWatched: false,
-                autoAdvanceTotalEpisodes: s.autoAdvanceTotalEpisodes ?? false,
                 sortOrder: i,
             })
         }
@@ -250,7 +245,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const body: UpdateSeriesRequest = await request.json()
         const {
             title,
-            description,
             thumbnailUrl,
             scheduleType,
             scheduleValue,
@@ -258,11 +252,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             endDate,
             tagIds,
             isActive,
-            totalEpisodes,
-            watchedEpisodes,
+            episodesAired,
+            episodesRemaining,
+            episodesWatched,
             isWatched,
-            missedPeriods,
-            autoAdvanceTotalEpisodes,
             hasSeasons,
             seasons: seasonsData,
         } = body
@@ -287,18 +280,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         if (title !== undefined) updateData.title = title
-        if (description !== undefined) updateData.description = description
         if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl
         if (isActive !== undefined) updateData.isActive = isActive
-        if (totalEpisodes !== undefined)
-            updateData.totalEpisodes = totalEpisodes
-        if (watchedEpisodes !== undefined)
-            updateData.watchedEpisodes = watchedEpisodes
+        if (episodesAired !== undefined)
+            updateData.episodesAired = episodesAired
+        if (episodesRemaining !== undefined)
+            updateData.episodesRemaining = episodesRemaining
+        if (episodesWatched !== undefined)
+            updateData.episodesWatched = episodesWatched
         if (isWatched !== undefined) updateData.isWatched = isWatched
-        if (missedPeriods !== undefined)
-            updateData.missedPeriods = missedPeriods
-        if (autoAdvanceTotalEpisodes !== undefined)
-            updateData.autoAdvanceTotalEpisodes = autoAdvanceTotalEpisodes
         if (hasSeasons !== undefined) updateData.hasSeasons = hasSeasons
 
         // Handle schedule changes

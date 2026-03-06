@@ -19,11 +19,9 @@ export interface SeriesUpdateResult {
 
 export class SeriesUpdateService {
     /**
-     * Updates all active series and season schedules
-     * This method can be called from:
-     * - Trigger.dev scheduled tasks
-     * - Manual API endpoints
-     * - Admin dashboard actions
+     * Updates all active series and season schedules.
+     * Increments episodesAired and decrements episodesRemaining
+     * for each new episode period that has passed.
      */
     static async updateSeriesSchedules(): Promise<SeriesUpdateResult> {
         console.log('SeriesUpdateService: Starting series schedule update')
@@ -31,7 +29,7 @@ export class SeriesUpdateService {
         const timezone = await SeriesUpdateService.getTimezone()
         const now = nowHKT()
 
-        // 1. Update standalone series (hasSeasons=false) — existing logic
+        // 1. Update standalone series (hasSeasons=false)
         const standaloneResult =
             await SeriesUpdateService.updateStandaloneSeries(now, timezone)
 
@@ -106,13 +104,15 @@ export class SeriesUpdateService {
                     s.scheduleValue,
                 )
 
-                const missedPeriods = ScheduleService.calculateMissedPeriods(
-                    s.nextEpisodeAt,
-                    now,
-                    scheduleType,
-                    scheduleValue as ScheduleValue,
-                    timezone,
-                )
+                // Count how many new episodes have aired since last update
+                const newEpisodes =
+                    ScheduleService.calculateNewEpisodesSinceDate(
+                        s.nextEpisodeAt,
+                        now,
+                        scheduleType,
+                        scheduleValue as ScheduleValue,
+                        timezone,
+                    )
 
                 // Calculate next episode date (ensuring it's in the future in HKT)
                 let nextEpisodeAt = toHKT(now)
@@ -130,23 +130,23 @@ export class SeriesUpdateService {
                 const hasEnded =
                     s.endDate && isHKTAfter(now, getEndOfHKTDay(s.endDate))
 
-                // Calculate new total episodes if auto-advance is enabled
-                let newTotalEpisodes = s.totalEpisodes
-                if (s.autoAdvanceTotalEpisodes && missedPeriods > 0) {
-                    const currentTotal = s.totalEpisodes ?? 0
-                    newTotalEpisodes = currentTotal + missedPeriods
-                }
+                // Increment episodesAired, decrement episodesRemaining
+                const newAired = s.episodesAired + newEpisodes
+                const newRemaining =
+                    s.episodesRemaining !== null
+                        ? Math.max(0, s.episodesRemaining - newEpisodes)
+                        : null
 
                 await db
                     .update(series)
                     .set({
-                        missedPeriods: s.missedPeriods + missedPeriods,
+                        episodesAired: newAired,
+                        ...(newRemaining !== null
+                            ? { episodesRemaining: newRemaining }
+                            : {}),
                         nextEpisodeAt,
                         isActive: !hasEnded,
                         updatedAt: now,
-                        ...(s.autoAdvanceTotalEpisodes && missedPeriods > 0
-                            ? { totalEpisodes: newTotalEpisodes }
-                            : {}),
                     })
                     .where(eq(series.id, s.id))
 
@@ -220,13 +220,15 @@ export class SeriesUpdateService {
                     s.scheduleValue,
                 )
 
-                const missedPeriods = ScheduleService.calculateMissedPeriods(
-                    s.nextEpisodeAt,
-                    now,
-                    scheduleType,
-                    scheduleValue as ScheduleValue,
-                    timezone,
-                )
+                // Count how many new episodes have aired since last update
+                const newEpisodes =
+                    ScheduleService.calculateNewEpisodesSinceDate(
+                        s.nextEpisodeAt,
+                        now,
+                        scheduleType,
+                        scheduleValue as ScheduleValue,
+                        timezone,
+                    )
 
                 // Calculate next episode date (ensuring it's in the future)
                 let nextEpisodeAt = toHKT(now)
@@ -244,23 +246,23 @@ export class SeriesUpdateService {
                 const hasEnded =
                     s.endDate && isHKTAfter(now, getEndOfHKTDay(s.endDate))
 
-                // Calculate new total episodes if auto-advance is enabled
-                let newTotalEpisodes = s.totalEpisodes
-                if (s.autoAdvanceTotalEpisodes && missedPeriods > 0) {
-                    const currentTotal = s.totalEpisodes ?? 0
-                    newTotalEpisodes = currentTotal + missedPeriods
-                }
+                // Increment episodesAired, decrement episodesRemaining
+                const newAired = s.episodesAired + newEpisodes
+                const newRemaining =
+                    s.episodesRemaining !== null
+                        ? Math.max(0, s.episodesRemaining - newEpisodes)
+                        : null
 
                 await db
                     .update(seasons)
                     .set({
-                        missedPeriods: s.missedPeriods + missedPeriods,
+                        episodesAired: newAired,
+                        ...(newRemaining !== null
+                            ? { episodesRemaining: newRemaining }
+                            : {}),
                         nextEpisodeAt,
                         isActive: !hasEnded,
                         updatedAt: now,
-                        ...(s.autoAdvanceTotalEpisodes && missedPeriods > 0
-                            ? { totalEpisodes: newTotalEpisodes }
-                            : {}),
                     })
                     .where(eq(seasons.id, s.id))
 

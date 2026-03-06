@@ -81,29 +81,30 @@ export class ScheduleService {
     }
 
     /**
-     * Calculate how many periods have been missed since the next episode date
+     * Calculate how many new episodes have aired since a given date.
+     * Used by the cron job to increment episodesAired.
      */
-    static calculateMissedPeriods(
-        nextEpisodeAt: Date,
+    static calculateNewEpisodesSinceDate(
+        sinceDate: Date,
         now: Date,
         scheduleType: ScheduleType,
         scheduleValue: ScheduleValue,
         _timezone: string = 'Asia/Hong_Kong',
     ): number {
-        // Backlog series don't track missed periods
+        // Backlog series don't have scheduled episodes
         if (scheduleType === 'none') {
             return 0
         }
 
         // Convert both dates to HKT for comparison
         const localNow = toHKT(now)
-        const localNextEpisode = toHKT(nextEpisodeAt)
+        const localSince = toHKT(sinceDate)
 
-        if (localNow < localNextEpisode) {
+        if (localNow < localSince) {
             return 0
         }
 
-        const diffMs = localNow.getTime() - localNextEpisode.getTime()
+        const diffMs = localNow.getTime() - localSince.getTime()
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
         switch (scheduleType) {
@@ -118,7 +119,7 @@ export class ScheduleService {
                 let count = 0
                 let i = 0
                 while (true) {
-                    const checkDate = addHKTDays(localNextEpisode, i)
+                    const checkDate = addHKTDays(localSince, i)
                     if (checkDate.getTime() > localNow.getTime()) break
                     const dayName = DAY_NAMES[getHKTDayOfWeek(checkDate)]
                     if (days.includes(dayName)) {
@@ -136,7 +137,7 @@ export class ScheduleService {
                     const entryDate = parseToHKT(entry.date)
                     if (
                         entryDate.getTime() <= localNow.getTime() &&
-                        entryDate.getTime() >= localNextEpisode.getTime()
+                        entryDate.getTime() >= localSince.getTime()
                     ) {
                         count += entry.episodes
                     }
@@ -226,62 +227,8 @@ export class ScheduleService {
     }
 
     /**
-     * Format the missed periods for display
-     */
-    static formatMissedPeriods(
-        missedPeriods: number,
-        scheduleType: ScheduleType,
-        scheduleValue: ScheduleValue,
-    ): string {
-        // Backlog series don't show missed periods
-        if (scheduleType === 'none') {
-            return ''
-        }
-
-        if (missedPeriods === 0) {
-            return 'Caught up'
-        }
-
-        // For weekly schedules, we say "episodes" since each day is an episode
-        // For daily/custom, we use the period terminology
-        if (scheduleType === 'weekly' || scheduleType === 'dates') {
-            if (missedPeriods === 1) {
-                return '1 episode behind'
-            }
-            return `${missedPeriods} episodes behind`
-        }
-
-        // For daily schedules
-        if (scheduleType === 'daily') {
-            const interval = (scheduleValue as DailySchedule).interval
-            if (interval === 1) {
-                if (missedPeriods === 1) {
-                    return '1 day behind'
-                }
-                return `${missedPeriods} days behind`
-            }
-        }
-
-        // For custom schedules, show weeks if applicable
-        if (scheduleType === 'custom') {
-            const interval = (scheduleValue as DailySchedule).interval
-            if (interval === 7) {
-                if (missedPeriods === 1) {
-                    return '1 week behind'
-                }
-                return `${missedPeriods} weeks behind`
-            }
-        }
-
-        // Default
-        if (missedPeriods === 1) {
-            return '1 period behind'
-        }
-        return `${missedPeriods} periods behind`
-    }
-
-    /**
-     * Parse and validate schedule value from JSON
+     * Parse and validate schedule value from JSON.
+     * Preserves the optional `time` field (HKT time-of-day for scheduling).
      */
     static parseScheduleValue(
         type: ScheduleType,
@@ -298,12 +245,19 @@ export class ScheduleService {
 
         const obj = value as Record<string, unknown>
 
+        // Extract optional time field (HKT time-of-day, e.g. "20:00")
+        const time =
+            typeof obj.time === 'string' && /^\d{2}:\d{2}$/.test(obj.time)
+                ? obj.time
+                : undefined
+        const timeField = time ? { time } : {}
+
         switch (type) {
             case 'daily':
             case 'custom': {
                 const interval =
                     typeof obj.interval === 'number' ? obj.interval : 1
-                return { interval: Math.max(1, interval) }
+                return { interval: Math.max(1, interval), ...timeField }
             }
             case 'weekly': {
                 const days = Array.isArray(obj.days)
@@ -313,6 +267,7 @@ export class ScheduleService {
                     : (['friday'] as DayOfWeek[])
                 return {
                     days: days.length > 0 ? days : (['friday'] as DayOfWeek[]),
+                    ...timeField,
                 }
             }
             case 'dates': {
@@ -331,7 +286,7 @@ export class ScheduleService {
                               episodes: Math.max(1, e.episodes),
                           }))
                     : []
-                return { entries }
+                return { entries, ...timeField }
             }
             default:
                 return ScheduleService.getDefaultScheduleValue(type)

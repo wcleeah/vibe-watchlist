@@ -41,14 +41,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
 
         const body: UpdateProgressRequest = await request.json()
-        const { watchedEpisodes, increment } = body
+        const { episodesWatched, increment } = body
 
         // Validate input
-        if (watchedEpisodes === undefined && increment === undefined) {
+        if (episodesWatched === undefined && increment === undefined) {
             return NextResponse.json(
                 {
                     success: false,
-                    error: 'Either watchedEpisodes or increment must be provided',
+                    error: 'Either episodesWatched or increment must be provided',
                 },
                 { status: 400 },
             )
@@ -75,28 +75,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         // Calculate new watched episodes count
         let newWatchedEpisodes: number
-        if (watchedEpisodes !== undefined) {
-            newWatchedEpisodes = Math.max(0, watchedEpisodes)
+        if (episodesWatched !== undefined) {
+            newWatchedEpisodes = Math.max(0, episodesWatched)
         } else {
             newWatchedEpisodes = Math.max(
                 0,
-                currentSeason.watchedEpisodes + (increment ?? 0),
+                currentSeason.episodesWatched + (increment ?? 0),
             )
         }
 
-        // Don't exceed total episodes if set
-        if (
-            currentSeason.totalEpisodes !== null &&
-            newWatchedEpisodes > currentSeason.totalEpisodes
-        ) {
-            newWatchedEpisodes = currentSeason.totalEpisodes
+        // Don't exceed episodes aired
+        if (newWatchedEpisodes > currentSeason.episodesAired) {
+            newWatchedEpisodes = currentSeason.episodesAired
         }
 
         // Update season
         await db
             .update(seasons)
             .set({
-                watchedEpisodes: newWatchedEpisodes,
+                episodesWatched: newWatchedEpisodes,
                 lastWatchedAt: now,
                 updatedAt: now,
             })

@@ -67,11 +67,11 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             now,
         )
 
-        // Update series: reset missedPeriods, update lastWatchedAt, calculate new nextEpisodeAt
+        // Update series: set episodesWatched = episodesAired, update lastWatchedAt, calculate new nextEpisodeAt
         await db
             .update(series)
             .set({
-                missedPeriods: 0,
+                episodesWatched: currentSeries.episodesAired,
                 lastWatchedAt: now,
                 nextEpisodeAt,
                 updatedAt: now,
