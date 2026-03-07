@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { platformConfigs, videos, playlists, videoTags, tags, comingSoon, comingSoonTags, series, seasons, seriesTags, playlistTags } from "./schema";
+import { platformConfigs, videos, playlists, videoTags, tags, comingSoon, comingSoonTags, series, seasons, seriesConfig, seriesTags, playlistTags } from "./schema";
 
 export const videosRelations = relations(videos, ({one, many}) => ({
 	platformConfig: one(platformConfigs, {
@@ -47,14 +47,6 @@ export const tagsRelations = relations(tags, ({many}) => ({
 	playlistTags: many(playlistTags),
 }));
 
-export const comingSoonRelations = relations(comingSoon, ({one, many}) => ({
-	platformConfig: one(platformConfigs, {
-		fields: [comingSoon.platform],
-		references: [platformConfigs.platformId]
-	}),
-	comingSoonTags: many(comingSoonTags),
-}));
-
 export const comingSoonTagsRelations = relations(comingSoonTags, ({one}) => ({
 	comingSoon: one(comingSoon, {
 		fields: [comingSoonTags.comingSoonId],
@@ -63,6 +55,14 @@ export const comingSoonTagsRelations = relations(comingSoonTags, ({one}) => ({
 	tag: one(tags, {
 		fields: [comingSoonTags.tagId],
 		references: [tags.id]
+	}),
+}));
+
+export const comingSoonRelations = relations(comingSoon, ({one, many}) => ({
+	comingSoonTags: many(comingSoonTags),
+	platformConfig: one(platformConfigs, {
+		fields: [comingSoon.platform],
+		references: [platformConfigs.platformId]
 	}),
 }));
 
@@ -75,10 +75,18 @@ export const seasonsRelations = relations(seasons, ({one}) => ({
 
 export const seriesRelations = relations(series, ({one, many}) => ({
 	seasons: many(seasons),
+	seriesConfigs: many(seriesConfig),
 	seriesTags: many(seriesTags),
 	platformConfig: one(platformConfigs, {
 		fields: [series.platform],
 		references: [platformConfigs.platformId]
+	}),
+}));
+
+export const seriesConfigRelations = relations(seriesConfig, ({one}) => ({
+	series: one(series, {
+		fields: [seriesConfig.seriesId],
+		references: [series.id]
 	}),
 }));
 

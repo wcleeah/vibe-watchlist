@@ -1,7 +1,7 @@
 'use client'
 
-import { Check, Globe, Pencil, Plus, RotateCcw } from 'lucide-react'
-import { useState } from 'react'
+import { Check, Globe, Loader2, Pencil, Plus, RotateCcw, X } from 'lucide-react'
+import { useCallback, useState } from 'react'
 
 import {
     type ActionConfig,
@@ -9,10 +9,19 @@ import {
     type MediaMetadataItem,
     type StatusBadgeConfig,
 } from '@/components/shared'
+import { Button } from '@/components/ui/button'
+import {
+    Popover,
+    PopoverAnchor,
+    PopoverContent,
+} from '@/components/ui/popover'
+import { SeasonService } from '@/lib/services/season-service'
 import { ScheduleService } from '@/lib/services/schedule-service'
+import type { CachedSeasonInfo } from '@/hooks/use-series'
 import type {
     ScheduleType,
     ScheduleValue,
+    Season,
     SeriesWithTags,
 } from '@/types/series'
 import {
@@ -33,6 +42,21 @@ interface SeriesCardProps {
     onDelete?: (id: number) => Promise<void>
     onEdit?: (series: SeriesWithTags) => void
     onRefreshMetadata?: (series: SeriesWithTags) => void
+    /** Season cache for multi-season +1 (seriesId → CachedSeasonInfo) */
+    seasonCache?: Map<number, CachedSeasonInfo>
+    /** Cache a season selection for multi-season +1 */
+    onCacheSeasonForIncrement?: (
+        seriesId: number,
+        seasonId: number,
+        seasonNumber: number,
+    ) => void
+    /** Clear the cached season selection */
+    onClearSeasonCache?: (seriesId: number) => void
+    /** Increment progress for a specific season */
+    onIncrementSeasonProgress?: (
+        seriesId: number,
+        seasonId: number,
+    ) => Promise<boolean>
     className?: string
 }
 
@@ -132,6 +156,10 @@ export function SeriesCard({
     onDelete,
     onEdit,
     onRefreshMetadata,
+    seasonCache,
+    onCacheSeasonForIncrement,
+    onClearSeasonCache,
+    onIncrementSeasonProgress,
     className,
 }: SeriesCardProps) {
     const [loadingCatchUp, setLoadingCatchUp] = useState(false)
@@ -139,8 +167,60 @@ export function SeriesCard({
     const [loadingIncrement, setLoadingIncrement] = useState(false)
     const [loadingDelete, setLoadingDelete] = useState(false)
 
+    // Season picker popover state (for multi-season +1)
+    const [seasonPickerOpen, setSeasonPickerOpen] = useState(false)
+    const [seasons, setSeasons] = useState<Season[]>([])
+    const [loadingSeasons, setLoadingSeasons] = useState(false)
+
     const status = getSeriesStatus(series)
     const isBacklog = isBacklogSeries(series)
+
+    // Multi-season helpers
+    const isMultiSeason = series.hasSeasons
+    const cachedSeason = seasonCache?.get(series.id)
+    const hasCachedSeason = cachedSeason !== undefined
+
+    // Fetch seasons lazily when popover opens
+    const handleOpenSeasonPicker = useCallback(async () => {
+        setSeasonPickerOpen(true)
+        setLoadingSeasons(true)
+        try {
+            const fetchedSeasons = await SeasonService.getAll(series.id)
+            setSeasons(fetchedSeasons)
+        } catch (err) {
+            console.error('Failed to fetch seasons:', err)
+        } finally {
+            setLoadingSeasons(false)
+        }
+    }, [series.id])
+
+    // Handle season selection from popover
+    const handleSelectSeason = useCallback(
+        async (seasonId: number, seasonNumber: number) => {
+            setSeasonPickerOpen(false)
+            onCacheSeasonForIncrement?.(series.id, seasonId, seasonNumber)
+
+            // Immediately increment the selected season
+            setLoadingIncrement(true)
+            try {
+                await onIncrementSeasonProgress?.(series.id, seasonId)
+            } finally {
+                setLoadingIncrement(false)
+            }
+        },
+        [series.id, onCacheSeasonForIncrement, onIncrementSeasonProgress],
+    )
+
+    // Handle +1 click for multi-season with cached season
+    const handleIncrementCachedSeason = useCallback(async () => {
+        if (!cachedSeason || !onIncrementSeasonProgress) return
+        setLoadingIncrement(true)
+        try {
+            await onIncrementSeasonProgress(series.id, cachedSeason.seasonId)
+        } finally {
+            setLoadingIncrement(false)
+        }
+    }, [series.id, cachedSeason, onIncrementSeasonProgress])
 
     // Build primary actions
     const primaryActions: ActionConfig[] = [
@@ -190,26 +270,61 @@ export function SeriesCard({
     }
 
     // Increment progress for any non-watched series (per spec: available for ALL)
-    if (onIncrementProgress && !series.isWatched) {
-        primaryActions.push({
-            id: 'increment',
-            label: '+1 Episode',
-            onClick: async () => {
-                setLoadingIncrement(true)
-                try {
-                    await onIncrementProgress(series.id)
-                } finally {
-                    setLoadingIncrement(false)
-                }
-            },
-            variant: 'secondary',
-            icon: <Plus className='w-3 h-3' />,
-            loading: loadingIncrement,
-        })
+    if (!series.isWatched) {
+        if (isMultiSeason && onIncrementSeasonProgress) {
+            // Multi-season: use cached season or open season picker
+            if (hasCachedSeason) {
+                primaryActions.push({
+                    id: 'increment',
+                    label: `+1 S${cachedSeason.seasonNumber}`,
+                    onClick: handleIncrementCachedSeason,
+                    variant: 'secondary',
+                    icon: <Plus className='w-3 h-3' />,
+                    loading: loadingIncrement,
+                })
+            } else {
+                primaryActions.push({
+                    id: 'increment',
+                    label: '+1 Episode',
+                    onClick: handleOpenSeasonPicker,
+                    variant: 'secondary',
+                    icon: <Plus className='w-3 h-3' />,
+                    loading: loadingIncrement,
+                })
+            }
+        } else if (onIncrementProgress) {
+            // Single-mode: standard increment
+            primaryActions.push({
+                id: 'increment',
+                label: '+1 Episode',
+                onClick: async () => {
+                    setLoadingIncrement(true)
+                    try {
+                        await onIncrementProgress(series.id)
+                    } finally {
+                        setLoadingIncrement(false)
+                    }
+                },
+                variant: 'secondary',
+                icon: <Plus className='w-3 h-3' />,
+                loading: loadingIncrement,
+            })
+        }
     }
 
     // Build secondary actions
     const secondaryActions: ActionConfig[] = []
+
+    // Clear cached season (for multi-season series with cached selection)
+    if (isMultiSeason && hasCachedSeason && onClearSeasonCache) {
+        secondaryActions.push({
+            id: 'clear-season',
+            label: `clearSeason(S${cachedSeason.seasonNumber})`,
+            onClick: () => onClearSeasonCache(series.id),
+            variant: 'ghost',
+            icon: <X className='w-3 h-3' />,
+        })
+    }
 
     if (onEdit) {
         secondaryActions.push({
@@ -278,21 +393,79 @@ export function SeriesCard({
     const progressTotal = computed.episodesTotal
 
     return (
-        <MediaCard
-            item={series}
-            title={series.title || 'Untitled Series'}
-            thumbnailUrl={series.thumbnailUrl}
-            url={series.url}
-            tags={series.tags}
-            metadata={buildMetadata(series)}
-            primaryActions={primaryActions}
-            secondaryActions={secondaryActions}
-            deleteAction={deleteAction}
-            statusBadge={getStatusBadge(series)}
-            showProgress={showProgress}
-            progressCurrent={progressCurrent}
-            progressTotal={progressTotal}
-            className={className}
-        />
+        <Popover open={seasonPickerOpen} onOpenChange={setSeasonPickerOpen}>
+            <PopoverAnchor asChild>
+                <div>
+                    <MediaCard
+                        item={series}
+                        title={series.title || 'Untitled Series'}
+                        thumbnailUrl={series.thumbnailUrl}
+                        url={series.url}
+                        tags={series.tags}
+                        metadata={buildMetadata(series)}
+                        primaryActions={primaryActions}
+                        secondaryActions={secondaryActions}
+                        deleteAction={deleteAction}
+                        statusBadge={getStatusBadge(series)}
+                        showProgress={showProgress}
+                        progressCurrent={progressCurrent}
+                        progressTotal={progressTotal}
+                        className={className}
+                    />
+                </div>
+            </PopoverAnchor>
+            <PopoverContent
+                align='end'
+                side='bottom'
+                className='w-64 p-0'
+            >
+                <div className='p-3 border-b border-border'>
+                    <h4 className='font-mono text-sm font-medium'>
+                        Select Season
+                    </h4>
+                    <p className='text-xs text-muted-foreground mt-1'>
+                        Choose which season to increment
+                    </p>
+                </div>
+                <div className='p-2'>
+                    {loadingSeasons ? (
+                        <div className='flex items-center justify-center py-4'>
+                            <Loader2 className='w-4 h-4 animate-spin text-muted-foreground' />
+                        </div>
+                    ) : seasons.length === 0 ? (
+                        <p className='text-xs text-muted-foreground py-4 text-center'>
+                            No seasons found
+                        </p>
+                    ) : (
+                        <div className='space-y-1'>
+                            {seasons.map((season) => {
+                                const progress = `${season.episodesWatched}/${season.episodesAired}`
+                                return (
+                                    <Button
+                                        key={season.id}
+                                        variant='ghost'
+                                        size='sm'
+                                        className='w-full justify-between font-mono text-xs h-8'
+                                        onClick={() =>
+                                            handleSelectSeason(
+                                                season.id,
+                                                season.seasonNumber,
+                                            )
+                                        }
+                                    >
+                                        <span>
+                                            Season {season.seasonNumber}
+                                        </span>
+                                        <span className='text-muted-foreground'>
+                                            {progress}
+                                        </span>
+                                    </Button>
+                                )
+                            })}
+                        </div>
+                    )}
+                </div>
+            </PopoverContent>
+        </Popover>
     )
 }

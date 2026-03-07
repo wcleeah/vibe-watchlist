@@ -407,6 +407,14 @@ export default function SeriesPage() {
                                 : watchedSeries.reorderSeries
                             : undefined
                     }
+                    seasonCache={activeSeries.seasonCache}
+                    onCacheSeasonForIncrement={
+                        activeSeries.cacheSeasonForIncrement
+                    }
+                    onClearSeasonCache={activeSeries.clearSeasonCache}
+                    onIncrementSeasonProgress={
+                        activeSeries.incrementSeasonProgress
+                    }
                 />
 
                 {/* Edit Modal */}

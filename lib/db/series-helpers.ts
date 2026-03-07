@@ -9,6 +9,7 @@ import {
     tags,
 } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
+import { formatDateToHKTString } from '@/lib/utils/hkt-date'
 import type { ScheduleType, ScheduleValue, Series } from '@/types/series'
 
 /**
@@ -75,20 +76,22 @@ export async function aggregateSeasonCounts(seriesIds: number[]): Promise<
 }
 
 /** Default config values for multi-season series (no series_config row). */
-const MULTI_SEASON_CONFIG_DEFAULTS: Omit<
+function getMultiSeasonConfigDefaults(): Omit<
     Series,
     keyof typeof series.$inferSelect | 'tags'
-> = {
-    scheduleType: 'none' as ScheduleType,
-    scheduleValue: {} as ScheduleValue,
-    startDate: new Date().toISOString(),
-    endDate: null,
-    lastWatchedAt: null,
-    nextEpisodeAt: new Date(0),
-    isActive: true,
-    episodesAired: 0,
-    episodesRemaining: null,
-    episodesWatched: 0,
+> {
+    return {
+        scheduleType: 'none' as ScheduleType,
+        scheduleValue: {} as ScheduleValue,
+        startDate: formatDateToHKTString(new Date()) ?? '',
+        endDate: null,
+        lastWatchedAt: null,
+        nextEpisodeAt: new Date(0),
+        isActive: true,
+        episodesAired: 0,
+        episodesRemaining: null,
+        episodesWatched: 0,
+    }
 }
 
 /**
@@ -116,8 +119,9 @@ function flattenSeriesRow(
                 config.scheduleValue,
             ),
             startDate:
-                config.startDate?.toISOString() ?? new Date().toISOString(),
-            endDate: config.endDate?.toISOString() ?? null,
+                formatDateToHKTString(config.startDate) ??
+                (formatDateToHKTString(new Date()) as string),
+            endDate: formatDateToHKTString(config.endDate),
             lastWatchedAt: config.lastWatchedAt,
             nextEpisodeAt: config.nextEpisodeAt,
             isActive: config.isActive,
@@ -130,7 +134,7 @@ function flattenSeriesRow(
     // Multi-season: use defaults, overlay aggregated episode counts
     return {
         ...s,
-        ...MULTI_SEASON_CONFIG_DEFAULTS,
+        ...getMultiSeasonConfigDefaults(),
         ...(seasonAggregation && {
             episodesAired: seasonAggregation.episodesAired,
             episodesWatched: seasonAggregation.episodesWatched,

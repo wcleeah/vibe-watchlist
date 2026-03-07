@@ -4,6 +4,7 @@ import { CalendarDays } from 'lucide-react'
 
 import { MediaList, SortableMediaList } from '@/components/shared'
 
+import type { CachedSeasonInfo } from '@/hooks/use-series'
 import type { SeriesWithTags } from '@/types/series'
 
 import { SeriesCard } from './series-card'
@@ -18,6 +19,21 @@ interface SeriesListProps {
     onEdit?: (series: SeriesWithTags) => void
     onRefreshMetadata?: (series: SeriesWithTags) => void
     onReorder?: (orderedIds: number[]) => Promise<void>
+    /** Season cache for multi-season +1 (seriesId → CachedSeasonInfo) */
+    seasonCache?: Map<number, CachedSeasonInfo>
+    /** Cache a season selection for multi-season +1 */
+    onCacheSeasonForIncrement?: (
+        seriesId: number,
+        seasonId: number,
+        seasonNumber: number,
+    ) => void
+    /** Clear the cached season selection */
+    onClearSeasonCache?: (seriesId: number) => void
+    /** Increment progress for a specific season */
+    onIncrementSeasonProgress?: (
+        seriesId: number,
+        seasonId: number,
+    ) => Promise<boolean>
     loading?: boolean
     emptyState?: {
         title: string
@@ -35,6 +51,10 @@ export function SeriesList({
     onEdit,
     onRefreshMetadata,
     onReorder,
+    seasonCache,
+    onCacheSeasonForIncrement,
+    onClearSeasonCache,
+    onIncrementSeasonProgress,
     loading = false,
     emptyState,
 }: SeriesListProps) {
@@ -48,6 +68,10 @@ export function SeriesList({
             onDelete={onDelete}
             onEdit={onEdit}
             onRefreshMetadata={onRefreshMetadata}
+            seasonCache={seasonCache}
+            onCacheSeasonForIncrement={onCacheSeasonForIncrement}
+            onClearSeasonCache={onClearSeasonCache}
+            onIncrementSeasonProgress={onIncrementSeasonProgress}
         />
     )
 

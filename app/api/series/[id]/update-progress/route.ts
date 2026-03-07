@@ -116,9 +116,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({ success: true, series: seriesWithTags })
     } catch (error) {
-        console.error('Error updating series progress:', error)
+        console.error('Failed to update progress:', error)
         return NextResponse.json(
-            { success: false, error: 'Failed to update progress' },
+            {
+                success: false,
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to update progress',
+            },
             { status: 500 },
         )
     }

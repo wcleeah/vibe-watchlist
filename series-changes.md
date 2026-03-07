@@ -124,3 +124,34 @@ Extract schedule/episode tracking fields from `series` table into a dedicated `s
 - [x] **Phase 7** — UI components: confirmed no changes needed (insulated by `SeriesWithTags` type)
 - [x] **Phase 8** — Mode switching: hard delete logic in PUT handler for Single↔Seasons transitions
 - [x] **Phase 9** — Mirror `drizzle/schema.ts`, type checks pass, biome checks pass (pre-existing issues only)
+
+---
+
+## Multi-Season +1 Button
+
+When clicking +1 on a multi-season series, a season picker popover appears (since multi-season series have no `series_config` row — episode data lives in `seasons`). After selecting a season, the choice is cached in React state so subsequent clicks increment directly.
+
+### Behavior
+
+1. **No cached season** → Popover opens listing all seasons with progress (e.g., "Season 1 — 0/6")
+2. **User selects a season** → Cache choice (React state only, clears on refresh), immediately increment
+3. **Subsequent +1 clicks** → Use cached season, increment directly
+4. **Button label** → Shows `+1 S{n}` when a season is cached
+5. **Clear cache** → "Clear Season" action on the card resets to popover mode
+
+### Files Changed
+
+- `hooks/use-series.ts` — `CachedSeasonInfo` type, `seasonCache` Map state, `cacheSeasonForIncrement()`, `clearSeasonCache()`, `incrementSeasonProgress()`
+- `components/series/series-card.tsx` — Multi-season +1 branching: popover season picker vs cached direct increment, clear cache action
+- `components/series/series-list.tsx` — Props passthrough for season cache + increment callbacks
+- `app/series/page.tsx` — Passes new season props to `SeriesList`
+- `app/api/series/[id]/update-progress/route.ts` — Removed debug logging
+- `scripts/migrate-hkt-dates.ts` — Replaced with stub (already-run migration, stale schema refs)
+
+### Status
+
+- [x] Hook logic (season cache + increment)
+- [x] SeriesCard UI (popover, cached label, clear action)
+- [x] Props wired through SeriesList → page.tsx
+- [x] Build passes (`bun run build` — zero type errors)
+- [ ] Manual browser testing
