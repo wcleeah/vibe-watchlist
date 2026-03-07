@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import {
@@ -70,25 +70,42 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
             .where(eq(videos.playlistId, playlistId))
             .orderBy(asc(videos.playlistIndex))
 
-        // Get tags for each video
-        const videosWithTags = await Promise.all(
-            playlistVideos.map(async (video) => {
-                const videoTagResults = await db
-                    .select({
-                        id: tags.id,
-                        name: tags.name,
-                        color: tags.color,
-                    })
-                    .from(videoTags)
-                    .innerJoin(tags, eq(videoTags.tagId, tags.id))
-                    .where(eq(videoTags.videoId, video.id))
+        // Get tags for all videos in a single query
+        const videoIds = playlistVideos.map((v) => v.id)
+        const allVideoTags =
+            videoIds.length > 0
+                ? await db
+                      .select({
+                          videoId: videoTags.videoId,
+                          tagId: tags.id,
+                          tagName: tags.name,
+                          tagColor: tags.color,
+                      })
+                      .from(videoTags)
+                      .innerJoin(tags, eq(videoTags.tagId, tags.id))
+                      .where(inArray(videoTags.videoId, videoIds))
+                : []
 
-                return {
-                    ...video,
-                    tags: videoTagResults,
-                }
-            }),
-        )
+        // Group tags by video ID
+        const tagsByVideo = new Map<
+            number,
+            Array<{ id: number; name: string; color: string | null }>
+        >()
+        for (const vt of allVideoTags) {
+            if (!tagsByVideo.has(vt.videoId)) {
+                tagsByVideo.set(vt.videoId, [])
+            }
+            tagsByVideo.get(vt.videoId)!.push({
+                id: vt.tagId,
+                name: vt.tagName,
+                color: vt.tagColor,
+            })
+        }
+
+        const videosWithTags = playlistVideos.map((video) => ({
+            ...video,
+            tags: tagsByVideo.get(video.id) || [],
+        }))
 
         // Calculate stats
         const watchedCount = videosWithTags.filter((v) => v.isWatched).length
