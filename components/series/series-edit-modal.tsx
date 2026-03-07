@@ -479,7 +479,10 @@ export function SeriesEditModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className='max-w-6xl max-h-[92vh] overflow-y-auto'>
+            <DialogContent
+                className='max-h-[92vh] overflow-y-auto'
+                style={{ width: '96vw', maxWidth: '88rem' }}
+            >
                 <DialogHeader>
                     <DialogTitle>Edit Series</DialogTitle>
                 </DialogHeader>

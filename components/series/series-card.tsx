@@ -2,7 +2,6 @@
 
 import { Check, Globe, Loader2, Pencil, Plus, RotateCcw, X } from 'lucide-react'
 import { useCallback, useState } from 'react'
-import { toast } from 'sonner'
 
 import {
     type ActionConfig,
@@ -167,6 +166,7 @@ export function SeriesCard({
     const isMultiSeason = series.hasSeasons
     const cachedSeason = seasonCache?.get(series.id)
     const hasCachedSeason = cachedSeason !== undefined
+    const canIncrementSingleSeries = series.episodesWatched < series.episodesAired
 
     // Fetch seasons lazily when popover opens
     const handleOpenSeasonPicker = useCallback(async () => {
@@ -258,7 +258,7 @@ export function SeriesCard({
     }
 
     // Increment progress for any non-watched series (per spec: available for ALL)
-    if (!series.isWatched) {
+    if (!series.isWatched && series.episodesWatched < series.episodesAired) {
         if (isMultiSeason && onIncrementSeasonProgress) {
             // Multi-season: use cached season or open season picker
             if (hasCachedSeason) {
@@ -280,18 +280,12 @@ export function SeriesCard({
                     loading: loadingIncrement,
                 })
             }
-        } else if (onIncrementProgress) {
+        } else if (onIncrementProgress && canIncrementSingleSeries) {
             // Single-mode: standard increment
             primaryActions.push({
                 id: 'increment',
                 label: '+1 Episode',
                 onClick: async () => {
-                    if (series.episodesWatched >= series.episodesAired) {
-                        toast.info(
-                            'Already at aired count. Wait for new episodes.',
-                        )
-                        return
-                    }
                     setLoadingIncrement(true)
                     try {
                         await onIncrementProgress(series.id)

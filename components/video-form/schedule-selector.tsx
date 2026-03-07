@@ -79,6 +79,8 @@ export function ScheduleSelector({
         }
     }
 
+    const currentScheduleTime = (scheduleValue as { time?: string }).time || ''
+
     const handleDayToggle = (day: DayOfWeek) => {
         const currentDays = (scheduleValue as WeeklySchedule).days || []
         const currentTime = (scheduleValue as { time?: string }).time
@@ -136,6 +138,7 @@ export function ScheduleSelector({
 
         const entries = (scheduleValue as DatesSchedule).entries || []
         const episodeCount = Math.max(1, parseInt(newEpisodes, 10) || 1)
+        const currentTime = (scheduleValue as { time?: string }).time
 
         let newEntries: DateScheduleEntry[]
 
@@ -160,7 +163,10 @@ export function ScheduleSelector({
             )
         }
 
-        onValueChange({ entries: newEntries })
+        onValueChange({
+            entries: newEntries,
+            ...(currentTime ? { time: currentTime } : {}),
+        })
         updateDerivedFieldsFromEntries(newEntries)
 
         // Reset input
@@ -170,17 +176,25 @@ export function ScheduleSelector({
 
     const handleRemoveDateEntry = (date: string) => {
         const entries = (scheduleValue as DatesSchedule).entries || []
+        const currentTime = (scheduleValue as { time?: string }).time
         const newEntries = entries.filter((e) => e.date !== date)
-        onValueChange({ entries: newEntries })
+        onValueChange({
+            entries: newEntries,
+            ...(currentTime ? { time: currentTime } : {}),
+        })
         updateDerivedFieldsFromEntries(newEntries)
     }
 
     const handleUpdateEpisodes = (date: string, episodes: number) => {
         const entries = (scheduleValue as DatesSchedule).entries || []
+        const currentTime = (scheduleValue as { time?: string }).time
         const newEntries = entries.map((e) =>
             e.date === date ? { ...e, episodes: Math.max(1, episodes) } : e,
         )
-        onValueChange({ entries: newEntries })
+        onValueChange({
+            entries: newEntries,
+            ...(currentTime ? { time: currentTime } : {}),
+        })
         updateDerivedFieldsFromEntries(newEntries)
     }
 
@@ -316,6 +330,23 @@ export function ScheduleSelector({
                                 className='h-9'
                             />
                         </div>
+                        <div className='w-40'>
+                            <Label
+                                htmlFor='new-date-time'
+                                className='text-xs flex items-center gap-1'
+                            >
+                                <Clock className='w-3 h-3' />
+                                Air Time
+                            </Label>
+                            <Input
+                                id='new-date-time'
+                                type='time'
+                                value={currentScheduleTime}
+                                onChange={handleTimeChange}
+                                disabled={disabled}
+                                className='h-9'
+                            />
+                        </div>
                         <div className='w-24'>
                             <Label htmlFor='new-episodes' className='text-xs'>
                                 Episodes
@@ -355,6 +386,11 @@ export function ScheduleSelector({
                                     <span className='flex-1 text-sm'>
                                         {formatDate(entry.date)}
                                     </span>
+                                    {currentScheduleTime && (
+                                        <span className='text-xs text-muted-foreground font-mono'>
+                                            {currentScheduleTime} HKT
+                                        </span>
+                                    )}
                                     <Input
                                         type='number'
                                         min='1'
@@ -391,8 +427,8 @@ export function ScheduleSelector({
                 </div>
             )}
 
-            {/* Time of day picker - shown for all non-backlog schedule types */}
-            {scheduleType !== 'none' && (
+            {/* Time of day picker - shown for non-backlog, non-dates schedule types */}
+            {scheduleType !== 'none' && scheduleType !== 'dates' && (
                 <div className='space-y-2'>
                     <Label
                         htmlFor='schedule-time'
@@ -405,9 +441,7 @@ export function ScheduleSelector({
                         <Input
                             id='schedule-time'
                             type='time'
-                            value={
-                                (scheduleValue as { time?: string }).time || ''
-                            }
+                            value={currentScheduleTime}
                             onChange={handleTimeChange}
                             disabled={disabled}
                             className='w-36 h-9 border-border/70 bg-transparent'
