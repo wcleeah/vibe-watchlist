@@ -13,7 +13,13 @@ import type { PlatformSuggestion } from '@/lib/services/ai-service'
 import { SeriesService } from '@/lib/services/series-service'
 import type { VideoFormData, VideoSuggestions } from '@/types/form'
 import type { PlaylistImportPreview } from '@/types/playlist'
-import type { ContentMode, ScheduleType, ScheduleValue } from '@/types/series'
+import type {
+    BulkSeasonData,
+    ContentMode,
+    ScheduleType,
+    ScheduleValue,
+} from '@/types/series'
+import { computeEpisodeFields, getDefaultScheduleValue } from '@/types/series'
 import type { Tag } from '@/types/tag'
 import { DatePickerField } from './date-picker-field'
 import { MetadataSelector } from './metadata-selector'
@@ -22,6 +28,71 @@ import { PlatformSuggestions } from './platform-suggestions'
 import { ScheduleSelector } from './schedule-selector'
 import { SubmitButton } from './submit-button'
 import { TagInput } from './tag-input'
+
+interface LocalSeason {
+    seasonNumber: number
+    title: string
+    url: string
+    scheduleType: ScheduleType
+    scheduleValue: ScheduleValue
+    startDate: string
+    endDate: string | undefined
+    isActive: boolean
+    episodesAired: string
+    episodesRemaining: string
+    episodesWatched: string
+}
+
+function makeBlankSeason(seasonNumber: number): LocalSeason {
+    return {
+        seasonNumber,
+        title: '',
+        url: '',
+        scheduleType: 'none',
+        scheduleValue: {},
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: undefined,
+        isActive: true,
+        episodesAired: '0',
+        episodesRemaining: '',
+        episodesWatched: '0',
+    }
+}
+
+function localSeasonToBulk(s: LocalSeason): BulkSeasonData {
+    const episodesAired = s.episodesAired
+        ? parseInt(s.episodesAired, 10)
+        : undefined
+    const episodesRemaining = s.episodesRemaining
+        ? parseInt(s.episodesRemaining, 10)
+        : undefined
+    const episodesWatched = s.episodesWatched
+        ? parseInt(s.episodesWatched, 10)
+        : undefined
+
+    return {
+        seasonNumber: s.seasonNumber,
+        title: s.title || undefined,
+        url: s.url || undefined,
+        scheduleType: s.scheduleType,
+        scheduleValue: s.scheduleValue,
+        startDate: s.startDate,
+        endDate: s.endDate || null,
+        isActive: s.isActive,
+        episodesAired:
+            episodesAired !== undefined && !Number.isNaN(episodesAired)
+                ? episodesAired
+                : 0,
+        episodesRemaining:
+            episodesRemaining !== undefined && !Number.isNaN(episodesRemaining)
+                ? episodesRemaining
+                : null,
+        episodesWatched:
+            episodesWatched !== undefined && !Number.isNaN(episodesWatched)
+                ? episodesWatched
+                : 0,
+    }
+}
 
 interface FormLayoutProps {
     isSubmitting: boolean
@@ -66,14 +137,21 @@ export function FormLayout({
     const [scheduleValue, setScheduleValue] = useState<ScheduleValue>({
         days: ['friday'],
     })
+    const [seriesTypeTab, setSeriesTypeTab] = useState<'single' | 'seasons'>(
+        'single',
+    )
     const [startDate, setStartDate] = useState<string>(
         new Date().toISOString().split('T')[0],
     )
     const [endDate, setEndDate] = useState<string | undefined>(undefined)
-    const [totalEpisodes, setTotalEpisodes] = useState<string>('')
+    const [episodesAired, setEpisodesAired] = useState<string>('0')
+    const [episodesRemaining, setEpisodesRemaining] = useState<string>('')
+    const [episodesWatched, setEpisodesWatched] = useState<string>('0')
+    const [localSeasons, setLocalSeasons] = useState<LocalSeason[]>([
+        makeBlankSeason(1),
+    ])
+    const [selectedSeasonIdx, setSelectedSeasonIdx] = useState<number>(0)
     const [saveAsDefault, setSaveAsDefault] = useState(false)
-    const [autoAdvanceTotalEpisodes, setAutoAdvanceTotalEpisodes] =
-        useState(false)
     const [seriesError, setSeriesError] = useState<string | null>(null)
     const [isSubmittingSeries, setIsSubmittingSeries] = useState(false)
 
@@ -239,6 +317,40 @@ export function FormLayout({
         )
         .slice(0, 5)
 
+    const selectedSeason =
+        localSeasons.length > 0 ? localSeasons[selectedSeasonIdx] : null
+
+    const updateSelectedSeason = (updates: Partial<LocalSeason>) => {
+        setLocalSeasons((prev) => {
+            const next = [...prev]
+            if (next[selectedSeasonIdx]) {
+                next[selectedSeasonIdx] = {
+                    ...next[selectedSeasonIdx],
+                    ...updates,
+                }
+            }
+            return next
+        })
+    }
+
+    const addSeason = () => {
+        const maxNum = localSeasons.reduce(
+            (max, s) => Math.max(max, s.seasonNumber),
+            0,
+        )
+        const newSeason = makeBlankSeason(maxNum + 1)
+        setLocalSeasons((prev) => [...prev, newSeason])
+        setSelectedSeasonIdx(localSeasons.length)
+    }
+
+    const deleteSeason = () => {
+        if (localSeasons.length <= 1) return
+        setLocalSeasons((prev) =>
+            prev.filter((_, i) => i !== selectedSeasonIdx),
+        )
+        setSelectedSeasonIdx((prev) => Math.max(0, prev - 1))
+    }
+
     // Series submission handler
     const handleSeriesSubmit = async () => {
         const formData = getValues()
@@ -246,21 +358,39 @@ export function FormLayout({
         setIsSubmittingSeries(true)
 
         try {
-            await SeriesService.create({
-                url: formData.url,
-                title: formData.title,
-                platform: formData.platform || 'unknown',
-                thumbnailUrl: formData.thumbnailUrl || undefined,
-                scheduleType,
-                scheduleValue,
-                startDate,
-                endDate,
-                tagIds: selectedTagIds,
-                totalEpisodes: totalEpisodes
-                    ? parseInt(totalEpisodes, 10)
-                    : undefined,
-                autoAdvanceTotalEpisodes,
-            })
+            if (seriesTypeTab === 'seasons') {
+                await SeriesService.create({
+                    url: formData.url,
+                    title: formData.title,
+                    platform: formData.platform || 'unknown',
+                    thumbnailUrl: formData.thumbnailUrl || undefined,
+                    tagIds: selectedTagIds,
+                    hasSeasons: true,
+                    seasons: localSeasons.map(localSeasonToBulk),
+                })
+            } else {
+                await SeriesService.create({
+                    url: formData.url,
+                    title: formData.title,
+                    platform: formData.platform || 'unknown',
+                    thumbnailUrl: formData.thumbnailUrl || undefined,
+                    scheduleType,
+                    scheduleValue,
+                    startDate,
+                    endDate,
+                    tagIds: selectedTagIds,
+                    episodesAired: episodesAired
+                        ? parseInt(episodesAired, 10)
+                        : undefined,
+                    episodesRemaining: episodesRemaining
+                        ? parseInt(episodesRemaining, 10)
+                        : undefined,
+                    episodesWatched: episodesWatched
+                        ? parseInt(episodesWatched, 10)
+                        : undefined,
+                    hasSeasons: false,
+                })
+            }
 
             // Save as default mode for platform if checked
             if (saveAsDefault && formData.platform) {
@@ -280,6 +410,16 @@ export function FormLayout({
 
             toast.success('Series created successfully!')
             await markComingSoonTransformed()
+            setSeriesTypeTab('single')
+            setScheduleType('weekly')
+            setScheduleValue({ days: ['friday'] })
+            setStartDate(new Date().toISOString().split('T')[0])
+            setEndDate(undefined)
+            setEpisodesAired('0')
+            setEpisodesRemaining('')
+            setEpisodesWatched('0')
+            setLocalSeasons([makeBlankSeason(1)])
+            setSelectedSeasonIdx(0)
             onSeriesCreated?.()
             onReset()
         } catch (error) {
@@ -619,101 +759,452 @@ export function FormLayout({
             {/* Schedule Fields - Only shown in Series mode */}
             {mode === 'series' && (
                 <div className='space-y-4 p-4 bg-muted/50 rounded-lg'>
-                    <ScheduleSelector
-                        scheduleType={scheduleType}
-                        scheduleValue={scheduleValue}
-                        onTypeChange={setScheduleType}
-                        onValueChange={setScheduleValue}
-                        onEndDateChange={setEndDate}
-                        onTotalEpisodesChange={setTotalEpisodes}
-                        disabled={isSubmitting || isSubmittingSeries}
-                    />
-
-                    <div className='grid grid-cols-2 gap-4'>
-                        <DatePickerField
-                            id='start-date'
-                            label='Start Date'
-                            value={startDate}
-                            onChange={(date) =>
-                                setStartDate(
-                                    date ||
-                                        new Date().toISOString().split('T')[0],
-                                )
-                            }
-                            required
-                            disabled={isSubmitting || isSubmittingSeries}
-                        />
-                        <DatePickerField
-                            id='end-date'
-                            label={
-                                scheduleType === 'dates'
-                                    ? 'End Date (Auto)'
-                                    : 'End Date (Optional)'
-                            }
-                            value={endDate}
-                            onChange={setEndDate}
-                            disabled={
-                                isSubmitting ||
-                                isSubmittingSeries ||
-                                scheduleType === 'dates'
-                            }
-                        />
-                    </div>
-
-                    {/* Episode Count */}
-                    <div className='space-y-1.5'>
-                        <Label
-                            htmlFor='series-total-episodes'
-                            className='text-sm'
-                        >
-                            {scheduleType === 'dates'
-                                ? 'Total Episodes (Auto)'
-                                : 'Total Episodes (Optional)'}
-                        </Label>
-                        <Input
-                            id='series-total-episodes'
-                            type='number'
-                            min='1'
-                            placeholder={
-                                scheduleType === 'dates'
-                                    ? 'Calculated from dates'
-                                    : 'e.g., 12 - leave empty if unknown'
-                            }
-                            value={totalEpisodes}
-                            onChange={(e) => setTotalEpisodes(e.target.value)}
-                            disabled={
-                                isSubmitting ||
-                                isSubmittingSeries ||
-                                scheduleType === 'dates'
-                            }
-                        />
-                    </div>
-
-                    {/* Auto-advance total episodes checkbox */}
-                    <div className='flex items-start space-x-2'>
-                        <input
-                            type='checkbox'
-                            id='auto-advance-episodes'
-                            checked={autoAdvanceTotalEpisodes}
-                            onChange={(e) =>
-                                setAutoAdvanceTotalEpisodes(e.target.checked)
-                            }
-                            disabled={isSubmitting || isSubmittingSeries}
-                            className='h-4 w-4 rounded border-gray-300 mt-1'
-                        />
-                        <div className='space-y-1'>
-                            <Label
-                                htmlFor='auto-advance-episodes'
-                                className='cursor-pointer'
+                    <div className='space-y-2'>
+                        <Label>Series Type</Label>
+                        <div className='inline-flex rounded-md border border-border p-1 bg-background'>
+                            <button
+                                type='button'
+                                onClick={() => setSeriesTypeTab('single')}
+                                disabled={isSubmitting || isSubmittingSeries}
+                                className={`px-3 py-1.5 text-sm rounded-sm transition-colors ${
+                                    seriesTypeTab === 'single'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
                             >
-                                Auto-advance total episodes
-                            </Label>
-                            <p className='text-xs text-muted-foreground'>
-                                Automatically increase total episodes when new
-                                episodes are released
-                            </p>
+                                Single
+                            </button>
+                            <button
+                                type='button'
+                                onClick={() => setSeriesTypeTab('seasons')}
+                                disabled={isSubmitting || isSubmittingSeries}
+                                className={`px-3 py-1.5 text-sm rounded-sm transition-colors ${
+                                    seriesTypeTab === 'seasons'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                Seasons
+                            </button>
                         </div>
                     </div>
+
+                    {seriesTypeTab === 'single' ? (
+                        <>
+                            <ScheduleSelector
+                                scheduleType={scheduleType}
+                                scheduleValue={scheduleValue}
+                                onTypeChange={setScheduleType}
+                                onValueChange={setScheduleValue}
+                                onEndDateChange={setEndDate}
+                                onTotalEpisodesChange={setEpisodesRemaining}
+                                disabled={isSubmitting || isSubmittingSeries}
+                            />
+
+                            <div className='grid grid-cols-2 gap-4'>
+                                <DatePickerField
+                                    id='start-date'
+                                    label='Start Date'
+                                    value={startDate}
+                                    onChange={(date) =>
+                                        setStartDate(
+                                            date ||
+                                                new Date()
+                                                    .toISOString()
+                                                    .split('T')[0],
+                                        )
+                                    }
+                                    required
+                                    disabled={
+                                        isSubmitting || isSubmittingSeries
+                                    }
+                                />
+                                <DatePickerField
+                                    id='end-date'
+                                    label={
+                                        scheduleType === 'dates'
+                                            ? 'End Date (Auto)'
+                                            : 'End Date (Optional)'
+                                    }
+                                    value={endDate}
+                                    onChange={setEndDate}
+                                    disabled={
+                                        isSubmitting ||
+                                        isSubmittingSeries ||
+                                        scheduleType === 'dates'
+                                    }
+                                />
+                            </div>
+
+                            <div className='grid grid-cols-3 gap-4'>
+                                <div className='space-y-1.5'>
+                                    <Label
+                                        htmlFor='series-episodes-aired'
+                                        className='text-sm'
+                                    >
+                                        Episodes Aired
+                                    </Label>
+                                    <Input
+                                        id='series-episodes-aired'
+                                        type='number'
+                                        min='0'
+                                        placeholder='0'
+                                        value={episodesAired}
+                                        onChange={(e) =>
+                                            setEpisodesAired(e.target.value)
+                                        }
+                                        disabled={
+                                            isSubmitting || isSubmittingSeries
+                                        }
+                                    />
+                                </div>
+                                <div className='space-y-1.5'>
+                                    <Label
+                                        htmlFor='series-episodes-watched'
+                                        className='text-sm'
+                                    >
+                                        Episodes Watched
+                                    </Label>
+                                    <Input
+                                        id='series-episodes-watched'
+                                        type='number'
+                                        min='0'
+                                        placeholder='0'
+                                        value={episodesWatched}
+                                        onChange={(e) =>
+                                            setEpisodesWatched(e.target.value)
+                                        }
+                                        disabled={
+                                            isSubmitting || isSubmittingSeries
+                                        }
+                                    />
+                                </div>
+                                <div className='space-y-1.5'>
+                                    <Label
+                                        htmlFor='series-episodes-remaining'
+                                        className='text-sm'
+                                    >
+                                        {scheduleType === 'dates'
+                                            ? 'Episodes Remaining (Auto)'
+                                            : 'Episodes Remaining (Optional)'}
+                                    </Label>
+                                    <Input
+                                        id='series-episodes-remaining'
+                                        type='number'
+                                        min='0'
+                                        placeholder={
+                                            scheduleType === 'dates'
+                                                ? 'Calculated from dates'
+                                                : 'e.g., 12 - leave empty if unknown'
+                                        }
+                                        value={episodesRemaining}
+                                        onChange={(e) =>
+                                            setEpisodesRemaining(e.target.value)
+                                        }
+                                        disabled={
+                                            isSubmitting ||
+                                            isSubmittingSeries ||
+                                            scheduleType === 'dates'
+                                        }
+                                    />
+                                </div>
+                            </div>
+
+                            {(() => {
+                                const computed = computeEpisodeFields({
+                                    episodesAired:
+                                        parseInt(episodesAired, 10) || 0,
+                                    episodesRemaining:
+                                        episodesRemaining !== '' &&
+                                        !Number.isNaN(
+                                            parseInt(episodesRemaining, 10),
+                                        )
+                                            ? parseInt(episodesRemaining, 10)
+                                            : null,
+                                    episodesWatched:
+                                        parseInt(episodesWatched, 10) || 0,
+                                })
+                                return (
+                                    <div className='grid grid-cols-3 gap-4 text-sm'>
+                                        <div>
+                                            <Label className='text-xs text-muted-foreground'>
+                                                Total (computed)
+                                            </Label>
+                                            <p className='font-medium'>
+                                                {computed.episodesTotal}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <Label className='text-xs text-muted-foreground'>
+                                                Unwatched (computed)
+                                            </Label>
+                                            <p className='font-medium'>
+                                                {computed.episodesUnwatched}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <Label className='text-xs text-muted-foreground'>
+                                                Behind (computed)
+                                            </Label>
+                                            <p className='font-medium'>
+                                                {computed.episodesBehind}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )
+                            })()}
+                        </>
+                    ) : (
+                        <div className='space-y-4'>
+                            <div className='flex items-center gap-2'>
+                                <select
+                                    value={selectedSeasonIdx}
+                                    onChange={(e) =>
+                                        setSelectedSeasonIdx(
+                                            Number(e.target.value),
+                                        )
+                                    }
+                                    disabled={
+                                        isSubmitting ||
+                                        isSubmittingSeries ||
+                                        localSeasons.length === 0
+                                    }
+                                    className='flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm'
+                                >
+                                    {localSeasons.map((s, i) => (
+                                        <option
+                                            key={`${s.seasonNumber}-${i}`}
+                                            value={i}
+                                        >
+                                            Season {s.seasonNumber}
+                                            {s.title ? ` — ${s.title}` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                <Button
+                                    type='button'
+                                    variant='secondary'
+                                    size='sm'
+                                    onClick={addSeason}
+                                    disabled={
+                                        isSubmitting || isSubmittingSeries
+                                    }
+                                >
+                                    Add
+                                </Button>
+                                <Button
+                                    type='button'
+                                    variant='secondary'
+                                    size='sm'
+                                    onClick={deleteSeason}
+                                    disabled={
+                                        isSubmitting ||
+                                        isSubmittingSeries ||
+                                        localSeasons.length <= 1
+                                    }
+                                >
+                                    Delete
+                                </Button>
+                            </div>
+
+                            {selectedSeason && (
+                                <div className='space-y-4 rounded-lg bg-background p-4 border border-border'>
+                                    <div className='grid grid-cols-3 gap-3'>
+                                        <div className='space-y-2'>
+                                            <Label>Season #</Label>
+                                            <Input
+                                                type='number'
+                                                min='1'
+                                                value={
+                                                    selectedSeason.seasonNumber
+                                                }
+                                                onChange={(e) =>
+                                                    updateSelectedSeason({
+                                                        seasonNumber:
+                                                            parseInt(
+                                                                e.target.value,
+                                                                10,
+                                                            ) || 1,
+                                                    })
+                                                }
+                                                disabled={
+                                                    isSubmitting ||
+                                                    isSubmittingSeries
+                                                }
+                                            />
+                                        </div>
+                                        <div className='col-span-2 space-y-2'>
+                                            <Label>Title (optional)</Label>
+                                            <Input
+                                                value={selectedSeason.title}
+                                                onChange={(e) =>
+                                                    updateSelectedSeason({
+                                                        title: e.target.value,
+                                                    })
+                                                }
+                                                placeholder='e.g. Part 1'
+                                                disabled={
+                                                    isSubmitting ||
+                                                    isSubmittingSeries
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className='space-y-2'>
+                                        <Label>URL Override (optional)</Label>
+                                        <Input
+                                            value={selectedSeason.url}
+                                            onChange={(e) =>
+                                                updateSelectedSeason({
+                                                    url: e.target.value,
+                                                })
+                                            }
+                                            placeholder='https://...'
+                                            disabled={
+                                                isSubmitting ||
+                                                isSubmittingSeries
+                                            }
+                                        />
+                                    </div>
+
+                                    <ScheduleSelector
+                                        scheduleType={
+                                            selectedSeason.scheduleType
+                                        }
+                                        scheduleValue={
+                                            selectedSeason.scheduleValue
+                                        }
+                                        onTypeChange={(type) =>
+                                            updateSelectedSeason({
+                                                scheduleType: type,
+                                                scheduleValue:
+                                                    getDefaultScheduleValue(
+                                                        type,
+                                                    ),
+                                            })
+                                        }
+                                        onValueChange={(val) =>
+                                            updateSelectedSeason({
+                                                scheduleValue: val,
+                                            })
+                                        }
+                                        onEndDateChange={(d) =>
+                                            updateSelectedSeason({ endDate: d })
+                                        }
+                                        onTotalEpisodesChange={(val) =>
+                                            updateSelectedSeason({
+                                                episodesRemaining: val,
+                                            })
+                                        }
+                                        disabled={
+                                            isSubmitting || isSubmittingSeries
+                                        }
+                                    />
+
+                                    <div className='grid grid-cols-2 gap-4'>
+                                        <DatePickerField
+                                            id={`new-series-season-start-${selectedSeasonIdx}`}
+                                            label='Start Date'
+                                            value={selectedSeason.startDate}
+                                            onChange={(d) =>
+                                                updateSelectedSeason({
+                                                    startDate:
+                                                        d ||
+                                                        new Date()
+                                                            .toISOString()
+                                                            .split('T')[0],
+                                                })
+                                            }
+                                            required
+                                            disabled={
+                                                isSubmitting ||
+                                                isSubmittingSeries
+                                            }
+                                        />
+                                        <DatePickerField
+                                            id={`new-series-season-end-${selectedSeasonIdx}`}
+                                            label='End Date (optional)'
+                                            value={selectedSeason.endDate}
+                                            onChange={(d) =>
+                                                updateSelectedSeason({
+                                                    endDate: d,
+                                                })
+                                            }
+                                            disabled={
+                                                isSubmitting ||
+                                                isSubmittingSeries
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className='grid grid-cols-3 gap-3'>
+                                        <div className='space-y-2'>
+                                            <Label>Episodes Aired</Label>
+                                            <Input
+                                                type='number'
+                                                min='0'
+                                                value={
+                                                    selectedSeason.episodesAired
+                                                }
+                                                onChange={(e) =>
+                                                    updateSelectedSeason({
+                                                        episodesAired:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                                disabled={
+                                                    isSubmitting ||
+                                                    isSubmittingSeries
+                                                }
+                                            />
+                                        </div>
+                                        <div className='space-y-2'>
+                                            <Label>Episodes Watched</Label>
+                                            <Input
+                                                type='number'
+                                                min='0'
+                                                value={
+                                                    selectedSeason.episodesWatched
+                                                }
+                                                onChange={(e) =>
+                                                    updateSelectedSeason({
+                                                        episodesWatched:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                                disabled={
+                                                    isSubmitting ||
+                                                    isSubmittingSeries
+                                                }
+                                            />
+                                        </div>
+                                        <div className='space-y-2'>
+                                            <Label>Episodes Remaining</Label>
+                                            <Input
+                                                type='number'
+                                                min='0'
+                                                value={
+                                                    selectedSeason.episodesRemaining
+                                                }
+                                                onChange={(e) =>
+                                                    updateSelectedSeason({
+                                                        episodesRemaining:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                                placeholder='Unknown'
+                                                disabled={
+                                                    isSubmitting ||
+                                                    isSubmittingSeries
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Save as default mode checkbox */}
                     <div className='flex items-center space-x-2'>

@@ -70,11 +70,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             startDate,
             endDate,
             isActive,
-            totalEpisodes,
-            watchedEpisodes,
+            episodesAired,
+            episodesRemaining,
+            episodesWatched,
             isWatched,
-            missedPeriods,
-            autoAdvanceTotalEpisodes,
         } = body
 
         // Build update object
@@ -119,15 +118,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (title !== undefined) updateData.title = title
         if (url !== undefined) updateData.url = url
         if (isActive !== undefined) updateData.isActive = isActive
-        if (totalEpisodes !== undefined)
-            updateData.totalEpisodes = totalEpisodes
-        if (watchedEpisodes !== undefined)
-            updateData.watchedEpisodes = watchedEpisodes
+        if (episodesAired !== undefined)
+            updateData.episodesAired = episodesAired
+        if (episodesRemaining !== undefined)
+            updateData.episodesRemaining = episodesRemaining
+        if (episodesWatched !== undefined)
+            updateData.episodesWatched = episodesWatched
         if (isWatched !== undefined) updateData.isWatched = isWatched
-        if (missedPeriods !== undefined)
-            updateData.missedPeriods = missedPeriods
-        if (autoAdvanceTotalEpisodes !== undefined)
-            updateData.autoAdvanceTotalEpisodes = autoAdvanceTotalEpisodes
 
         // Handle schedule changes
         if (scheduleType) {

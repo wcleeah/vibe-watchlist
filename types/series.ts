@@ -19,14 +19,17 @@ export type DayOfWeek =
 
 export interface DailySchedule {
     interval: number
+    time?: string // HKT time string e.g. '21:00'
 }
 
 export interface WeeklySchedule {
     days: DayOfWeek[]
+    time?: string // HKT time string e.g. '21:00'
 }
 
 export interface CustomSchedule {
     interval: number
+    time?: string // HKT time string e.g. '21:00'
 }
 
 // Schedule entry for specific date with episode count
@@ -38,6 +41,7 @@ export interface DateScheduleEntry {
 // Schedule with multiple specific dates
 export interface DatesSchedule {
     entries: DateScheduleEntry[]
+    time?: string // HKT time string e.g. '21:00'
 }
 
 // Empty schedule for backlog series
@@ -53,15 +57,34 @@ export type ScheduleValue =
 // Content mode for the add form
 export type ContentMode = 'video' | 'series' | 'playlist' | 'coming-soon'
 
-// Series with typed schedule value
-export interface Series
-    extends Omit<DbSeries, 'scheduleValue' | 'startDate' | 'endDate'> {
+// ============================================================
+// Config fields — shared shape for series_config rows & season rows
+// These fields exist on series_config (single-mode) or are
+// aggregated from seasons (multi-season mode).
+// ============================================================
+
+/** The schedule/episode fields that live on series_config or seasons. */
+export interface SeriesConfigFields {
+    scheduleType: ScheduleType
     scheduleValue: ScheduleValue
     startDate: string // ISO date string
     endDate: string | null
-    autoAdvanceTotalEpisodes: boolean
-    hasSeasons: boolean
+    lastWatchedAt: Date | null
+    nextEpisodeAt: Date
+    isActive: boolean
+    episodesAired: number
+    episodesRemaining: number | null
+    episodesWatched: number
 }
+
+/**
+ * Flattened Series type — combines DB metadata with config fields.
+ *
+ * For single-mode (hasSeasons=false): config comes from `series_config`.
+ * For multi-season (hasSeasons=true): config is aggregated from seasons
+ * at the DB-helper layer, so consumers always see a flat shape.
+ */
+export interface Series extends DbSeries, SeriesConfigFields {}
 
 // Series with tags included
 export interface SeriesWithTags extends Series {
@@ -74,6 +97,54 @@ export interface Season
     scheduleValue: ScheduleValue
     startDate: string // ISO date string
     endDate: string | null
+}
+
+// ============================================================
+// Computed episode fields (enriched types)
+// ============================================================
+
+export interface EpisodeComputedFields {
+    episodesTotal: number
+    episodesUnwatched: number
+    episodesBehind: number
+}
+
+export interface SeriesEnriched extends Series, EpisodeComputedFields {}
+export interface SeriesWithTagsEnriched
+    extends SeriesWithTags,
+        EpisodeComputedFields {}
+export interface SeasonEnriched extends Season, EpisodeComputedFields {}
+
+/**
+ * Compute derived episode fields from the stored DB fields.
+ */
+export function computeEpisodeFields(entity: {
+    episodesAired: number
+    episodesRemaining: number | null
+    episodesWatched: number
+}): EpisodeComputedFields {
+    const episodesTotal = entity.episodesAired + (entity.episodesRemaining ?? 0)
+    const episodesUnwatched = episodesTotal - entity.episodesWatched
+    const episodesBehind = entity.episodesAired - entity.episodesWatched
+    return { episodesTotal, episodesUnwatched, episodesBehind }
+}
+
+/**
+ * Enrich a series with computed episode fields.
+ */
+export function enrichSeries<T extends Series>(
+    s: T,
+): T & EpisodeComputedFields {
+    return { ...s, ...computeEpisodeFields(s) }
+}
+
+/**
+ * Enrich a season with computed episode fields.
+ */
+export function enrichSeason<T extends Season>(
+    s: T,
+): T & EpisodeComputedFields {
+    return { ...s, ...computeEpisodeFields(s) }
 }
 
 // Series with tags and seasons included
@@ -90,26 +161,29 @@ export interface SeriesStatusSummary {
     total: number
 }
 
+// ============================================================
 // API request types
+// ============================================================
+
 export interface CreateSeriesRequest {
     url: string
     title?: string
-    description?: string
     platform: string
     thumbnailUrl?: string
-    scheduleType: ScheduleType
-    scheduleValue: ScheduleValue
-    startDate: string // ISO date string
-    endDate?: string
+    scheduleType?: ScheduleType
+    scheduleValue?: ScheduleValue
+    startDate?: string // ISO date string
+    endDate?: string | null
     tagIds?: number[]
-    totalEpisodes?: number
-    watchedEpisodes?: number
-    autoAdvanceTotalEpisodes?: boolean
+    episodesAired?: number
+    episodesRemaining?: number
+    episodesWatched?: number
+    hasSeasons?: boolean
+    seasons?: BulkSeasonData[]
 }
 
 export interface UpdateSeriesRequest {
     title?: string
-    description?: string
     thumbnailUrl?: string
     scheduleType?: ScheduleType
     scheduleValue?: ScheduleValue
@@ -117,11 +191,10 @@ export interface UpdateSeriesRequest {
     endDate?: string | null
     tagIds?: number[]
     isActive?: boolean
-    totalEpisodes?: number | null
-    watchedEpisodes?: number
+    episodesAired?: number
+    episodesRemaining?: number | null
+    episodesWatched?: number
     isWatched?: boolean
-    missedPeriods?: number
-    autoAdvanceTotalEpisodes?: boolean
     hasSeasons?: boolean
     /** Full seasons array — server diffs against DB (create/update/delete) */
     seasons?: BulkSeasonData[]
@@ -139,10 +212,9 @@ export interface BulkSeasonData {
     startDate: string
     endDate?: string | null
     isActive?: boolean
-    totalEpisodes?: number | null
-    watchedEpisodes?: number
-    missedPeriods?: number
-    autoAdvanceTotalEpisodes?: boolean
+    episodesAired?: number
+    episodesRemaining?: number | null
+    episodesWatched?: number
 }
 
 // Season API request types
@@ -154,9 +226,9 @@ export interface CreateSeasonRequest {
     scheduleValue: ScheduleValue
     startDate: string
     endDate?: string
-    totalEpisodes?: number
-    watchedEpisodes?: number
-    autoAdvanceTotalEpisodes?: boolean
+    episodesAired?: number
+    episodesRemaining?: number
+    episodesWatched?: number
 }
 
 export interface UpdateSeasonRequest {
@@ -168,16 +240,15 @@ export interface UpdateSeasonRequest {
     startDate?: string
     endDate?: string | null
     isActive?: boolean
-    totalEpisodes?: number | null
-    watchedEpisodes?: number
+    episodesAired?: number
+    episodesRemaining?: number | null
+    episodesWatched?: number
     isWatched?: boolean
-    missedPeriods?: number
-    autoAdvanceTotalEpisodes?: boolean
 }
 
 // Progress update request
 export interface UpdateProgressRequest {
-    watchedEpisodes?: number
+    episodesWatched?: number
     increment?: number // Alternative: increment by this amount
 }
 
@@ -212,11 +283,14 @@ export interface SeriesFilters {
     platform?: string
     search?: string
     isWatched?: boolean // Filter by watched tab
-    sortBy?: 'custom' | 'missedPeriods' | 'createdAt' | 'title'
+    sortBy?: 'custom' | 'episodesBehind' | 'createdAt' | 'title'
     sortOrder?: 'asc' | 'desc'
 }
 
+// ============================================================
 // Helper type guards
+// ============================================================
+
 export function isDailySchedule(value: ScheduleValue): value is DailySchedule {
     return 'interval' in value && !('days' in value)
 }
@@ -251,57 +325,153 @@ export function isBacklogSeries(series: Series): boolean {
     return series.scheduleType === 'none'
 }
 
-// Status display helpers - updated to include backlog
+// ============================================================
+// Status helpers
+// ============================================================
+
+// A series/season can have multiple statuses simultaneously
 export type SeriesStatus = 'behind' | 'caught-up' | 'ended' | 'backlog'
 
-export function getSeriesStatus(series: Series): SeriesStatus {
-    // Backlog series have their own status
+/**
+ * Get all applicable statuses for a series.
+ * A series can be both 'ended' AND 'behind' if it ended with unwatched episodes.
+ */
+export function getSeriesStatuses(
+    series: Series | SeriesEnriched,
+): SeriesStatus[] {
     if (series.scheduleType === 'none') {
-        return 'backlog'
+        return ['backlog']
     }
+
+    const { episodesBehind } =
+        'episodesBehind' in series ? series : computeEpisodeFields(series)
+
+    const statuses: SeriesStatus[] = []
+
     if (!series.isActive) {
-        return 'ended'
+        statuses.push('ended')
     }
-    if (series.missedPeriods > 0) {
-        return 'behind'
+
+    if (episodesBehind > 0) {
+        statuses.push('behind')
     }
-    return 'caught-up'
+
+    if (statuses.length === 0) {
+        statuses.push('caught-up')
+    }
+
+    return statuses
 }
 
-// Check if series is complete (all episodes watched)
-export function isSeriesComplete(series: Series): boolean {
-    if (series.totalEpisodes === null || series.totalEpisodes === undefined) {
-        return false
-    }
-    return series.watchedEpisodes >= series.totalEpisodes
+/**
+ * Get the primary status for a series (for filtering/sorting).
+ * Backward-compatible single-status accessor.
+ */
+export function getSeriesStatus(series: Series | SeriesEnriched): SeriesStatus {
+    const statuses = getSeriesStatuses(series)
+    // 'behind' takes priority for filtering purposes
+    if (statuses.includes('behind')) return 'behind'
+    return statuses[0]
 }
 
-// Get progress percentage
-export function getProgressPercentage(series: Series): number | null {
-    if (series.totalEpisodes === null || series.totalEpisodes === undefined) {
-        return null
+/**
+ * Get all applicable statuses for a season.
+ */
+export function getSeasonStatuses(
+    season: Season | SeasonEnriched,
+): SeriesStatus[] {
+    if (season.scheduleType === 'none') {
+        return ['backlog']
     }
-    if (series.totalEpisodes === 0) {
+
+    const { episodesBehind } =
+        'episodesBehind' in season ? season : computeEpisodeFields(season)
+
+    const statuses: SeriesStatus[] = []
+
+    if (!season.isActive) {
+        statuses.push('ended')
+    }
+
+    if (episodesBehind > 0) {
+        statuses.push('behind')
+    }
+
+    if (statuses.length === 0) {
+        statuses.push('caught-up')
+    }
+
+    return statuses
+}
+
+/**
+ * Get the primary status for a season.
+ */
+export function getSeasonStatus(season: Season | SeasonEnriched): SeriesStatus {
+    const statuses = getSeasonStatuses(season)
+    if (statuses.includes('behind')) return 'behind'
+    return statuses[0]
+}
+
+// Check if a series is a backlog season (no schedule)
+export function isBacklogSeason(season: Season): boolean {
+    return season.scheduleType === 'none'
+}
+
+// ============================================================
+// Progress helpers
+// ============================================================
+
+/**
+ * Check if series is complete (all episodes watched)
+ */
+export function isSeriesComplete(series: Series | SeriesEnriched): boolean {
+    const { episodesTotal } =
+        'episodesTotal' in series ? series : computeEpisodeFields(series)
+    if (episodesTotal === 0 && series.episodesRemaining === null) {
+        return false // unknown total
+    }
+    return series.episodesWatched >= episodesTotal
+}
+
+/**
+ * Get progress percentage
+ */
+export function getProgressPercentage(
+    series: Series | SeriesEnriched,
+): number | null {
+    const { episodesTotal } =
+        'episodesTotal' in series ? series : computeEpisodeFields(series)
+    if (episodesTotal === 0 && series.episodesRemaining === null) {
+        return null // unknown total
+    }
+    if (episodesTotal === 0) {
         return 100
     }
     return Math.min(
         100,
-        Math.round((series.watchedEpisodes / series.totalEpisodes) * 100),
+        Math.round((series.episodesWatched / episodesTotal) * 100),
     )
 }
 
-// Format progress string
-export function formatProgress(series: Series): string | null {
+/**
+ * Format progress string
+ */
+export function formatProgress(series: Series | SeriesEnriched): string | null {
+    const { episodesTotal } =
+        'episodesTotal' in series ? series : computeEpisodeFields(series)
     if (
-        series.watchedEpisodes === 0 &&
-        (series.totalEpisodes === null || series.totalEpisodes === undefined)
+        series.episodesWatched === 0 &&
+        series.episodesAired === 0 &&
+        series.episodesRemaining === null
     ) {
         return null
     }
-    if (series.totalEpisodes === null || series.totalEpisodes === undefined) {
-        return `${series.watchedEpisodes} Episodes`
+    if (series.episodesRemaining === null) {
+        // No known total — show watched vs aired
+        return `${series.episodesWatched}/${series.episodesAired} Episodes`
     }
-    return `${series.watchedEpisodes}/${series.totalEpisodes} Episodes`
+    return `${series.episodesWatched}/${episodesTotal} Episodes`
 }
 
 // Default schedule value
@@ -320,71 +490,61 @@ export function getDefaultScheduleValue(type: ScheduleType): ScheduleValue {
     }
 }
 
+// ============================================================
 // Season helpers
-
-/**
- * Get the status of a season (same logic as series)
- */
-export function getSeasonStatus(season: Season): SeriesStatus {
-    if (season.scheduleType === 'none') {
-        return 'backlog'
-    }
-    if (!season.isActive) {
-        return 'ended'
-    }
-    if (season.missedPeriods > 0) {
-        return 'behind'
-    }
-    return 'caught-up'
-}
-
-/**
- * Check if a season is a backlog season (no schedule)
- */
-export function isBacklogSeason(season: Season): boolean {
-    return season.scheduleType === 'none'
-}
+// ============================================================
 
 /**
  * Check if a season is complete (all episodes watched)
  */
-export function isSeasonComplete(season: Season): boolean {
-    if (season.totalEpisodes === null || season.totalEpisodes === undefined) {
+export function isSeasonComplete(season: Season | SeasonEnriched): boolean {
+    const { episodesTotal } =
+        'episodesTotal' in season ? season : computeEpisodeFields(season)
+    if (episodesTotal === 0 && season.episodesRemaining === null) {
         return false
     }
-    return season.watchedEpisodes >= season.totalEpisodes
+    return season.episodesWatched >= episodesTotal
 }
 
 /**
  * Get season progress percentage
  */
-export function getSeasonProgressPercentage(season: Season): number | null {
-    if (season.totalEpisodes === null || season.totalEpisodes === undefined) {
+export function getSeasonProgressPercentage(
+    season: Season | SeasonEnriched,
+): number | null {
+    const { episodesTotal } =
+        'episodesTotal' in season ? season : computeEpisodeFields(season)
+    if (episodesTotal === 0 && season.episodesRemaining === null) {
         return null
     }
-    if (season.totalEpisodes === 0) {
+    if (episodesTotal === 0) {
         return 100
     }
     return Math.min(
         100,
-        Math.round((season.watchedEpisodes / season.totalEpisodes) * 100),
+        Math.round((season.episodesWatched / episodesTotal) * 100),
     )
 }
 
 /**
  * Format season progress string
  */
-export function formatSeasonProgress(season: Season): string | null {
+export function formatSeasonProgress(
+    season: Season | SeasonEnriched,
+): string | null {
+    const { episodesTotal } =
+        'episodesTotal' in season ? season : computeEpisodeFields(season)
     if (
-        season.watchedEpisodes === 0 &&
-        (season.totalEpisodes === null || season.totalEpisodes === undefined)
+        season.episodesWatched === 0 &&
+        season.episodesAired === 0 &&
+        season.episodesRemaining === null
     ) {
         return null
     }
-    if (season.totalEpisodes === null || season.totalEpisodes === undefined) {
-        return `${season.watchedEpisodes} Episodes`
+    if (season.episodesRemaining === null) {
+        return `${season.episodesWatched}/${season.episodesAired} Aired`
     }
-    return `${season.watchedEpisodes}/${season.totalEpisodes} Episodes`
+    return `${season.episodesWatched}/${episodesTotal} Episodes`
 }
 
 /**
@@ -446,26 +606,29 @@ export function formatStatusSummary(summary: SeriesStatusSummary): string {
  * Compute aggregate episode progress across all seasons
  */
 export function getAggregateProgress(seasons: Season[]): {
-    watchedEpisodes: number
-    totalEpisodes: number | null
+    episodesWatched: number
+    episodesAired: number
+    episodesRemaining: number | null
+    episodesTotal: number
 } {
     let watched = 0
-    let total = 0
-    let hasTotal = false
+    let aired = 0
+    let remaining = 0
+    let hasRemaining = false
 
     for (const season of seasons) {
-        watched += season.watchedEpisodes
-        if (
-            season.totalEpisodes !== null &&
-            season.totalEpisodes !== undefined
-        ) {
-            total += season.totalEpisodes
-            hasTotal = true
+        watched += season.episodesWatched
+        aired += season.episodesAired
+        if (season.episodesRemaining !== null) {
+            remaining += season.episodesRemaining
+            hasRemaining = true
         }
     }
 
     return {
-        watchedEpisodes: watched,
-        totalEpisodes: hasTotal ? total : null,
+        episodesWatched: watched,
+        episodesAired: aired,
+        episodesRemaining: hasRemaining ? remaining : null,
+        episodesTotal: aired + (hasRemaining ? remaining : 0),
     }
 }

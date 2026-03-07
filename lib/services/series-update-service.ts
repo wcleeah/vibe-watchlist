@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { seasons, series, userConfig } from '@/lib/db/schema'
+import { seasons, series, seriesConfig, userConfig } from '@/lib/db/schema'
 import { ScheduleService } from '@/lib/services/schedule-service'
 import { getEndOfHKTDay, isHKTAfter, nowHKT, toHKT } from '@/lib/utils/hkt-date'
 import type { ScheduleType, ScheduleValue } from '@/types/series'
@@ -19,11 +19,9 @@ export interface SeriesUpdateResult {
 
 export class SeriesUpdateService {
     /**
-     * Updates all active series and season schedules
-     * This method can be called from:
-     * - Trigger.dev scheduled tasks
-     * - Manual API endpoints
-     * - Admin dashboard actions
+     * Updates all active series and season schedules.
+     * Increments episodesAired and decrements episodesRemaining
+     * for each new episode period that has passed.
      */
     static async updateSeriesSchedules(): Promise<SeriesUpdateResult> {
         console.log('SeriesUpdateService: Starting series schedule update')
@@ -31,7 +29,7 @@ export class SeriesUpdateService {
         const timezone = await SeriesUpdateService.getTimezone()
         const now = nowHKT()
 
-        // 1. Update standalone series (hasSeasons=false) — existing logic
+        // 1. Update standalone series (hasSeasons=false) via series_config
         const standaloneResult =
             await SeriesUpdateService.updateStandaloneSeries(now, timezone)
 
@@ -58,7 +56,8 @@ export class SeriesUpdateService {
     }
 
     /**
-     * Update standalone series (hasSeasons=false) that have due episodes
+     * Update standalone series (hasSeasons=false) that have due episodes.
+     * Schedule/episode data now lives on series_config, not on series.
      */
     private static async updateStandaloneSeries(
         now: Date,
@@ -69,50 +68,58 @@ export class SeriesUpdateService {
         deactivated: number
         errors: number
     }> {
-        // Query active standalone series where nextEpisodeAt is due
-        const activeSeries = await db
-            .select()
-            .from(series)
+        // Query active series_config rows where nextEpisodeAt is due,
+        // joined with series to filter hasSeasons=false
+        const activeConfigs = await db
+            .select({
+                config: seriesConfig,
+                seriesId: series.id,
+            })
+            .from(seriesConfig)
+            .innerJoin(series, eq(seriesConfig.seriesId, series.id))
             .where(
                 and(
-                    eq(series.isActive, true),
+                    eq(seriesConfig.isActive, true),
                     eq(series.hasSeasons, false),
-                    sql`${series.nextEpisodeAt} <= ${now}`,
+                    sql`${seriesConfig.nextEpisodeAt} <= ${now}`,
                 ),
             )
 
         console.log(
-            `SeriesUpdateService: Found ${activeSeries.length} standalone series to update`,
+            `SeriesUpdateService: Found ${activeConfigs.length} standalone series to update`,
         )
 
         let updatedCount = 0
         let deactivatedCount = 0
         let errorCount = 0
 
-        for (const s of activeSeries) {
+        for (const row of activeConfigs) {
+            const config = row.config
             try {
-                const scheduleType = s.scheduleType as ScheduleType
+                const scheduleType = config.scheduleType as ScheduleType
 
                 // Skip backlog series - they don't have schedules to update
                 if (scheduleType === 'none') {
                     console.log(
-                        `SeriesUpdateService: Skipping backlog series ${s.id}`,
+                        `SeriesUpdateService: Skipping backlog series config ${config.id} (series ${config.seriesId})`,
                     )
                     continue
                 }
 
                 const scheduleValue = ScheduleService.parseScheduleValue(
                     scheduleType,
-                    s.scheduleValue,
+                    config.scheduleValue,
                 )
 
-                const missedPeriods = ScheduleService.calculateMissedPeriods(
-                    s.nextEpisodeAt,
-                    now,
-                    scheduleType,
-                    scheduleValue as ScheduleValue,
-                    timezone,
-                )
+                // Count how many new episodes have aired since last update
+                const newEpisodes =
+                    ScheduleService.calculateNewEpisodesSinceDate(
+                        config.nextEpisodeAt,
+                        now,
+                        scheduleType,
+                        scheduleValue as ScheduleValue,
+                        timezone,
+                    )
 
                 // Calculate next episode date (ensuring it's in the future in HKT)
                 let nextEpisodeAt = toHKT(now)
@@ -128,32 +135,40 @@ export class SeriesUpdateService {
 
                 // Check if series has ended (current HKT time is past end of endDate day)
                 const hasEnded =
-                    s.endDate && isHKTAfter(now, getEndOfHKTDay(s.endDate))
+                    config.endDate &&
+                    isHKTAfter(now, getEndOfHKTDay(config.endDate))
 
-                // Calculate new total episodes if auto-advance is enabled
-                let newTotalEpisodes = s.totalEpisodes
-                if (s.autoAdvanceTotalEpisodes && missedPeriods > 0) {
-                    const currentTotal = s.totalEpisodes ?? 0
-                    newTotalEpisodes = currentTotal + missedPeriods
-                }
+                // Increment episodesAired, decrement episodesRemaining
+                const newAired = config.episodesAired + newEpisodes
+                const newRemaining =
+                    config.episodesRemaining !== null
+                        ? Math.max(0, config.episodesRemaining - newEpisodes)
+                        : null
 
+                // Update series_config (schedule/episode data)
                 await db
-                    .update(series)
+                    .update(seriesConfig)
                     .set({
-                        missedPeriods: s.missedPeriods + missedPeriods,
+                        episodesAired: newAired,
+                        ...(newRemaining !== null
+                            ? { episodesRemaining: newRemaining }
+                            : {}),
                         nextEpisodeAt,
                         isActive: !hasEnded,
                         updatedAt: now,
-                        ...(s.autoAdvanceTotalEpisodes && missedPeriods > 0
-                            ? { totalEpisodes: newTotalEpisodes }
-                            : {}),
                     })
-                    .where(eq(series.id, s.id))
+                    .where(eq(seriesConfig.id, config.id))
+
+                // Also update series.updatedAt
+                await db
+                    .update(series)
+                    .set({ updatedAt: now })
+                    .where(eq(series.id, config.seriesId))
 
                 if (hasEnded) {
                     deactivatedCount++
                     console.log(
-                        `SeriesUpdateService: Deactivated series ${s.id} (ended)`,
+                        `SeriesUpdateService: Deactivated series config ${config.id} (series ${config.seriesId}, ended)`,
                     )
                 } else {
                     updatedCount++
@@ -161,14 +176,14 @@ export class SeriesUpdateService {
             } catch (error) {
                 errorCount++
                 console.error(
-                    `SeriesUpdateService: Error updating series ${s.id}:`,
+                    `SeriesUpdateService: Error updating series config ${config.id} (series ${config.seriesId}):`,
                     error,
                 )
             }
         }
 
         return {
-            processed: activeSeries.length,
+            processed: activeConfigs.length,
             updated: updatedCount,
             deactivated: deactivatedCount,
             errors: errorCount,
@@ -220,13 +235,15 @@ export class SeriesUpdateService {
                     s.scheduleValue,
                 )
 
-                const missedPeriods = ScheduleService.calculateMissedPeriods(
-                    s.nextEpisodeAt,
-                    now,
-                    scheduleType,
-                    scheduleValue as ScheduleValue,
-                    timezone,
-                )
+                // Count how many new episodes have aired since last update
+                const newEpisodes =
+                    ScheduleService.calculateNewEpisodesSinceDate(
+                        s.nextEpisodeAt,
+                        now,
+                        scheduleType,
+                        scheduleValue as ScheduleValue,
+                        timezone,
+                    )
 
                 // Calculate next episode date (ensuring it's in the future)
                 let nextEpisodeAt = toHKT(now)
@@ -244,23 +261,23 @@ export class SeriesUpdateService {
                 const hasEnded =
                     s.endDate && isHKTAfter(now, getEndOfHKTDay(s.endDate))
 
-                // Calculate new total episodes if auto-advance is enabled
-                let newTotalEpisodes = s.totalEpisodes
-                if (s.autoAdvanceTotalEpisodes && missedPeriods > 0) {
-                    const currentTotal = s.totalEpisodes ?? 0
-                    newTotalEpisodes = currentTotal + missedPeriods
-                }
+                // Increment episodesAired, decrement episodesRemaining
+                const newAired = s.episodesAired + newEpisodes
+                const newRemaining =
+                    s.episodesRemaining !== null
+                        ? Math.max(0, s.episodesRemaining - newEpisodes)
+                        : null
 
                 await db
                     .update(seasons)
                     .set({
-                        missedPeriods: s.missedPeriods + missedPeriods,
+                        episodesAired: newAired,
+                        ...(newRemaining !== null
+                            ? { episodesRemaining: newRemaining }
+                            : {}),
                         nextEpisodeAt,
                         isActive: !hasEnded,
                         updatedAt: now,
-                        ...(s.autoAdvanceTotalEpisodes && missedPeriods > 0
-                            ? { totalEpisodes: newTotalEpisodes }
-                            : {}),
                     })
                     .where(eq(seasons.id, s.id))
 

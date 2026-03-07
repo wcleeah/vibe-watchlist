@@ -2,7 +2,14 @@ import { and, asc, eq, inArray } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
-import { seasons, series, seriesTags, tags } from '@/lib/db/schema'
+import {
+    seasons,
+    series,
+    seriesConfig,
+    seriesTags,
+    tags,
+} from '@/lib/db/schema'
+import { fetchSeriesWithTags } from '@/lib/db/series-helpers'
 import { ScheduleService } from '@/lib/services/schedule-service'
 import {
     formatDateToHKTString,
@@ -18,73 +25,6 @@ import type {
 
 interface RouteParams {
     params: Promise<{ id: string }>
-}
-
-// Helper function to fetch a single series with its tags
-async function fetchSeriesWithTags(seriesId: number) {
-    // Fetch series
-    const seriesResult = await db
-        .select({
-            id: series.id,
-            url: series.url,
-            title: series.title,
-            description: series.description,
-            platform: series.platform,
-            thumbnailUrl: series.thumbnailUrl,
-            scheduleType: series.scheduleType,
-            scheduleValue: series.scheduleValue,
-            startDate: series.startDate,
-            endDate: series.endDate,
-            lastWatchedAt: series.lastWatchedAt,
-            missedPeriods: series.missedPeriods,
-            nextEpisodeAt: series.nextEpisodeAt,
-            isActive: series.isActive,
-            totalEpisodes: series.totalEpisodes,
-            watchedEpisodes: series.watchedEpisodes,
-            isWatched: series.isWatched,
-            autoAdvanceTotalEpisodes: series.autoAdvanceTotalEpisodes,
-            hasSeasons: series.hasSeasons,
-            sortOrder: series.sortOrder,
-            createdAt: series.createdAt,
-            updatedAt: series.updatedAt,
-        })
-        .from(series)
-        .where(eq(series.id, seriesId))
-        .limit(1)
-
-    if (seriesResult.length === 0) {
-        return null
-    }
-
-    const s = seriesResult[0]
-
-    // Fetch tags for this series
-    const tagsResult = await db
-        .select({
-            tagId: tags.id,
-            tagName: tags.name,
-            tagColor: tags.color,
-        })
-        .from(seriesTags)
-        .innerJoin(tags, eq(seriesTags.tagId, tags.id))
-        .where(eq(seriesTags.seriesId, seriesId))
-
-    const parsedTags = tagsResult.map((t) => ({
-        id: t.tagId,
-        name: t.tagName,
-        color: t.tagColor,
-    }))
-
-    return {
-        ...s,
-        startDate: formatDateToHKTString(s.startDate),
-        endDate: formatDateToHKTString(s.endDate),
-        scheduleValue: ScheduleService.parseScheduleValue(
-            s.scheduleType as ScheduleType,
-            s.scheduleValue,
-        ),
-        tags: parsedTags,
-    }
 }
 
 /**
@@ -145,11 +85,9 @@ async function syncSeasons(seriesId: number, seasonsData: BulkSeasonData[]) {
                     endDate: parsedEndDate,
                     nextEpisodeAt,
                     isActive: s.isActive ?? true,
-                    totalEpisodes: s.totalEpisodes ?? null,
-                    watchedEpisodes: s.watchedEpisodes ?? 0,
-                    missedPeriods: s.missedPeriods ?? 0,
-                    autoAdvanceTotalEpisodes:
-                        s.autoAdvanceTotalEpisodes ?? false,
+                    episodesAired: s.episodesAired ?? 0,
+                    episodesRemaining: s.episodesRemaining ?? null,
+                    episodesWatched: s.episodesWatched ?? 0,
                     sortOrder: i,
                     updatedAt: new Date(),
                 })
@@ -166,12 +104,11 @@ async function syncSeasons(seriesId: number, seasonsData: BulkSeasonData[]) {
                 startDate: parsedStartDate,
                 endDate: parsedEndDate,
                 nextEpisodeAt,
-                missedPeriods: s.missedPeriods ?? 0,
                 isActive: s.isActive ?? true,
-                totalEpisodes: s.totalEpisodes ?? null,
-                watchedEpisodes: s.watchedEpisodes ?? 0,
+                episodesAired: s.episodesAired ?? 0,
+                episodesRemaining: s.episodesRemaining ?? null,
+                episodesWatched: s.episodesWatched ?? 0,
                 isWatched: false,
-                autoAdvanceTotalEpisodes: s.autoAdvanceTotalEpisodes ?? false,
                 sortOrder: i,
             })
         }
@@ -250,7 +187,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const body: UpdateSeriesRequest = await request.json()
         const {
             title,
-            description,
             thumbnailUrl,
             scheduleType,
             scheduleValue,
@@ -258,11 +194,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             endDate,
             tagIds,
             isActive,
-            totalEpisodes,
-            watchedEpisodes,
+            episodesAired,
+            episodesRemaining,
+            episodesWatched,
             isWatched,
-            missedPeriods,
-            autoAdvanceTotalEpisodes,
             hasSeasons,
             seasons: seasonsData,
         } = body
@@ -281,88 +216,160 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             )
         }
 
-        // Build update object
-        const updateData: Record<string, unknown> = {
+        // Fetch existing series_config (may not exist for multi-season series)
+        const existingConfigRows = await db
+            .select()
+            .from(seriesConfig)
+            .where(eq(seriesConfig.seriesId, seriesId))
+            .limit(1)
+        const existingConfig =
+            existingConfigRows.length > 0 ? existingConfigRows[0] : null
+
+        // ── Detect mode switch ──
+        const wasSeasonsMode = existingSeries[0].hasSeasons
+        const willBeSeasonsMode =
+            hasSeasons !== undefined ? hasSeasons : wasSeasonsMode
+        const switchingToSeasons = !wasSeasonsMode && willBeSeasonsMode
+        const switchingToSingle = wasSeasonsMode && !willBeSeasonsMode
+
+        // ── Build series metadata update ──
+        const seriesUpdateData: Record<string, unknown> = {
             updatedAt: new Date(),
         }
+        if (title !== undefined) seriesUpdateData.title = title
+        if (thumbnailUrl !== undefined)
+            seriesUpdateData.thumbnailUrl = thumbnailUrl
+        if (isWatched !== undefined) seriesUpdateData.isWatched = isWatched
+        if (hasSeasons !== undefined) seriesUpdateData.hasSeasons = hasSeasons
 
-        if (title !== undefined) updateData.title = title
-        if (description !== undefined) updateData.description = description
-        if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl
-        if (isActive !== undefined) updateData.isActive = isActive
-        if (totalEpisodes !== undefined)
-            updateData.totalEpisodes = totalEpisodes
-        if (watchedEpisodes !== undefined)
-            updateData.watchedEpisodes = watchedEpisodes
-        if (isWatched !== undefined) updateData.isWatched = isWatched
-        if (missedPeriods !== undefined)
-            updateData.missedPeriods = missedPeriods
-        if (autoAdvanceTotalEpisodes !== undefined)
-            updateData.autoAdvanceTotalEpisodes = autoAdvanceTotalEpisodes
-        if (hasSeasons !== undefined) updateData.hasSeasons = hasSeasons
-
-        // Handle schedule changes
-        if (scheduleType) {
-            const effectiveScheduleValue =
-                scheduleValue ??
-                ScheduleService.getDefaultScheduleValue(scheduleType)
-
-            if (
-                !ScheduleService.isValidScheduleValue(
-                    scheduleType,
-                    effectiveScheduleValue,
-                )
-            ) {
-                return NextResponse.json(
-                    { success: false, error: 'Invalid schedule value' },
-                    { status: 400 },
-                )
-            }
-
-            updateData.scheduleType = scheduleType
-            updateData.scheduleValue = effectiveScheduleValue
-
-            // Recalculate next episode date
-            const baseDate = startDate
-                ? parseToHKT(startDate)
-                : new Date(existingSeries[0].startDate)
-            updateData.nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
-                scheduleType,
-                effectiveScheduleValue,
-                baseDate,
-            )
-        }
-
-        if (startDate !== undefined) {
-            updateData.startDate = parseToHKT(startDate)
-            // Only recalculate next episode if start date changed but schedule didn't
-            if (!scheduleType) {
-                const effectiveScheduleType = existingSeries[0]
-                    .scheduleType as ScheduleType
-                const effectiveScheduleValue =
-                    ScheduleService.parseScheduleValue(
-                        effectiveScheduleType,
-                        existingSeries[0].scheduleValue,
-                    )
-                updateData.nextEpisodeAt =
-                    ScheduleService.calculateNextEpisodeDate(
-                        effectiveScheduleType,
-                        effectiveScheduleValue,
-                        parseToHKT(startDate),
-                    )
-            }
-        }
-
-        if (endDate !== undefined) {
-            updateData.endDate = endDate ? getEndOfHKTDay(endDate) : null
-        }
-
-        // Update series
+        // Update series metadata
         await db
             .update(series)
-            .set(updateData)
+            .set(seriesUpdateData)
             .where(eq(series.id, seriesId))
-            .returning()
+
+        // ── Mode switch: Single → Seasons ──
+        // Hard delete the series_config row; season rows will be created by syncSeasons below
+        if (switchingToSeasons && existingConfig) {
+            await db
+                .delete(seriesConfig)
+                .where(eq(seriesConfig.seriesId, seriesId))
+        }
+
+        // ── Mode switch: Seasons → Single ──
+        // Hard delete all season rows; series_config will be created by the upsert below
+        if (switchingToSingle) {
+            await db.delete(seasons).where(eq(seasons.seriesId, seriesId))
+        }
+
+        // ── Build seriesConfig update (for single-mode series) ──
+        // Only update config fields if the series will be in single mode
+        const willHaveConfig = !willBeSeasonsMode
+
+        if (willHaveConfig) {
+            // Re-check config existence after potential mode-switch deletion
+            const currentConfig = switchingToSingle ? null : existingConfig
+
+            const configUpdateData: Record<string, unknown> = {
+                updatedAt: new Date(),
+            }
+
+            if (isActive !== undefined) configUpdateData.isActive = isActive
+            if (episodesAired !== undefined)
+                configUpdateData.episodesAired = episodesAired
+            if (episodesRemaining !== undefined)
+                configUpdateData.episodesRemaining = episodesRemaining
+            if (episodesWatched !== undefined)
+                configUpdateData.episodesWatched = episodesWatched
+
+            // Handle schedule changes
+            if (scheduleType) {
+                const effectiveScheduleValue =
+                    scheduleValue ??
+                    ScheduleService.getDefaultScheduleValue(scheduleType)
+
+                if (
+                    !ScheduleService.isValidScheduleValue(
+                        scheduleType,
+                        effectiveScheduleValue,
+                    )
+                ) {
+                    return NextResponse.json(
+                        { success: false, error: 'Invalid schedule value' },
+                        { status: 400 },
+                    )
+                }
+
+                configUpdateData.scheduleType = scheduleType
+                configUpdateData.scheduleValue = effectiveScheduleValue
+
+                // Recalculate next episode date
+                const baseDate = startDate
+                    ? parseToHKT(startDate)
+                    : (currentConfig?.startDate ?? new Date())
+                configUpdateData.nextEpisodeAt =
+                    ScheduleService.calculateNextEpisodeDate(
+                        scheduleType,
+                        effectiveScheduleValue,
+                        baseDate,
+                    )
+            }
+
+            if (startDate !== undefined) {
+                configUpdateData.startDate = parseToHKT(startDate)
+                // Only recalculate next episode if start date changed but schedule didn't
+                if (!scheduleType && currentConfig) {
+                    const effectiveScheduleType =
+                        currentConfig.scheduleType as ScheduleType
+                    const effectiveScheduleValue =
+                        ScheduleService.parseScheduleValue(
+                            effectiveScheduleType,
+                            currentConfig.scheduleValue,
+                        )
+                    configUpdateData.nextEpisodeAt =
+                        ScheduleService.calculateNextEpisodeDate(
+                            effectiveScheduleType,
+                            effectiveScheduleValue,
+                            parseToHKT(startDate),
+                        )
+                }
+            }
+
+            if (endDate !== undefined) {
+                configUpdateData.endDate = endDate
+                    ? getEndOfHKTDay(endDate)
+                    : null
+            }
+
+            // Upsert: update existing config or create new one
+            if (currentConfig) {
+                await db
+                    .update(seriesConfig)
+                    .set(configUpdateData)
+                    .where(eq(seriesConfig.seriesId, seriesId))
+            } else {
+                // No config row — create one with defaults + incoming overrides
+                await db.insert(seriesConfig).values({
+                    seriesId,
+                    scheduleType:
+                        (configUpdateData.scheduleType as string) ?? 'none',
+                    scheduleValue: configUpdateData.scheduleValue ?? {},
+                    startDate:
+                        (configUpdateData.startDate as Date) ?? new Date(),
+                    endDate: (configUpdateData.endDate as Date) ?? null,
+                    nextEpisodeAt:
+                        (configUpdateData.nextEpisodeAt as Date) ?? new Date(0),
+                    isActive: (configUpdateData.isActive as boolean) ?? true,
+                    episodesAired:
+                        (configUpdateData.episodesAired as number) ?? 0,
+                    episodesRemaining:
+                        (configUpdateData.episodesRemaining as number | null) ??
+                        null,
+                    episodesWatched:
+                        (configUpdateData.episodesWatched as number) ?? 0,
+                })
+            }
+        }
 
         // Handle tag updates if provided
         if (tagIds !== undefined) {
@@ -395,25 +402,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             }
         }
 
-        // Handle bulk seasons sync if provided
-        if (seasonsData !== undefined) {
+        // Handle bulk seasons sync if provided (only in seasons mode)
+        if (willBeSeasonsMode && seasonsData !== undefined) {
             await syncSeasons(seriesId, seasonsData)
-        } else if (hasSeasons === false) {
-            // hasSeasons set to false without explicit seasons array — delete all
-            await db.delete(seasons).where(eq(seasons.seriesId, seriesId))
         }
 
         // Fetch updated series with tags
-        const seriesWithTags = await fetchSeriesWithTags(seriesId)
+        const updatedSeries = await fetchSeriesWithTags(seriesId)
 
-        if (!seriesWithTags) {
+        if (!updatedSeries) {
             return NextResponse.json(
                 { success: false, error: 'Series not found' },
                 { status: 404 },
             )
         }
 
-        return NextResponse.json({ success: true, series: seriesWithTags })
+        return NextResponse.json({ success: true, series: updatedSeries })
     } catch (error) {
         console.error('Error updating series:', error)
         return NextResponse.json(
@@ -450,7 +454,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
             )
         }
 
-        // Delete series (cascade will handle seriesTags)
+        // Delete series (cascade handles seriesConfig, seriesTags, seasons)
         await db.delete(series).where(eq(series.id, seriesId))
 
         return NextResponse.json({ success: true })

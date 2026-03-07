@@ -123,8 +123,8 @@ export class SeriesService {
     }
 
     /**
-     * Catch up on a series (reset missed periods)
-     * This resets the missed count and updates next episode date
+     * Catch up on a series (set episodesWatched = episodesAired)
+     * Marks all aired episodes as watched
      */
     static async catchUp(id: number): Promise<SeriesWithTags> {
         const response = await fetch(

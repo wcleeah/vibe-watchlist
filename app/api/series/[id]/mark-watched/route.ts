@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
-import { series } from '@/lib/db/schema'
+import { series, seriesConfig } from '@/lib/db/schema'
 import { fetchSeriesWithTags } from '@/lib/db/series-helpers'
 
 interface RouteParams {
@@ -39,15 +39,31 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
 
         const now = new Date()
 
-        // Mark series as watched
+        // Mark series as watched (isWatched lives on series table)
         await db
             .update(series)
             .set({
                 isWatched: true,
-                lastWatchedAt: now,
                 updatedAt: now,
             })
             .where(eq(series.id, seriesId))
+
+        // Update lastWatchedAt on seriesConfig if it exists (single-mode series)
+        const configRows = await db
+            .select()
+            .from(seriesConfig)
+            .where(eq(seriesConfig.seriesId, seriesId))
+            .limit(1)
+
+        if (configRows.length > 0) {
+            await db
+                .update(seriesConfig)
+                .set({
+                    lastWatchedAt: now,
+                    updatedAt: now,
+                })
+                .where(eq(seriesConfig.seriesId, seriesId))
+        }
 
         // Fetch updated series with tags
         const seriesWithTags = await fetchSeriesWithTags(seriesId)

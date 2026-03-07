@@ -24,15 +24,15 @@ import { usePlatforms } from '@/hooks/use-platforms'
 import { useSeries } from '@/hooks/use-series'
 import { useTags } from '@/hooks/use-tags'
 import type { SeriesFilters, SeriesWithTags } from '@/types/series'
-import { isBacklogSeries } from '@/types/series'
+import { computeEpisodeFields, isBacklogSeries } from '@/types/series'
 
 type TabType = 'active' | 'watched'
 type StatusFilter = 'all' | 'behind' | 'caught-up' | 'backlog'
 
 const SORT_OPTIONS: SortOption[] = [
     { value: 'custom', label: 'Custom Order' },
-    { value: 'missedPeriods-desc', label: 'Most Behind' },
-    { value: 'missedPeriods-asc', label: 'Least Behind' },
+    { value: 'episodesBehind-desc', label: 'Most Behind' },
+    { value: 'episodesBehind-asc', label: 'Least Behind' },
     { value: 'createdAt-desc', label: 'Newest First' },
     { value: 'createdAt-asc', label: 'Oldest First' },
     { value: 'title-asc', label: 'Title A-Z' },
@@ -62,7 +62,7 @@ export default function SeriesPage() {
     const [sortBy, sortOrder] = isCustomOrder
         ? (['custom', 'desc'] as const)
         : (sortValue.split('-') as [
-              'missedPeriods' | 'createdAt' | 'title',
+              'episodesBehind' | 'createdAt' | 'title',
               'asc' | 'desc',
           ])
 
@@ -159,7 +159,7 @@ export default function SeriesPage() {
             if (!s.isActive) continue
             if (isBacklogSeries(s)) {
                 counts.backlog++
-            } else if (s.missedPeriods > 0) {
+            } else if (computeEpisodeFields(s).episodesBehind > 0) {
                 counts.behind++
             } else {
                 counts['caught-up']++
@@ -406,6 +406,14 @@ export default function SeriesPage() {
                                 ? activeSeries.reorderSeries
                                 : watchedSeries.reorderSeries
                             : undefined
+                    }
+                    seasonCache={activeSeries.seasonCache}
+                    onCacheSeasonForIncrement={
+                        activeSeries.cacheSeasonForIncrement
+                    }
+                    onClearSeasonCache={activeSeries.clearSeasonCache}
+                    onIncrementSeasonProgress={
+                        activeSeries.incrementSeasonProgress
                     }
                 />
 

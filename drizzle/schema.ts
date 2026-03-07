@@ -100,26 +100,6 @@ export const videoTags = pgTable("video_tags", {
 		}).onDelete("cascade"),
 ]);
 
-export const comingSoon = pgTable("coming_soon", {
-	id: serial().primaryKey().notNull(),
-	url: text().notNull(),
-	title: text(),
-	platform: text().notNull(),
-	thumbnailUrl: text("thumbnail_url"),
-	releaseDate: timestamp("release_date", { mode: 'string' }).notNull(),
-	transformedAt: timestamp("transformed_at", { mode: 'string' }),
-	sortOrder: integer("sort_order").default(0).notNull(),
-	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
-}, (table) => [
-	index("coming_soon_release_date_idx").using("btree", table.releaseDate.asc().nullsLast().op("timestamp_ops")),
-	foreignKey({
-			columns: [table.platform],
-			foreignColumns: [platformConfigs.platformId],
-			name: "coming_soon_platform_fkey"
-		}).onDelete("restrict"),
-]);
-
 export const comingSoonTags = pgTable("coming_soon_tags", {
 	id: serial().primaryKey().notNull(),
 	comingSoonId: integer("coming_soon_id").notNull(),
@@ -137,6 +117,26 @@ export const comingSoonTags = pgTable("coming_soon_tags", {
 		}).onDelete("cascade"),
 ]);
 
+export const comingSoon = pgTable("coming_soon", {
+	id: serial().primaryKey().notNull(),
+	url: text().notNull(),
+	title: text(),
+	platform: text().notNull(),
+	thumbnailUrl: text("thumbnail_url"),
+	releaseDate: timestamp("release_date", { mode: 'string' }).notNull(),
+	sortOrder: integer("sort_order").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+	transformedAt: timestamp("transformed_at", { mode: 'string' }),
+}, (table) => [
+	index("coming_soon_release_date_idx").using("btree", table.releaseDate.asc().nullsLast().op("timestamp_ops")),
+	foreignKey({
+			columns: [table.platform],
+			foreignColumns: [platformConfigs.platformId],
+			name: "coming_soon_platform_fkey"
+		}).onDelete("restrict"),
+]);
+
 export const seasons = pgTable("seasons", {
 	id: serial().primaryKey().notNull(),
 	seriesId: integer("series_id").notNull(),
@@ -148,16 +148,15 @@ export const seasons = pgTable("seasons", {
 	startDate: timestamp("start_date", { mode: 'string' }).notNull(),
 	endDate: timestamp("end_date", { mode: 'string' }),
 	lastWatchedAt: timestamp("last_watched_at", { mode: 'string' }),
-	missedPeriods: integer("missed_periods").default(0).notNull(),
 	nextEpisodeAt: timestamp("next_episode_at", { mode: 'string' }).notNull(),
 	isActive: boolean("is_active").default(true).notNull(),
-	totalEpisodes: integer("total_episodes"),
-	watchedEpisodes: integer("watched_episodes").default(0).notNull(),
 	isWatched: boolean("is_watched").default(false).notNull(),
-	autoAdvanceTotalEpisodes: boolean("auto_advance_total_episodes").default(false).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+	episodesAired: integer("episodes_aired").default(0).notNull(),
+	episodesRemaining: integer("episodes_remaining"),
+	episodesWatched: integer("episodes_watched").default(0).notNull(),
 }, (table) => [
 	index("seasons_is_active_idx").using("btree", table.isActive.asc().nullsLast().op("bool_ops")),
 	index("seasons_next_episode_idx").using("btree", table.nextEpisodeAt.asc().nullsLast().op("timestamp_ops")),
@@ -168,6 +167,32 @@ export const seasons = pgTable("seasons", {
 			name: "seasons_series_id_series_id_fk"
 		}).onDelete("cascade"),
 	unique("seasons_series_id_season_number_unique").on(table.seriesId, table.seasonNumber),
+]);
+
+export const seriesConfig = pgTable("series_config", {
+	id: serial().primaryKey().notNull(),
+	seriesId: integer("series_id").notNull(),
+	scheduleType: text("schedule_type").notNull(),
+	scheduleValue: jsonb("schedule_value").notNull(),
+	startDate: timestamp("start_date", { mode: 'string' }).notNull(),
+	endDate: timestamp("end_date", { mode: 'string' }),
+	lastWatchedAt: timestamp("last_watched_at", { mode: 'string' }),
+	nextEpisodeAt: timestamp("next_episode_at", { mode: 'string' }).notNull(),
+	isActive: boolean("is_active").default(true).notNull(),
+	episodesAired: integer("episodes_aired").default(0).notNull(),
+	episodesRemaining: integer("episodes_remaining"),
+	episodesWatched: integer("episodes_watched").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	index("series_config_is_active_idx").using("btree", table.isActive.asc().nullsLast().op("bool_ops")),
+	index("series_config_next_episode_idx").using("btree", table.nextEpisodeAt.asc().nullsLast().op("timestamp_ops")),
+	foreignKey({
+			columns: [table.seriesId],
+			foreignColumns: [series.id],
+			name: "series_config_series_id_series_id_fk"
+		}).onDelete("cascade"),
+	unique("series_config_series_id_unique").on(table.seriesId),
 ]);
 
 export const apiUsageStats = pgTable("api_usage_stats", {
@@ -248,28 +273,14 @@ export const series = pgTable("series", {
 	id: serial().primaryKey().notNull(),
 	url: text().notNull(),
 	title: text(),
-	description: text(),
 	platform: text().notNull(),
 	thumbnailUrl: text("thumbnail_url"),
-	scheduleType: text("schedule_type").notNull(),
-	scheduleValue: jsonb("schedule_value").notNull(),
-	startDate: timestamp("start_date", { mode: 'string' }).notNull(),
-	endDate: timestamp("end_date", { mode: 'string' }),
-	lastWatchedAt: timestamp("last_watched_at", { mode: 'string' }),
-	missedPeriods: integer("missed_periods").default(0).notNull(),
-	nextEpisodeAt: timestamp("next_episode_at", { mode: 'string' }).notNull(),
-	isActive: boolean("is_active").default(true).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
-	totalEpisodes: integer("total_episodes"),
-	watchedEpisodes: integer("watched_episodes").default(0).notNull(),
 	isWatched: boolean("is_watched").default(false).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
-	autoAdvanceTotalEpisodes: boolean("auto_advance_total_episodes").default(false).notNull(),
 	hasSeasons: boolean("has_seasons").default(false).notNull(),
 }, (table) => [
-	index("series_is_active_idx").using("btree", table.isActive.asc().nullsLast().op("bool_ops")),
-	index("series_next_episode_idx").using("btree", table.nextEpisodeAt.asc().nullsLast().op("timestamp_ops")),
 	foreignKey({
 			columns: [table.platform],
 			foreignColumns: [platformConfigs.platformId],

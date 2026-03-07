@@ -1,19 +1,60 @@
-import { and, asc, eq, gt, ilike, inArray, or, sql } from 'drizzle-orm'
+import { and, asc, eq, ilike, inArray } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
-import { platformConfigs, series, seriesTags, tags } from '@/lib/db/schema'
-import { ScheduleService } from '@/lib/services/schedule-service'
 import {
-    formatDateToHKTString,
-    getEndOfHKTDay,
-    parseToHKT,
-} from '@/lib/utils/hkt-date'
+    platformConfigs,
+    seasons,
+    series,
+    seriesConfig,
+    seriesTags,
+    tags,
+} from '@/lib/db/schema'
+import {
+    fetchSeriesWithConfigs,
+    fetchSeriesWithTags,
+} from '@/lib/db/series-helpers'
+import { ScheduleService } from '@/lib/services/schedule-service'
+import { getEndOfHKTDay, parseToHKT } from '@/lib/utils/hkt-date'
 import type {
+    BulkSeasonData,
     CreateSeriesRequest,
     ScheduleType,
     ScheduleValue,
 } from '@/types/series'
+
+async function syncSeasons(seriesId: number, seasonsData: BulkSeasonData[]) {
+    for (let i = 0; i < seasonsData.length; i++) {
+        const s = seasonsData[i]
+        const parsedStartDate = parseToHKT(s.startDate)
+        const parsedEndDate = s.endDate ? getEndOfHKTDay(s.endDate) : null
+        const effectiveScheduleValue =
+            s.scheduleType === 'none' ? {} : (s.scheduleValue ?? {})
+        const nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
+            s.scheduleType,
+            effectiveScheduleValue as ScheduleValue,
+            parsedStartDate,
+        )
+
+        await db.insert(seasons).values({
+            seriesId,
+            seasonNumber: s.seasonNumber,
+            title: s.title || null,
+            url: s.url || null,
+            scheduleType: s.scheduleType,
+            scheduleValue: effectiveScheduleValue,
+            startDate: parsedStartDate,
+            endDate: parsedEndDate,
+            nextEpisodeAt,
+            isActive: s.isActive ?? true,
+            episodesAired: s.episodesAired ?? 0,
+            episodesRemaining: s.episodesRemaining ?? null,
+            episodesWatched: s.episodesWatched ?? 0,
+            isWatched: false,
+            sortOrder: i,
+        })
+    }
+}
 
 // GET /api/series - Get series with optional filters
 export async function GET(request: NextRequest) {
@@ -23,7 +64,7 @@ export async function GET(request: NextRequest) {
         const platform = searchParams.get('platform')
         const search = searchParams.get('search')
         const isWatchedParam = searchParams.get('isWatched') // 'true' or 'false'
-        const sortBy = searchParams.get('sortBy') // 'custom', 'missedPeriods', 'createdAt', 'title'
+        const sortBy = searchParams.get('sortBy') // 'custom', 'episodesBehind', 'createdAt', 'title'
         const sortOrder = searchParams.get('sortOrder') || 'desc' // 'asc' or 'desc'
 
         const whereConditions = []
@@ -35,96 +76,39 @@ export async function GET(request: NextRequest) {
             whereConditions.push(eq(series.isWatched, false))
         }
 
-        // Filter by status (only applies to active/unwatched series)
-        if (status === 'behind') {
-            whereConditions.push(
-                and(
-                    eq(series.isActive, true),
-                    gt(series.missedPeriods, 0),
-                    sql`${series.scheduleType} != 'none'`,
-                ),
-            )
-        } else if (status === 'caught-up') {
-            whereConditions.push(
-                and(
-                    eq(series.isActive, true),
-                    eq(series.missedPeriods, 0),
-                    sql`${series.scheduleType} != 'none'`,
-                ),
-            )
-        } else if (status === 'backlog') {
-            whereConditions.push(sql`${series.scheduleType} = 'none'`)
-        }
-        // 'all' doesn't add any status filter
+        // Status filters now need to operate via seriesConfig for single-mode series.
+        // For simplicity, we fetch all rows and filter in-memory after flattening,
+        // since status depends on config (single) or season aggregation (multi).
+        // NOTE: We could push filters to SQL via a subquery later if perf matters.
 
         // Filter by platform
         if (platform) {
             whereConditions.push(eq(series.platform, platform))
         }
 
-        // Search in title and description
+        // Search in title
         if (search?.trim()) {
             const searchPattern = `%${search.trim()}%`
-            whereConditions.push(
-                or(
-                    ilike(series.title, searchPattern),
-                    ilike(series.description, searchPattern),
-                ),
-            )
+            whereConditions.push(ilike(series.title, searchPattern))
         }
 
-        // Fetch series without joins
-        const seriesResult = await db
+        // Fetch series with LEFT JOIN on seriesConfig
+        const rows = await db
             .select({
-                id: series.id,
-                url: series.url,
-                title: series.title,
-                description: series.description,
-                platform: series.platform,
-                thumbnailUrl: series.thumbnailUrl,
-                scheduleType: series.scheduleType,
-                scheduleValue: series.scheduleValue,
-                startDate: series.startDate,
-                endDate: series.endDate,
-                lastWatchedAt: series.lastWatchedAt,
-                missedPeriods: series.missedPeriods,
-                nextEpisodeAt: series.nextEpisodeAt,
-                isActive: series.isActive,
-                totalEpisodes: series.totalEpisodes,
-                watchedEpisodes: series.watchedEpisodes,
-                isWatched: series.isWatched,
-                autoAdvanceTotalEpisodes: series.autoAdvanceTotalEpisodes,
-                hasSeasons: series.hasSeasons,
-                createdAt: series.createdAt,
-                updatedAt: series.updatedAt,
+                series: series,
+                config: seriesConfig,
             })
             .from(series)
+            .leftJoin(seriesConfig, eq(series.id, seriesConfig.seriesId))
             .where(
                 whereConditions.length > 0
                     ? and(...whereConditions)
                     : undefined,
             )
-            .orderBy(
-                // Use sortOrder column only for custom order, otherwise use selected column
-                sortBy === 'custom' || !sortBy
-                    ? sql`${series.sortOrder} ASC, ${series.missedPeriods} DESC, ${series.nextEpisodeAt} ASC`
-                    : sortBy === 'missedPeriods'
-                      ? sortOrder === 'asc'
-                          ? sql`${series.missedPeriods} ASC, ${series.nextEpisodeAt} DESC`
-                          : sql`${series.missedPeriods} DESC, ${series.nextEpisodeAt} ASC`
-                      : sortBy === 'title'
-                        ? sortOrder === 'asc'
-                            ? sql`${series.title} ASC`
-                            : sql`${series.title} DESC`
-                        : sortBy === 'createdAt'
-                          ? sortOrder === 'asc'
-                              ? sql`${series.createdAt} ASC`
-                              : sql`${series.createdAt} DESC`
-                          : sql`${series.sortOrder} ASC, ${series.missedPeriods} DESC`,
-            )
+            .orderBy(asc(series.sortOrder))
 
         // Fetch all tags for the series in one query
-        const seriesIds = seriesResult.map((s) => s.id)
+        const seriesIds = rows.map((r) => r.series.id)
         const tagsResult =
             seriesIds.length > 0
                 ? await db
@@ -155,19 +139,86 @@ export async function GET(request: NextRequest) {
             })
         }
 
-        // Merge series with their tags and format dates to HKT
-        const seriesWithTags = seriesResult.map((s) => ({
-            ...s,
-            startDate: formatDateToHKTString(s.startDate),
-            endDate: formatDateToHKTString(s.endDate),
-            scheduleValue: ScheduleService.parseScheduleValue(
-                s.scheduleType as ScheduleType,
-                s.scheduleValue,
-            ),
-            tags: tagsBySeries.get(s.id) || [],
-        }))
+        const flattenedSeriesMap = await fetchSeriesWithConfigs(seriesIds)
 
-        return NextResponse.json({ success: true, series: seriesWithTags })
+        // Build flattened series list
+        const seriesWithTags = rows.map((row) => {
+            const s = row.series
+            const flat = flattenedSeriesMap.get(s.id)
+
+            return {
+                ...(flat ?? {
+                    ...s,
+                    scheduleType: 'none' as ScheduleType,
+                    scheduleValue: {} as ScheduleValue,
+                    startDate: new Date().toISOString(),
+                    endDate: null,
+                    lastWatchedAt: null,
+                    nextEpisodeAt: new Date(0),
+                    isActive: true,
+                    episodesAired: 0,
+                    episodesRemaining: null,
+                    episodesWatched: 0,
+                }),
+                tags: tagsBySeries.get(s.id) || [],
+            }
+        })
+
+        // Apply status filter in-memory (since config fields are now joined/aggregated)
+        let filtered = seriesWithTags
+        if (status === 'behind') {
+            filtered = seriesWithTags.filter(
+                (s) =>
+                    s.isActive &&
+                    s.episodesAired > s.episodesWatched &&
+                    s.scheduleType !== 'none',
+            )
+        } else if (status === 'caught-up') {
+            filtered = seriesWithTags.filter(
+                (s) =>
+                    s.isActive &&
+                    s.episodesAired <= s.episodesWatched &&
+                    s.scheduleType !== 'none',
+            )
+        } else if (status === 'backlog') {
+            filtered = seriesWithTags.filter((s) => s.scheduleType === 'none')
+        }
+
+        // Apply sorting
+        filtered.sort((a, b) => {
+            if (sortBy === 'episodesBehind') {
+                const aBehind = a.episodesAired - a.episodesWatched
+                const bBehind = b.episodesAired - b.episodesWatched
+                const cmp =
+                    sortOrder === 'asc' ? aBehind - bBehind : bBehind - aBehind
+                if (cmp !== 0) return cmp
+                // Secondary: nextEpisodeAt (opposite direction)
+                const aNext = a.nextEpisodeAt?.getTime?.() ?? 0
+                const bNext = b.nextEpisodeAt?.getTime?.() ?? 0
+                return sortOrder === 'asc' ? bNext - aNext : aNext - bNext
+            }
+            if (sortBy === 'title') {
+                const aTitle = a.title ?? ''
+                const bTitle = b.title ?? ''
+                return sortOrder === 'asc'
+                    ? aTitle.localeCompare(bTitle)
+                    : bTitle.localeCompare(aTitle)
+            }
+            if (sortBy === 'createdAt') {
+                const aDate = a.createdAt?.getTime?.() ?? 0
+                const bDate = b.createdAt?.getTime?.() ?? 0
+                return sortOrder === 'asc' ? aDate - bDate : bDate - aDate
+            }
+            // Default: custom sort order, then episodes behind desc
+            if (a.sortOrder !== b.sortOrder) {
+                return a.sortOrder - b.sortOrder
+            }
+            const aBehind = a.episodesAired - a.episodesWatched
+            const bBehind = b.episodesAired - b.episodesWatched
+            return bBehind - aBehind
+        })
+
+        return NextResponse.json({ success: true, series: filtered })
     } catch (error) {
         console.error('Error fetching series:', error)
         return NextResponse.json(
@@ -184,7 +235,6 @@ export async function POST(request: NextRequest) {
         const {
             url,
             title,
-            description,
             platform,
             thumbnailUrl,
             scheduleType,
@@ -192,10 +242,14 @@ export async function POST(request: NextRequest) {
             startDate,
             endDate,
             tagIds,
-            totalEpisodes,
-            watchedEpisodes,
-            autoAdvanceTotalEpisodes,
+            episodesAired,
+            episodesRemaining,
+            episodesWatched,
+            hasSeasons,
+            seasons: seasonsData,
         } = body
+
+        const useSeasonsMode = hasSeasons === true
 
         // Validation
         if (!url || typeof url !== 'string') {
@@ -212,44 +266,133 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        if (
-            !scheduleType ||
-            !['daily', 'weekly', 'custom', 'none'].includes(scheduleType)
-        ) {
-            return NextResponse.json(
-                { success: false, error: 'Valid schedule type is required' },
-                { status: 400 },
-            )
-        }
+        if (useSeasonsMode) {
+            if (!Array.isArray(seasonsData) || seasonsData.length === 0) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: 'At least one season is required in seasons mode',
+                    },
+                    { status: 400 },
+                )
+            }
 
-        // Schedule value is required for non-backlog series
-        if (scheduleType !== 'none' && !scheduleValue) {
-            return NextResponse.json(
-                { success: false, error: 'Schedule value is required' },
-                { status: 400 },
-            )
-        }
+            for (const season of seasonsData) {
+                if (!season.seasonNumber || season.seasonNumber < 1) {
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: 'Each season must have a valid season number',
+                        },
+                        { status: 400 },
+                    )
+                }
 
-        if (!startDate) {
-            return NextResponse.json(
-                { success: false, error: 'Start date is required' },
-                { status: 400 },
-            )
-        }
+                if (
+                    !season.scheduleType ||
+                    !['daily', 'weekly', 'custom', 'dates', 'none'].includes(
+                        season.scheduleType,
+                    )
+                ) {
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: 'Each season must have a valid schedule type',
+                        },
+                        { status: 400 },
+                    )
+                }
 
-        // Validate schedule value (use empty object for 'none' type)
-        const effectiveScheduleValue =
-            scheduleType === 'none' ? {} : scheduleValue
-        if (
-            !ScheduleService.isValidScheduleValue(
-                scheduleType,
-                effectiveScheduleValue,
-            )
-        ) {
-            return NextResponse.json(
-                { success: false, error: 'Invalid schedule value' },
-                { status: 400 },
-            )
+                if (season.scheduleType !== 'none' && !season.scheduleValue) {
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: 'Schedule value is required for non-backlog seasons',
+                        },
+                        { status: 400 },
+                    )
+                }
+
+                if (!season.startDate) {
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: 'Start date is required for each season',
+                        },
+                        { status: 400 },
+                    )
+                }
+
+                const effectiveSeasonScheduleValue =
+                    season.scheduleType === 'none'
+                        ? {}
+                        : (season.scheduleValue ?? {})
+                if (
+                    !ScheduleService.isValidScheduleValue(
+                        season.scheduleType,
+                        effectiveSeasonScheduleValue,
+                    )
+                ) {
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: 'Invalid schedule value in seasons payload',
+                        },
+                        { status: 400 },
+                    )
+                }
+            }
+        } else {
+            if (
+                !scheduleType ||
+                !['daily', 'weekly', 'custom', 'dates', 'none'].includes(
+                    scheduleType,
+                )
+            ) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: 'Valid schedule type is required for single mode',
+                    },
+                    { status: 400 },
+                )
+            }
+
+            // Schedule value is required for non-backlog series
+            if (scheduleType !== 'none' && !scheduleValue) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: 'Schedule value is required for non-backlog series',
+                    },
+                    { status: 400 },
+                )
+            }
+
+            if (!startDate) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: 'Start date is required for single mode',
+                    },
+                    { status: 400 },
+                )
+            }
+
+            // Validate schedule value (use empty object for 'none' type)
+            const effectiveScheduleValue: ScheduleValue =
+                scheduleType === 'none' ? {} : (scheduleValue ?? {})
+            if (
+                !ScheduleService.isValidScheduleValue(
+                    scheduleType,
+                    effectiveScheduleValue,
+                )
+            ) {
+                return NextResponse.json(
+                    { success: false, error: 'Invalid schedule value' },
+                    { status: 400 },
+                )
+            }
         }
 
         // Verify platform exists
@@ -283,48 +426,49 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Parse dates to HKT timezone
-        const parsedStartDate = parseToHKT(startDate)
+        // Parse dates / schedule for single mode only
+        const effectiveScheduleType = scheduleType ?? 'none'
+        const effectiveScheduleValue: ScheduleValue =
+            effectiveScheduleType === 'none' ? {} : (scheduleValue ?? {})
+        const parsedStartDate = startDate ? parseToHKT(startDate) : null
         const parsedEndDate = endDate ? getEndOfHKTDay(endDate) : null
+        const nextEpisodeAt = parsedStartDate
+            ? ScheduleService.calculateNextEpisodeDate(
+                  effectiveScheduleType,
+                  effectiveScheduleValue,
+                  parsedStartDate,
+              )
+            : null
 
-        // Calculate next episode date
-        const nextEpisodeAt = ScheduleService.calculateNextEpisodeDate(
-            scheduleType,
-            effectiveScheduleValue as ScheduleValue,
-            parsedStartDate,
-        )
-
-        // Insert series with HKT dates
+        // Insert series (metadata only)
         const newSeries = await db
             .insert(series)
             .values({
                 url,
                 title: title || null,
-                description: description || null,
                 platform,
                 thumbnailUrl: thumbnailUrl || null,
-                scheduleType,
-                scheduleValue: effectiveScheduleValue,
-                startDate: parsedStartDate,
-                endDate: parsedEndDate,
-                nextEpisodeAt,
-                missedPeriods: 0,
-                isActive: true,
-                totalEpisodes: totalEpisodes ?? null,
-                watchedEpisodes: watchedEpisodes ?? 0,
                 isWatched: false,
-                autoAdvanceTotalEpisodes: autoAdvanceTotalEpisodes ?? false,
+                hasSeasons: useSeasonsMode,
             })
             .returning()
 
-        const seriesWithTags = {
-            ...newSeries[0],
-            scheduleValue: effectiveScheduleValue as ScheduleValue,
-            tags: [] as Array<{
-                id: number
-                name: string
-                color: string | null
-            }>,
+        if (useSeasonsMode) {
+            await syncSeasons(newSeries[0].id, seasonsData ?? [])
+        } else {
+            // Insert series_config (schedule + episode data)
+            await db.insert(seriesConfig).values({
+                seriesId: newSeries[0].id,
+                scheduleType: effectiveScheduleType,
+                scheduleValue: effectiveScheduleValue,
+                startDate: parsedStartDate ?? new Date(),
+                endDate: parsedEndDate,
+                nextEpisodeAt: nextEpisodeAt ?? new Date(0),
+                episodesAired: episodesAired ?? 0,
+                episodesRemaining: episodesRemaining ?? null,
+                episodesWatched: episodesWatched ?? 0,
+                isActive: true,
+            })
         }
 
         // Handle tag associations if provided
@@ -352,12 +496,19 @@ export async function POST(request: NextRequest) {
             }))
 
             await db.insert(seriesTags).values(seriesTagInserts)
+        }
 
-            seriesWithTags.tags = tagResults
+        const createdSeries = await fetchSeriesWithTags(newSeries[0].id)
+
+        if (!createdSeries) {
+            return NextResponse.json(
+                { success: false, error: 'Failed to load created series' },
+                { status: 500 },
+            )
         }
 
         return NextResponse.json(
-            { success: true, series: seriesWithTags },
+            { success: true, series: createdSeries },
             { status: 201 },
         )
     } catch (error) {

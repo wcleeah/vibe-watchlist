@@ -2,8 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
+import { SeasonService } from '@/lib/services/season-service'
 import { SeriesService } from '@/lib/services/series-service'
 import type { SeriesFilters, SeriesWithTags } from '@/types/series'
+import { computeEpisodeFields } from '@/types/series'
+
+/** Cached season info for multi-season +1 shortcut */
+export interface CachedSeasonInfo {
+    seasonId: number
+    seasonNumber: number
+}
 
 interface UseSeriesReturn {
     series: SeriesWithTags[]
@@ -17,6 +25,21 @@ interface UseSeriesReturn {
     deleteSeries: (id: number) => Promise<void>
     reorderSeries: (orderedIds: number[]) => Promise<void>
     triggerUpdate: () => Promise<void>
+    /** Cache of selected seasons for multi-season +1 (seriesId → info) */
+    seasonCache: Map<number, CachedSeasonInfo>
+    /** Cache a season selection for multi-season +1 */
+    cacheSeasonForIncrement: (
+        seriesId: number,
+        seasonId: number,
+        seasonNumber: number,
+    ) => void
+    /** Clear the cached season selection for a series */
+    clearSeasonCache: (seriesId: number) => void
+    /** Increment progress for a specific season of a multi-season series */
+    incrementSeasonProgress: (
+        seriesId: number,
+        seasonId: number,
+    ) => Promise<boolean>
 }
 
 interface UseSeriesOptions {
@@ -33,6 +56,12 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
     const [series, setSeries] = useState<SeriesWithTags[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+
+    // Season cache: maps seriesId → { seasonId, seasonNumber } for multi-season +1
+    // Ephemeral (React state only — clears on refresh/navigate)
+    const [seasonCache, setSeasonCache] = useState<
+        Map<number, CachedSeasonInfo>
+    >(() => new Map())
 
     const fetchSeries = useCallback(async () => {
         try {
@@ -51,7 +80,7 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
         }
     }, [filters])
 
-    // Catch up - reset missed periods for recurring series
+    // Catch up - set watched = aired for recurring series
     const catchUp = useCallback(
         async (id: number) => {
             try {
@@ -62,7 +91,7 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
                         s.id === id
                             ? {
                                   ...s,
-                                  missedPeriods: 0,
+                                  episodesWatched: s.episodesAired,
                                   lastWatchedAt: new Date(),
                               }
                             : s,
@@ -131,16 +160,16 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
                         s.id === id
                             ? {
                                   ...s,
-                                  watchedEpisodes: result.watchedEpisodes,
+                                  episodesWatched: result.episodesWatched,
                               }
                             : s,
                     ),
                 )
                 // Return whether series is now complete
-                const seriesItem = series.find((s) => s.id === id)
+                const { episodesTotal } = computeEpisodeFields(result)
                 if (
-                    seriesItem?.totalEpisodes &&
-                    result.watchedEpisodes >= seriesItem.totalEpisodes
+                    episodesTotal > 0 &&
+                    result.episodesWatched >= episodesTotal
                 ) {
                     return true
                 }
@@ -156,7 +185,50 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
                 return false
             }
         },
-        [fetchSeries, series],
+        [fetchSeries],
+    )
+
+    // Cache a season selection for multi-season +1
+    const cacheSeasonForIncrement = useCallback(
+        (seriesId: number, seasonId: number, seasonNumber: number) => {
+            setSeasonCache((prev) => {
+                const next = new Map(prev)
+                next.set(seriesId, { seasonId, seasonNumber })
+                return next
+            })
+        },
+        [],
+    )
+
+    // Clear the cached season selection for a series
+    const clearSeasonCache = useCallback((seriesId: number) => {
+        setSeasonCache((prev) => {
+            const next = new Map(prev)
+            next.delete(seriesId)
+            return next
+        })
+    }, [])
+
+    // Increment progress for a specific season of a multi-season series
+    const incrementSeasonProgress = useCallback(
+        async (seriesId: number, seasonId: number): Promise<boolean> => {
+            try {
+                await SeasonService.incrementProgress(seriesId, seasonId)
+                // Refetch to get updated aggregated counts for the series
+                await fetchSeries()
+                return false // TODO: detect season completion if needed
+            } catch (err) {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : 'Failed to increment season progress',
+                )
+                console.error('Failed to increment season progress:', err)
+                await fetchSeries()
+                return false
+            }
+        },
+        [fetchSeries],
     )
 
     const deleteSeries = useCallback(
@@ -234,5 +306,9 @@ export function useSeries(options: UseSeriesOptions = {}): UseSeriesReturn {
         deleteSeries,
         reorderSeries,
         triggerUpdate,
+        seasonCache,
+        cacheSeasonForIncrement,
+        clearSeasonCache,
+        incrementSeasonProgress,
     }
 }

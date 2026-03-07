@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
-import { series } from '@/lib/db/schema'
+import { series, seriesConfig } from '@/lib/db/schema'
 import { fetchSeriesWithTags } from '@/lib/db/series-helpers'
 import type { UpdateProgressRequest } from '@/types/series'
 
@@ -11,7 +11,7 @@ interface RouteParams {
 }
 
 // POST /api/series/[id]/update-progress - Update episode progress
-// Can either set absolute watchedEpisodes or increment by a value
+// Can either set absolute episodesWatched or increment by a value
 export async function POST(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params
@@ -25,14 +25,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
 
         const body: UpdateProgressRequest = await request.json()
-        const { watchedEpisodes, increment } = body
+        const { episodesWatched, increment } = body
 
         // Validate input
-        if (watchedEpisodes === undefined && increment === undefined) {
+        if (episodesWatched === undefined && increment === undefined) {
             return NextResponse.json(
                 {
                     success: false,
-                    error: 'Either watchedEpisodes or increment must be provided',
+                    error: 'Either episodesWatched or increment must be provided',
                 },
                 { status: 400 },
             )
@@ -52,36 +52,56 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             )
         }
 
-        const currentSeries = existingSeries[0]
+        // Fetch the series_config row (episode data)
+        const configRows = await db
+            .select()
+            .from(seriesConfig)
+            .where(eq(seriesConfig.seriesId, seriesId))
+            .limit(1)
+
+        if (configRows.length === 0) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'No config found for this series. Multi-season series should update progress per-season.',
+                },
+                { status: 400 },
+            )
+        }
+
+        const config = configRows[0]
         const now = new Date()
 
         // Calculate new watched episodes count
         let newWatchedEpisodes: number
-        if (watchedEpisodes !== undefined) {
-            newWatchedEpisodes = Math.max(0, watchedEpisodes)
+        if (episodesWatched !== undefined) {
+            newWatchedEpisodes = Math.max(0, episodesWatched)
         } else {
             newWatchedEpisodes = Math.max(
                 0,
-                currentSeries.watchedEpisodes + (increment ?? 0),
+                config.episodesWatched + (increment ?? 0),
             )
         }
 
-        // Don't exceed total episodes if set
-        if (
-            currentSeries.totalEpisodes !== null &&
-            newWatchedEpisodes > currentSeries.totalEpisodes
-        ) {
-            newWatchedEpisodes = currentSeries.totalEpisodes
+        // Don't exceed episodes aired
+        if (newWatchedEpisodes > config.episodesAired) {
+            newWatchedEpisodes = config.episodesAired
         }
 
-        // Update series
+        // Update seriesConfig
         await db
-            .update(series)
+            .update(seriesConfig)
             .set({
-                watchedEpisodes: newWatchedEpisodes,
+                episodesWatched: newWatchedEpisodes,
                 lastWatchedAt: now,
                 updatedAt: now,
             })
+            .where(eq(seriesConfig.seriesId, seriesId))
+
+        // Also update series.updatedAt
+        await db
+            .update(series)
+            .set({ updatedAt: now })
             .where(eq(series.id, seriesId))
 
         // Fetch updated series with tags
@@ -96,9 +116,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({ success: true, series: seriesWithTags })
     } catch (error) {
-        console.error('Error updating series progress:', error)
+        console.error('Failed to update progress:', error)
         return NextResponse.json(
-            { success: false, error: 'Failed to update progress' },
+            {
+                success: false,
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to update progress',
+            },
             { status: 500 },
         )
     }
