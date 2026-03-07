@@ -1,5 +1,7 @@
 'use client'
 
+import { Clock } from 'lucide-react'
+
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
@@ -88,16 +90,35 @@ export function DatePickerField({
                 />
             </div>
             {showTimePicker && (
-                <div className='relative'>
-                    <input
-                        type='time'
-                        id={`${id}-time`}
-                        value={timeValue || ''}
-                        onChange={handleTimeChange}
-                        disabled={disabled}
-                        className={inputClassName}
-                    />
-                    <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                <div className='space-y-1.5'>
+                    <Label
+                        htmlFor={`${id}-time`}
+                        className='text-xs flex items-center gap-1.5 text-muted-foreground'
+                    >
+                        <Clock className='w-3.5 h-3.5' />
+                        Release Time (HKT)
+                    </Label>
+                    <div className='relative'>
+                        <input
+                            type='time'
+                            id={`${id}-time`}
+                            value={timeValue || ''}
+                            onChange={handleTimeChange}
+                            disabled={disabled}
+                            className={cn(inputClassName, 'w-40 pr-9')}
+                        />
+                        {timeValue && (
+                            <button
+                                type='button'
+                                onClick={() => onTimeChange?.(undefined)}
+                                disabled={disabled}
+                                className='absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-50'
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                    <p className='text-xs text-gray-500 dark:text-gray-400'>
                         {timeValue
                             ? `Release time: ${timeValue} HKT`
                             : 'Optional - defaults to start of day (HKT)'}

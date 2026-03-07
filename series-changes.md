@@ -155,3 +155,35 @@ When clicking +1 on a multi-season series, a season picker popover appears (sinc
 - [x] Props wired through SeriesList → page.tsx
 - [x] Build passes (`bun run build` — zero type errors)
 - [ ] Manual browser testing
+
+---
+
+## Post-Refactor UX Fixes (March 2026)
+
+Addressed the 10 follow-up regressions after `series_config` extraction and
+multi-season +1 rollout.
+
+### Fixed Issues
+
+- [x] Edit modal season loading state (avoid flashing "No seasons" before fetch)
+- [x] Single-series +1 UX feedback when already at aired cap
+- [x] Always show TYPE metadata on card (`Single` / `Multi-Season`)
+- [x] Remove PROGRESS metadata line from card metadata block
+- [x] Restyle schedule time selector UI
+- [x] Restyle Coming Soon time selector UI
+- [x] Multi-season card schedule now reflects season-level schedule defaults
+- [x] Season selector row in edit modal now includes schedule/time context
+- [x] Widen edit modal for season-heavy editing
+- [x] Add multi-season create flow (UI + API create route)
+- [x] Add missing create-side episode fields (`aired`, `watched`, `remaining`)
+
+### Files Updated
+
+- `app/api/series/route.ts`
+- `components/series/series-card.tsx`
+- `components/series/series-edit-modal.tsx`
+- `components/video-form/date-picker-field.tsx`
+- `components/video-form/form-layout.tsx`
+- `components/video-form/schedule-selector.tsx`
+- `lib/db/series-helpers.ts`
+- `types/series.ts`

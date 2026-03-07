@@ -12,6 +12,15 @@ import { ScheduleService } from '@/lib/services/schedule-service'
 import { formatDateToHKTString } from '@/lib/utils/hkt-date'
 import type { ScheduleType, ScheduleValue, Series } from '@/types/series'
 
+interface MultiSeasonScheduleSummary {
+    scheduleType: ScheduleType
+    scheduleValue: ScheduleValue
+    startDate: string
+    endDate: string | null
+    nextEpisodeAt: Date
+    isActive: boolean
+}
+
 /**
  * Aggregate season episode counts for one or more series.
  *
@@ -75,6 +84,67 @@ export async function aggregateSeasonCounts(seriesIds: number[]): Promise<
     return result
 }
 
+async function aggregateSeasonScheduleSummaries(
+    seriesIds: number[],
+): Promise<Map<number, MultiSeasonScheduleSummary>> {
+    if (seriesIds.length === 0) return new Map()
+
+    const seasonRows = await db
+        .select({
+            seriesId: seasons.seriesId,
+            scheduleType: seasons.scheduleType,
+            scheduleValue: seasons.scheduleValue,
+            startDate: seasons.startDate,
+            endDate: seasons.endDate,
+            nextEpisodeAt: seasons.nextEpisodeAt,
+            isActive: seasons.isActive,
+        })
+        .from(seasons)
+        .where(inArray(seasons.seriesId, seriesIds))
+
+    const grouped = new Map<number, typeof seasonRows>()
+    for (const row of seasonRows) {
+        if (!grouped.has(row.seriesId)) {
+            grouped.set(row.seriesId, [])
+        }
+        grouped.get(row.seriesId)?.push(row)
+    }
+
+    const result = new Map<number, MultiSeasonScheduleSummary>()
+    for (const [seriesId, rows] of grouped.entries()) {
+        if (rows.length === 0) continue
+
+        const preferred =
+            rows
+                .filter((r) => r.isActive && r.scheduleType !== 'none')
+                .sort(
+                    (a, b) =>
+                        a.nextEpisodeAt.getTime() - b.nextEpisodeAt.getTime(),
+                )[0] ??
+            rows
+                .slice()
+                .sort(
+                    (a, b) =>
+                        a.nextEpisodeAt.getTime() - b.nextEpisodeAt.getTime(),
+                )[0]
+
+        const anyActive = rows.some((r) => r.isActive)
+        result.set(seriesId, {
+            scheduleType: preferred.scheduleType as ScheduleType,
+            scheduleValue: ScheduleService.parseScheduleValue(
+                preferred.scheduleType as ScheduleType,
+                preferred.scheduleValue,
+            ),
+            startDate: formatDateToHKTString(preferred.startDate) ?? '',
+            endDate: formatDateToHKTString(preferred.endDate),
+            nextEpisodeAt: preferred.nextEpisodeAt,
+            isActive: anyActive,
+        })
+    }
+
+    return result
+}
+
 /** Default config values for multi-season series (no series_config row). */
 function getMultiSeasonConfigDefaults(): Omit<
     Series,
@@ -108,6 +178,7 @@ function flattenSeriesRow(
         episodesWatched: number
         episodesRemaining: number | null
     } | null,
+    seasonScheduleSummary?: MultiSeasonScheduleSummary | null,
 ): Omit<Series, 'tags'> {
     if (config) {
         // Single-mode: use series_config
@@ -135,6 +206,7 @@ function flattenSeriesRow(
     return {
         ...s,
         ...getMultiSeasonConfigDefaults(),
+        ...(seasonScheduleSummary ?? {}),
         ...(seasonAggregation && {
             episodesAired: seasonAggregation.episodesAired,
             episodesWatched: seasonAggregation.episodesWatched,
@@ -195,8 +267,17 @@ export async function fetchSeriesWithTags(seriesId: number) {
         seasonAggregation = aggregated.get(s.id) ?? null
     }
 
+    const seasonScheduleSummary = s.hasSeasons
+        ? ((await aggregateSeasonScheduleSummaries([s.id])).get(s.id) ?? null)
+        : null
+
     return {
-        ...flattenSeriesRow(s, config, seasonAggregation),
+        ...flattenSeriesRow(
+            s,
+            config,
+            seasonAggregation,
+            seasonScheduleSummary,
+        ),
         tags: parsedTags,
     }
 }
@@ -222,11 +303,16 @@ export async function fetchSeriesWithConfigs(seriesIds: number[]) {
         .filter((r) => r.series.hasSeasons)
         .map((r) => r.series.id)
     const seasonAggs = await aggregateSeasonCounts(multiSeasonIds)
+    const seasonScheduleSummaries =
+        await aggregateSeasonScheduleSummaries(multiSeasonIds)
 
     const result = new Map<number, Omit<Series, 'tags'>>()
     for (const { series: s, config } of rows) {
         const agg = s.hasSeasons ? (seasonAggs.get(s.id) ?? null) : null
-        result.set(s.id, flattenSeriesRow(s, config, agg))
+        const scheduleSummary = s.hasSeasons
+            ? (seasonScheduleSummaries.get(s.id) ?? null)
+            : null
+        result.set(s.id, flattenSeriesRow(s, config, agg, scheduleSummary))
     }
     return result
 }

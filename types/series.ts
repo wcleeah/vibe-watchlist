@@ -170,14 +170,16 @@ export interface CreateSeriesRequest {
     title?: string
     platform: string
     thumbnailUrl?: string
-    scheduleType: ScheduleType
-    scheduleValue: ScheduleValue
-    startDate: string // ISO date string
-    endDate?: string
+    scheduleType?: ScheduleType
+    scheduleValue?: ScheduleValue
+    startDate?: string // ISO date string
+    endDate?: string | null
     tagIds?: number[]
     episodesAired?: number
     episodesRemaining?: number
     episodesWatched?: number
+    hasSeasons?: boolean
+    seasons?: BulkSeasonData[]
 }
 
 export interface UpdateSeriesRequest {

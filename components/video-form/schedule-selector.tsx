@@ -396,12 +396,12 @@ export function ScheduleSelector({
                 <div className='space-y-2'>
                     <Label
                         htmlFor='schedule-time'
-                        className='flex items-center gap-1.5'
+                        className='flex items-center gap-1.5 text-muted-foreground'
                     >
                         <Clock className='w-3.5 h-3.5' />
                         Air time (HKT)
                     </Label>
-                    <div className='flex items-center gap-2'>
+                    <div className='flex items-center gap-2 rounded-md border border-border bg-background px-2 py-2 w-fit'>
                         <Input
                             id='schedule-time'
                             type='time'
@@ -410,7 +410,7 @@ export function ScheduleSelector({
                             }
                             onChange={handleTimeChange}
                             disabled={disabled}
-                            className='w-32 h-9'
+                            className='w-36 h-9 border-border/70 bg-transparent'
                         />
                         {(scheduleValue as { time?: string }).time && (
                             <Button

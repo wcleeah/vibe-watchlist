@@ -2,6 +2,7 @@
 
 import { Check, Globe, Loader2, Pencil, Plus, RotateCcw, X } from 'lucide-react'
 import { useCallback, useState } from 'react'
+import { toast } from 'sonner'
 
 import {
     type ActionConfig,
@@ -10,14 +11,10 @@ import {
     type StatusBadgeConfig,
 } from '@/components/shared'
 import { Button } from '@/components/ui/button'
-import {
-    Popover,
-    PopoverAnchor,
-    PopoverContent,
-} from '@/components/ui/popover'
-import { SeasonService } from '@/lib/services/season-service'
-import { ScheduleService } from '@/lib/services/schedule-service'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import type { CachedSeasonInfo } from '@/hooks/use-series'
+import { ScheduleService } from '@/lib/services/schedule-service'
+import { SeasonService } from '@/lib/services/season-service'
 import type {
     ScheduleType,
     ScheduleValue,
@@ -103,7 +100,6 @@ function getStatusBadge(series: SeriesWithTags): StatusBadgeConfig {
  */
 function buildMetadata(series: SeriesWithTags): MediaMetadataItem[] {
     const isBacklog = isBacklogSeries(series)
-    const progress = formatProgress(series)
     const { episodesBehind } = computeEpisodeFields(series)
     const scheduleDisplay = ScheduleService.formatScheduleDisplay(
         series.scheduleType as ScheduleType,
@@ -115,10 +111,11 @@ function buildMetadata(series: SeriesWithTags): MediaMetadataItem[] {
         { key: 'PLATFORM', value: series.platform, color: 'green' },
     ]
 
-    // Show "Multi-Season" type indicator for series with seasons
-    if (series.hasSeasons) {
-        metadata.push({ key: 'TYPE', value: 'Multi-Season', color: 'purple' })
-    }
+    metadata.push({
+        key: 'TYPE',
+        value: series.hasSeasons ? 'Multi-Season' : 'Single',
+        color: 'purple',
+    })
 
     metadata.push({
         key: 'SCHEDULE',
@@ -132,15 +129,6 @@ function buildMetadata(series: SeriesWithTags): MediaMetadataItem[] {
             key: 'BEHIND',
             value: episodesBehind,
             color: episodesBehind > 0 ? 'red' : 'green',
-        })
-    }
-
-    // Show PROGRESS for series with episode tracking
-    if (progress) {
-        metadata.push({
-            key: 'PROGRESS',
-            value: progress,
-            color: isSeriesComplete(series) ? 'green' : 'blue',
         })
     }
 
@@ -298,6 +286,12 @@ export function SeriesCard({
                 id: 'increment',
                 label: '+1 Episode',
                 onClick: async () => {
+                    if (series.episodesWatched >= series.episodesAired) {
+                        toast.info(
+                            'Already at aired count. Wait for new episodes.',
+                        )
+                        return
+                    }
                     setLoadingIncrement(true)
                     try {
                         await onIncrementProgress(series.id)
@@ -414,11 +408,7 @@ export function SeriesCard({
                     />
                 </div>
             </PopoverAnchor>
-            <PopoverContent
-                align='end'
-                side='bottom'
-                className='w-64 p-0'
-            >
+            <PopoverContent align='end' side='bottom' className='w-64 p-0'>
                 <div className='p-3 border-b border-border'>
                     <h4 className='font-mono text-sm font-medium'>
                         Select Season

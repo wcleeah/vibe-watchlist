@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Trash2 } from 'lucide-react'
+import { Loader2, Plus, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -22,6 +22,7 @@ import { TagList } from '@/components/ui/tag'
 import { DatePickerField } from '@/components/video-form/date-picker-field'
 import { ScheduleSelector } from '@/components/video-form/schedule-selector'
 import { useTags } from '@/hooks/use-tags'
+import { ScheduleService } from '@/lib/services/schedule-service'
 import { SeasonService } from '@/lib/services/season-service'
 import { SeriesService } from '@/lib/services/series-service'
 import type {
@@ -212,6 +213,7 @@ export function SeriesEditModal({
     // Seasons local state
     const [localSeasons, setLocalSeasons] = useState<LocalSeason[]>([])
     const [selectedSeasonIdx, setSelectedSeasonIdx] = useState<number>(0)
+    const [isLoadingSeasons, setIsLoadingSeasons] = useState(false)
 
     // Schedule state (managed separately from form — used by Single tab)
     const [scheduleType, setScheduleType] = useState<ScheduleType>('weekly')
@@ -275,6 +277,7 @@ export function SeriesEditModal({
 
             // Load seasons if series has them
             if (series.hasSeasons) {
+                setIsLoadingSeasons(true)
                 SeasonService.getAll(series.id)
                     .then((fetched) => {
                         setLocalSeasons(fetched.map(apiSeasonToLocal))
@@ -285,7 +288,11 @@ export function SeriesEditModal({
                         setLocalSeasons([])
                         setSelectedSeasonIdx(0)
                     })
+                    .finally(() => {
+                        setIsLoadingSeasons(false)
+                    })
             } else {
+                setIsLoadingSeasons(false)
                 setLocalSeasons([])
                 setSelectedSeasonIdx(0)
             }
@@ -459,9 +466,20 @@ export function SeriesEditModal({
 
     if (!series) return null
 
+    const getSeasonSelectLabel = (season: LocalSeason) => {
+        const scheduleText = ScheduleService.formatScheduleDisplay(
+            season.scheduleType,
+            season.scheduleValue,
+        )
+        const rangeText = season.startDate
+            ? `${season.startDate}${season.endDate ? ` to ${season.endDate}` : ''}`
+            : 'No start date'
+        return `Season ${season.seasonNumber}${season.title ? ` — ${season.title}` : ''} · ${scheduleText} · ${rangeText}`
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className='max-w-4xl max-h-[90vh] overflow-y-auto'>
+            <DialogContent className='max-w-6xl max-h-[92vh] overflow-y-auto'>
                 <DialogHeader>
                     <DialogTitle>Edit Series</DialogTitle>
                 </DialogHeader>
@@ -665,13 +683,20 @@ export function SeriesEditModal({
                                     }
                                     className='flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm'
                                 >
-                                    {localSeasons.length === 0 && (
-                                        <option value={0}>No seasons</option>
+                                    {isLoadingSeasons && (
+                                        <option value={0}>
+                                            Loading seasons...
+                                        </option>
                                     )}
+                                    {!isLoadingSeasons &&
+                                        localSeasons.length === 0 && (
+                                            <option value={0}>
+                                                No seasons
+                                            </option>
+                                        )}
                                     {localSeasons.map((s, i) => (
                                         <option key={i} value={i}>
-                                            Season {s.seasonNumber}
-                                            {s.title ? ` — ${s.title}` : ''}
+                                            {getSeasonSelectLabel(s)}
                                         </option>
                                     ))}
                                 </select>
@@ -701,7 +726,14 @@ export function SeriesEditModal({
                             </div>
 
                             {/* Season form fields (inline) */}
-                            {selectedSeason ? (
+                            {isLoadingSeasons ? (
+                                <div className='p-4 bg-muted/50 rounded-lg text-center'>
+                                    <div className='inline-flex items-center gap-2 text-sm text-muted-foreground'>
+                                        <Loader2 className='h-4 w-4 animate-spin' />
+                                        Loading seasons...
+                                    </div>
+                                </div>
+                            ) : selectedSeason ? (
                                 <div className='space-y-4 p-4 bg-muted/50 rounded-lg'>
                                     {/* Season Number + Title */}
                                     <div className='grid grid-cols-3 gap-3'>
