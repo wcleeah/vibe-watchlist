@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { playlists, videos } from '@/lib/db/schema'
@@ -84,19 +84,21 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             await db.delete(videos).where(inArray(videos.id, idsToRemove))
         }
 
-        // Update positions in a single query using CASE expression
+        // Update positions concurrently (neon-http doesn't support
+        // transactions, and CASE queries hit the 32-param limit)
         if (videosToUpdate.length > 0) {
-            const ids = videosToUpdate.map((u) => u.id)
-            const caseParts = videosToUpdate.map(
-                (u) => sql`when ${videos.id} = ${u.id} then ${u.playlistIndex}`,
+            const now = new Date()
+            await Promise.all(
+                videosToUpdate.map((update) =>
+                    db
+                        .update(videos)
+                        .set({
+                            playlistIndex: update.playlistIndex,
+                            updatedAt: now,
+                        })
+                        .where(eq(videos.id, update.id)),
+                ),
             )
-            await db
-                .update(videos)
-                .set({
-                    playlistIndex: sql`case ${sql.join(caseParts, sql` `)} end`,
-                    updatedAt: new Date(),
-                })
-                .where(inArray(videos.id, ids))
         }
 
         // Add new videos (after removes/updates to avoid URL conflicts)
