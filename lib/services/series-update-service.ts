@@ -15,6 +15,10 @@ export interface SeriesUpdateResult {
     seasonsUpdated: number
     seasonsDeactivated: number
     seasonsErrors: number
+    totalProcessed: number
+    totalUpdated: number
+    totalDeactivated: number
+    totalErrors: number
 }
 
 export class SeriesUpdateService {
@@ -43,6 +47,13 @@ export class SeriesUpdateService {
             `SeriesUpdateService: Completed. Series — Updated: ${standaloneResult.updated}, Deactivated: ${standaloneResult.deactivated}, Errors: ${standaloneResult.errors}. Seasons — Updated: ${seasonResult.updated}, Deactivated: ${seasonResult.deactivated}, Errors: ${seasonResult.errors}`,
         )
 
+        const totalProcessed =
+            standaloneResult.processed + seasonResult.processed
+        const totalUpdated = standaloneResult.updated + seasonResult.updated
+        const totalDeactivated =
+            standaloneResult.deactivated + seasonResult.deactivated
+        const totalErrors = standaloneResult.errors + seasonResult.errors
+
         return {
             processed: standaloneResult.processed,
             updated: standaloneResult.updated,
@@ -52,6 +63,10 @@ export class SeriesUpdateService {
             seasonsUpdated: seasonResult.updated,
             seasonsDeactivated: seasonResult.deactivated,
             seasonsErrors: seasonResult.errors,
+            totalProcessed,
+            totalUpdated,
+            totalDeactivated,
+            totalErrors,
         }
     }
 

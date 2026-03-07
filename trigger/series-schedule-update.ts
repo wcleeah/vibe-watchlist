@@ -18,7 +18,8 @@ export const updateSeriesSchedules = schedules.task({
         console.log(
             `Trigger.dev: Series schedule update completed. ` +
                 `Series — Processed: ${result.processed}, Updated: ${result.updated}, Deactivated: ${result.deactivated}, Errors: ${result.errors}. ` +
-                `Seasons — Processed: ${result.seasonsProcessed}, Updated: ${result.seasonsUpdated}, Deactivated: ${result.seasonsDeactivated}, Errors: ${result.seasonsErrors}.`,
+                `Seasons — Processed: ${result.seasonsProcessed}, Updated: ${result.seasonsUpdated}, Deactivated: ${result.seasonsDeactivated}, Errors: ${result.seasonsErrors}. ` +
+                `Total — Processed: ${result.totalProcessed}, Updated: ${result.totalUpdated}, Deactivated: ${result.totalDeactivated}, Errors: ${result.totalErrors}.`,
         )
 
         return {

@@ -103,13 +103,31 @@ export function usePlaylists(
 
             if (response.ok) {
                 const data = await response.json()
-                // Update the playlist in the list
+                // Update only sync-related fields to avoid replacing
+                // unrelated UI data (e.g. tags from current list state).
                 setPlaylists((prev) =>
-                    prev.map((p) => (p.id === id ? data.playlist : p)),
+                    prev.map((p) =>
+                        p.id === id
+                            ? {
+                                  ...p,
+                                  itemCount:
+                                      data.playlist?.itemCount ?? p.itemCount,
+                                  watchedCount:
+                                      data.playlist?.watchedCount ??
+                                      p.watchedCount,
+                                  unwatchedCount:
+                                      data.playlist?.unwatchedCount ??
+                                      p.unwatchedCount,
+                                  lastSyncedAt:
+                                      data.playlist?.lastSyncedAt ??
+                                      p.lastSyncedAt,
+                              }
+                            : p,
+                    ),
                 )
-                toast.success(
-                    `Synced: ${data.added} added, ${data.removed} removed`,
-                )
+                const added = data.sync?.added ?? 0
+                const removed = data.sync?.removed ?? 0
+                toast.success(`Synced: ${added} added, ${removed} removed`)
             } else {
                 const errorData = await response.json()
                 throw new Error(errorData.error || 'Failed to sync playlist')

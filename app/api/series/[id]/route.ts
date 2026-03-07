@@ -302,37 +302,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
                 configUpdateData.scheduleType = scheduleType
                 configUpdateData.scheduleValue = effectiveScheduleValue
-
-                // Recalculate next episode date
-                const baseDate = startDate
-                    ? parseToHKT(startDate)
-                    : (currentConfig?.startDate ?? new Date())
-                configUpdateData.nextEpisodeAt =
-                    ScheduleService.calculateNextEpisodeDate(
-                        scheduleType,
-                        effectiveScheduleValue,
-                        baseDate,
-                    )
             }
 
             if (startDate !== undefined) {
                 configUpdateData.startDate = parseToHKT(startDate)
-                // Only recalculate next episode if start date changed but schedule didn't
-                if (!scheduleType && currentConfig) {
-                    const effectiveScheduleType =
-                        currentConfig.scheduleType as ScheduleType
-                    const effectiveScheduleValue =
-                        ScheduleService.parseScheduleValue(
-                            effectiveScheduleType,
-                            currentConfig.scheduleValue,
-                        )
-                    configUpdateData.nextEpisodeAt =
-                        ScheduleService.calculateNextEpisodeDate(
-                            effectiveScheduleType,
-                            effectiveScheduleValue,
-                            parseToHKT(startDate),
-                        )
-                }
             }
 
             if (endDate !== undefined) {

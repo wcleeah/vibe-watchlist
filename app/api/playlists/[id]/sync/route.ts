@@ -1,11 +1,47 @@
 import { eq, inArray } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { playlists, videos } from '@/lib/db/schema'
+import { playlists, playlistTags, tags, videos } from '@/lib/db/schema'
 import { YouTubeApiService } from '@/lib/services/youtube-api-service'
 
 interface RouteParams {
     params: Promise<{ id: string }>
+}
+
+function toLoggableError(error: unknown): Record<string, unknown> {
+    if (!(error instanceof Error)) {
+        return { raw: error }
+    }
+
+    const drizzleLike = error as Error & {
+        cause?: unknown
+        query?: string
+        params?: unknown
+        code?: string
+        detail?: string
+        hint?: string
+        severity?: string
+    }
+
+    return {
+        name: drizzleLike.name,
+        message: drizzleLike.message,
+        stack: drizzleLike.stack,
+        code: drizzleLike.code,
+        query: drizzleLike.query,
+        params: drizzleLike.params,
+        detail: drizzleLike.detail,
+        hint: drizzleLike.hint,
+        severity: drizzleLike.severity,
+        cause:
+            drizzleLike.cause instanceof Error
+                ? {
+                      name: drizzleLike.cause.name,
+                      message: drizzleLike.cause.message,
+                      stack: drizzleLike.cause.stack,
+                  }
+                : drizzleLike.cause,
+    }
 }
 
 // POST /api/playlists/[id]/sync - Re-sync playlist from YouTube
@@ -84,21 +120,29 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             await db.delete(videos).where(inArray(videos.id, idsToRemove))
         }
 
-        // Update positions concurrently (neon-http doesn't support
-        // transactions, and CASE queries hit the 32-param limit)
+        // Update positions sequentially to avoid intermittent query failures
+        // under high concurrency with neon-http.
         if (videosToUpdate.length > 0) {
             const now = new Date()
-            await Promise.all(
-                videosToUpdate.map((update) =>
-                    db
+            for (const update of videosToUpdate) {
+                try {
+                    await db
                         .update(videos)
                         .set({
                             playlistIndex: update.playlistIndex,
                             updatedAt: now,
                         })
-                        .where(eq(videos.id, update.id)),
-                ),
-            )
+                        .where(eq(videos.id, update.id))
+                } catch (error) {
+                    console.error('Playlist sync position update failed', {
+                        playlistId,
+                        update,
+                        now,
+                        error: toLoggableError(error),
+                    })
+                    throw error
+                }
+            }
         }
 
         // Add new videos (after removes/updates to avoid URL conflicts)
@@ -136,6 +180,16 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         const watchedCount = updatedVideos.filter((v) => v.isWatched).length
         const unwatchedCount = updatedVideos.length - watchedCount
 
+        const playlistTagResults = await db
+            .select({
+                id: tags.id,
+                name: tags.name,
+                color: tags.color,
+            })
+            .from(playlistTags)
+            .innerJoin(tags, eq(playlistTags.tagId, tags.id))
+            .where(eq(playlistTags.playlistId, playlistId))
+
         return NextResponse.json({
             success: true,
             sync: {
@@ -156,11 +210,12 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
                 itemCount: youtubeItems.length,
                 watchedCount,
                 unwatchedCount,
+                tags: playlistTagResults,
                 lastSyncedAt: new Date(),
             },
         })
     } catch (error) {
-        console.error('Error syncing playlist:', error)
+        console.error('Error syncing playlist:', toLoggableError(error))
         const message =
             error instanceof Error ? error.message : 'Failed to sync playlist'
         return NextResponse.json(

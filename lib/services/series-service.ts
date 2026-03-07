@@ -230,6 +230,14 @@ export class SeriesService {
             updated: number
             deactivated: number
             errors: number
+            seasonsProcessed: number
+            seasonsUpdated: number
+            seasonsDeactivated: number
+            seasonsErrors: number
+            totalProcessed: number
+            totalUpdated: number
+            totalDeactivated: number
+            totalErrors: number
         }
     }> {
         const response = await fetch(
