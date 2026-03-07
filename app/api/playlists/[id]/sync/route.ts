@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { playlists, videos } from '@/lib/db/schema'
@@ -77,7 +77,29 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             }
         }
 
-        // Add new videos
+        // Remove videos no longer in playlist (must happen before
+        // inserts/updates to avoid potential URL conflicts and stale data)
+        if (videosToRemove.length > 0) {
+            const idsToRemove = videosToRemove.map((v) => v.id)
+            await db.delete(videos).where(inArray(videos.id, idsToRemove))
+        }
+
+        // Update positions in a single query using CASE expression
+        if (videosToUpdate.length > 0) {
+            const ids = videosToUpdate.map((u) => u.id)
+            const caseParts = videosToUpdate.map(
+                (u) => sql`when ${videos.id} = ${u.id} then ${u.playlistIndex}`,
+            )
+            await db
+                .update(videos)
+                .set({
+                    playlistIndex: sql`case ${sql.join(caseParts, sql` `)} end`,
+                    updatedAt: new Date(),
+                })
+                .where(inArray(videos.id, ids))
+        }
+
+        // Add new videos (after removes/updates to avoid URL conflicts)
         if (videosToAdd.length > 0) {
             const videoValues = videosToAdd.map((item) => ({
                 url: `https://www.youtube.com/watch?v=${item.videoId}`,
@@ -91,23 +113,6 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             }))
 
             await db.insert(videos).values(videoValues)
-        }
-
-        // Remove videos no longer in playlist
-        if (videosToRemove.length > 0) {
-            const idsToRemove = videosToRemove.map((v) => v.id)
-            await db.delete(videos).where(inArray(videos.id, idsToRemove))
-        }
-
-        // Update positions
-        for (const update of videosToUpdate) {
-            await db
-                .update(videos)
-                .set({
-                    playlistIndex: update.playlistIndex,
-                    updatedAt: new Date(),
-                })
-                .where(eq(videos.id, update.id))
         }
 
         // Update playlist sync bookkeeping (preserve existing metadata)
