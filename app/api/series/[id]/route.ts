@@ -14,6 +14,7 @@ import { ScheduleService } from '@/lib/services/schedule-service'
 import {
     formatDateToHKTString,
     getEndOfHKTDay,
+    nowHKT,
     parseToHKT,
 } from '@/lib/utils/hkt-date'
 import type {
@@ -190,6 +191,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             thumbnailUrl,
             scheduleType,
             scheduleValue,
+            resumeTrackingAt,
             startDate,
             endDate,
             tagIds,
@@ -312,6 +314,51 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 configUpdateData.endDate = endDate
                     ? getEndOfHKTDay(endDate)
                     : null
+            }
+
+            const incomingScheduleType =
+                (configUpdateData.scheduleType as ScheduleType | undefined) ??
+                (currentConfig?.scheduleType as ScheduleType | undefined)
+
+            const incomingScheduleValue =
+                (configUpdateData.scheduleValue as ScheduleValue | undefined) ??
+                (currentConfig
+                    ? ScheduleService.parseScheduleValue(
+                          currentConfig.scheduleType as ScheduleType,
+                          currentConfig.scheduleValue,
+                      )
+                    : undefined)
+
+            const previousScheduleType = currentConfig?.scheduleType as
+                | ScheduleType
+                | undefined
+            const previousScheduleValue = currentConfig
+                ? ScheduleService.parseScheduleValue(
+                      currentConfig.scheduleType as ScheduleType,
+                      currentConfig.scheduleValue,
+                  )
+                : undefined
+
+            const hasScheduleChanged =
+                incomingScheduleType !== previousScheduleType ||
+                JSON.stringify(incomingScheduleValue) !==
+                    JSON.stringify(previousScheduleValue)
+
+            if (
+                hasScheduleChanged &&
+                incomingScheduleType &&
+                incomingScheduleValue &&
+                incomingScheduleType !== 'none'
+            ) {
+                const anchorDate = resumeTrackingAt
+                    ? parseToHKT(resumeTrackingAt)
+                    : nowHKT()
+                configUpdateData.nextEpisodeAt =
+                    ScheduleService.calculateNextEpisodeDate(
+                        incomingScheduleType,
+                        incomingScheduleValue,
+                        anchorDate,
+                    )
             }
 
             // Upsert: update existing config or create new one

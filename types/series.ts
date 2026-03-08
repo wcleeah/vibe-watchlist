@@ -187,6 +187,8 @@ export interface UpdateSeriesRequest {
     thumbnailUrl?: string
     scheduleType?: ScheduleType
     scheduleValue?: ScheduleValue
+    /** Optional re-anchor point for nextEpisodeAt when schedule changes */
+    resumeTrackingAt?: string
     startDate?: string
     endDate?: string | null
     tagIds?: number[]

@@ -140,6 +140,17 @@ function localSeasonToBulk(s: LocalSeason): BulkSeasonData {
     }
 }
 
+function getNowDateTimeLocal(): string {
+    const now = new Date()
+    now.setSeconds(0, 0)
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hour = String(now.getHours()).padStart(2, '0')
+    const minute = String(now.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hour}:${minute}`
+}
+
 const MODE_TABS = [
     { id: 'single', label: 'Single' },
     { id: 'seasons', label: 'Seasons' },
@@ -224,6 +235,9 @@ export function SeriesEditModal({
         new Date().toISOString().split('T')[0],
     )
     const [endDate, setEndDate] = useState<string | undefined>(undefined)
+    const [resumeTrackingAt, setResumeTrackingAt] = useState<string>(
+        getNowDateTimeLocal(),
+    )
 
     const {
         register,
@@ -270,6 +284,7 @@ export function SeriesEditModal({
             setScheduleValue(series.scheduleValue)
             setStartDate(series.startDate?.split('T')[0])
             setEndDate(series.endDate?.split('T')[0])
+            setResumeTrackingAt(getNowDateTimeLocal())
             setTagInput('')
 
             // Set active tab based on current series state
@@ -417,6 +432,9 @@ export function SeriesEditModal({
                     thumbnailUrl: data.thumbnailUrl || undefined,
                     scheduleType,
                     scheduleValue,
+                    resumeTrackingAt: resumeTrackingAt
+                        ? new Date(resumeTrackingAt).toISOString()
+                        : undefined,
                     startDate,
                     endDate: endDate || null,
                     tagIds: data.tagIds,
@@ -585,6 +603,25 @@ export function SeriesEditModal({
                                             scheduleType === 'dates'
                                         }
                                     />
+                                </div>
+
+                                <div className='space-y-2'>
+                                    <Label htmlFor='resume-tracking-at'>
+                                        Resume Tracking From
+                                    </Label>
+                                    <Input
+                                        id='resume-tracking-at'
+                                        type='datetime-local'
+                                        value={resumeTrackingAt}
+                                        onChange={(e) =>
+                                            setResumeTrackingAt(e.target.value)
+                                        }
+                                        disabled={isSubmitting}
+                                    />
+                                    <p className='text-xs text-muted-foreground'>
+                                        Used as the anchor when schedule
+                                        changes. Default is now.
+                                    </p>
                                 </div>
                             </div>
 

@@ -225,10 +225,9 @@ export function ScheduleSelector({
                     onChange={handleTypeChange}
                     disabled={disabled}
                     className={cn(
-                        'flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm',
-                        'ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2',
+                        'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm',
+                        'ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                         'disabled:cursor-not-allowed disabled:opacity-50',
-                        'dark:border-gray-800 dark:bg-gray-950 dark:ring-offset-gray-950 dark:focus-visible:ring-gray-300',
                     )}
                 >
                     <option value='none'>No Schedule (Backlog)</option>
@@ -264,10 +263,9 @@ export function ScheduleSelector({
                             onChange={handleIntervalChange}
                             disabled={disabled}
                             className={cn(
-                                'inline-flex h-8 w-16 rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-center mx-1',
-                                'ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2',
+                                'mx-1 inline-flex h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-center text-sm',
+                                'ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                                 'disabled:cursor-not-allowed disabled:opacity-50',
-                                'dark:border-gray-800 dark:bg-gray-950 dark:ring-offset-gray-950 dark:focus-visible:ring-gray-300',
                             )}
                         />{' '}
                         {getIntervalLabel()}
@@ -293,7 +291,7 @@ export function ScheduleSelector({
                                         'px-3 py-1.5 text-sm font-medium rounded-md border transition-colors',
                                         isSelected
                                             ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
-                                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800 dark:hover:bg-gray-900',
+                                            : 'border-input bg-background text-foreground hover:bg-muted',
                                         disabled &&
                                             'opacity-50 cursor-not-allowed',
                                     )}
@@ -327,7 +325,7 @@ export function ScheduleSelector({
                                 value={newDate}
                                 onChange={(e) => setNewDate(e.target.value)}
                                 disabled={disabled}
-                                className='h-9'
+                                className='h-9 bg-background'
                             />
                         </div>
                         <div className='w-40'>
@@ -344,7 +342,7 @@ export function ScheduleSelector({
                                 value={currentScheduleTime}
                                 onChange={handleTimeChange}
                                 disabled={disabled}
-                                className='h-9'
+                                className='h-9 bg-background'
                             />
                         </div>
                         <div className='w-24'>
@@ -358,7 +356,7 @@ export function ScheduleSelector({
                                 value={newEpisodes}
                                 onChange={(e) => setNewEpisodes(e.target.value)}
                                 disabled={disabled}
-                                className='h-9'
+                                className='h-9 bg-background'
                             />
                         </div>
                         <Button
@@ -403,7 +401,7 @@ export function ScheduleSelector({
                                             )
                                         }
                                         disabled={disabled}
-                                        className='w-16 h-8 text-center'
+                                        className='h-8 w-16 bg-background text-center'
                                     />
                                     <span className='text-xs text-muted-foreground'>
                                         ep
@@ -432,19 +430,19 @@ export function ScheduleSelector({
                 <div className='space-y-2'>
                     <Label
                         htmlFor='schedule-time'
-                        className='flex items-center gap-1.5 text-muted-foreground'
+                        className='flex items-center gap-1.5'
                     >
                         <Clock className='w-3.5 h-3.5' />
                         Air time (HKT)
                     </Label>
-                    <div className='flex items-center gap-2 rounded-md border border-border bg-background px-2 py-2 w-fit'>
+                    <div className='flex items-center gap-2'>
                         <Input
                             id='schedule-time'
                             type='time'
                             value={currentScheduleTime}
                             onChange={handleTimeChange}
                             disabled={disabled}
-                            className='w-36 h-9 border-border/70 bg-transparent'
+                            className='h-9 w-40 bg-background'
                         />
                         {(scheduleValue as { time?: string }).time && (
                             <Button
