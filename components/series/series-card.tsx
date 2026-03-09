@@ -166,7 +166,8 @@ export function SeriesCard({
     const isMultiSeason = series.hasSeasons
     const cachedSeason = seasonCache?.get(series.id)
     const hasCachedSeason = cachedSeason !== undefined
-    const canIncrementSingleSeries = series.episodesWatched < series.episodesAired
+    const canIncrementSingleSeries =
+        series.episodesWatched < series.episodesAired
 
     // Fetch seasons lazily when popover opens
     const handleOpenSeasonPicker = useCallback(async () => {

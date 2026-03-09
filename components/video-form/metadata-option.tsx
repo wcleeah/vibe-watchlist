@@ -21,6 +21,7 @@ export function MetadataOption({
 }: MetadataOptionProps) {
     return (
         <button
+            type='button'
             onClick={onClick}
             className={cn(
                 'w-full p-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0',
@@ -101,6 +102,7 @@ export function MetadataOptionCompact({
 
     return (
         <button
+            type='button'
             onClick={onClick}
             className={cn(
                 'group relative p-3 rounded-lg border transition-all hover:shadow-md',

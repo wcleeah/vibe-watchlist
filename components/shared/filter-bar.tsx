@@ -127,7 +127,7 @@ export function FilterBar({
                     <select
                         value={sortValue}
                         onChange={(e) => onSortChange(e.target.value)}
-                        className='pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 text-sm'
+                        className='pl-3 pr-10 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 text-sm'
                     >
                         {sortOptions.map((option) => (
                             <option key={option.value} value={option.value}>

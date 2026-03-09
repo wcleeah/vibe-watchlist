@@ -252,10 +252,11 @@ export const LANGUAGE_NAMES: Record<string, string> = {
  * Validates if a language code is supported
  */
 export function isValidLanguageCode(code: string): boolean {
-    return (
-        Object.values(SUPPORTED_LANGUAGE_CODES).includes(code as any) ||
-        code === 'original'
-    )
+    const supportedLanguageCodes = Object.values(
+        SUPPORTED_LANGUAGE_CODES,
+    ) as readonly string[]
+
+    return supportedLanguageCodes.includes(code) || code === 'original'
 }
 
 /**

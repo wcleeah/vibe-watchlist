@@ -77,10 +77,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
             <div className='space-y-2'>
                 {/* Selected tags */}
                 {selectedTags.length > 0 && (
-                    <div
-                        id='selected-tags'
-                        aria-label={`Selected tags: ${selectedTags.map((tag) => tag.name).join(', ')}`}
-                    >
+                    <div id='selected-tags'>
                         <TagList
                             tags={selectedTags}
                             onRemove={onTagRemove}
@@ -148,6 +145,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
                         >
                             {suggestions.map((tag) => (
                                 <button
+                                    type='button'
                                     key={tag.id}
                                     onClick={() => handleSuggestionClick(tag)}
                                     className='w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none'

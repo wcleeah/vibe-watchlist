@@ -2,7 +2,7 @@
 
 import { Archive, CalendarDays, CheckCircle2, RefreshCw } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { NavigationTabs } from '@/components/navigation-tabs'

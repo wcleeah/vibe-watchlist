@@ -836,7 +836,7 @@ export function FormLayout({
                                         isSubmittingSeries ||
                                         localSeasons.length === 0
                                     }
-                                    className='flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm'
+                                    className='flex-1 h-9 rounded-md border border-input bg-background pl-3 pr-10 text-sm'
                                 >
                                     {localSeasons.map((s, i) => (
                                         <option

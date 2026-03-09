@@ -482,42 +482,6 @@ export class AIMetadataService {
     }
 
     /**
-     * Handle fallback cases with basic HTML extraction
-     */
-    private async handleFallbackPlatform(
-        url: string,
-        platform: string,
-    ): Promise<MetadataExtractionResponse> {
-        try {
-            const metadata =
-                await SharedMetadataService.extractHtmlMetadata(url)
-
-            return {
-                success: true,
-                suggestions: [
-                    {
-                        title: metadata.title || 'Untitled Video',
-                        thumbnailUrl: metadata.thumbnailUrl || undefined,
-                        platform,
-                        confidence: 0.1, // Basic extraction only
-                        reasoning: 'Basic HTML extraction only',
-                    },
-                ],
-                fallback: {
-                    title: metadata.title || undefined,
-                    thumbnailUrl: metadata.thumbnailUrl || undefined,
-                },
-            }
-        } catch (error) {
-            return {
-                success: false,
-                suggestions: [],
-                error: `Fallback extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            }
-        }
-    }
-
-    /**
      * Perform AI analysis using OpenRouter
      */
     private async performAIAnalysis(
@@ -1046,7 +1010,7 @@ export class AIMetadataService {
             const cachedEntry = {
                 id: cache.id,
                 url: cache.url,
-                searchResults: cache.searchResults as any[],
+                searchResults: cache.searchResults as GoogleSearchResult[],
                 extractedMetadata: cache.extractedMetadata as HtmlMetadata,
                 aiAnalysis: cache.aiAnalysis as MetadataSuggestion[],
                 confidenceScore: Number(cache.confidenceScore),

@@ -81,7 +81,7 @@ export function ConfidenceIndicator({
         )
     }
 
-    const { level, label, color } = getConfidenceLevel(confidence)
+    const { label, color } = getConfidenceLevel(confidence)
 
     return (
         <div className={cn('inline-flex items-center gap-1', className)}>

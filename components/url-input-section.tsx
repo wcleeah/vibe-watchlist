@@ -11,7 +11,6 @@ interface UrlInputSectionProps {
 }
 
 export function UrlInputSection({
-    value,
     onChange,
     isValid,
     error,

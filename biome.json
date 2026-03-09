@@ -5,6 +5,7 @@
             "**",
             "!**/node_modules",
             "!**/.next",
+            "!**/.open-next",
             "!**/.turbo",
             "!**/dist",
             "!**/build",
@@ -34,6 +35,12 @@
             },
             "style": {
                 "noNonNullAssertion": "off"
+            },
+            "complexity": {
+                "noStaticOnlyClass": "off"
+            },
+            "performance": {
+                "noImgElement": "off"
             }
         }
     },

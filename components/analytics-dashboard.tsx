@@ -616,7 +616,7 @@ export function AnalyticsDashboard() {
                                     onChange={(e) =>
                                         setSelectedOperation(e.target.value)
                                     }
-                                    className='px-3 py-1 border border-gray-300 rounded text-sm'
+                                    className='pl-3 pr-10 py-1 border border-gray-300 rounded text-sm'
                                 >
                                     <option value=''>All Operations</option>
                                     {Object.keys(OPERATION_LABELS).map((op) => (

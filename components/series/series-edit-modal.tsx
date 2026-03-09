@@ -577,7 +577,7 @@ export function SeriesEditModal({
                                         isSubmitting ||
                                         localSeasons.length === 0
                                     }
-                                    className='flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm'
+                                    className='flex-1 h-9 rounded-md border border-input bg-background pl-3 pr-10 text-sm'
                                 >
                                     {isLoadingSeasons && (
                                         <option value={0}>
@@ -778,6 +778,7 @@ export function SeriesEditModal({
                                     isSubmitting ||
                                     isLoadingTags
                                 }
+                                className='h-9 min-h-0'
                             >
                                 Add
                             </Button>

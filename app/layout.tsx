@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Toaster } from 'sonner'
 import { PreferencesProvider } from '@/lib/preferences-context'
@@ -13,7 +13,11 @@ export const metadata: Metadata = {
     title: 'Video Watchlist',
     description:
         'Personal video watchlist supporting multiple video platforms with AI-powered metadata extraction',
-    viewport: 'width=device-width, initial-scale=1',
+}
+
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
 }
 
 export default function RootLayout({

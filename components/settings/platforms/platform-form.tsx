@@ -389,7 +389,7 @@ export function PlatformForm({
                                         extractor: e.target.value,
                                     }))
                                 }
-                                className='w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 text-sm'
+                                className='w-full pl-3 pr-10 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 text-sm'
                             >
                                 <option value='official'>Official API</option>
                                 <option value='ai'>AI Analysis</option>

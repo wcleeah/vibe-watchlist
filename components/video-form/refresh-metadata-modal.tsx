@@ -83,7 +83,7 @@ export function RefreshMetadataModal({
             } else {
                 setError(result.error || 'Failed to fetch metadata')
             }
-        } catch (err) {
+        } catch {
             setError('Failed to fetch metadata')
         } finally {
             setLoading(false)
@@ -103,7 +103,7 @@ export function RefreshMetadataModal({
         try {
             await onUpdate(selectedTitle, selectedThumbnail)
             onOpenChange(false)
-        } catch (err) {
+        } catch {
             setError('Failed to update item')
         } finally {
             setUpdating(false)

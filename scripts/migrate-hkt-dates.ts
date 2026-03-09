@@ -18,7 +18,7 @@
 // This script references the pre-refactor schema and is no longer runnable.
 // Keeping it as documentation of the migration that was performed.
 
-export {};
+export {}
 console.log(
     'This migration has already been run. The series schema has since changed.',
-);
+)
