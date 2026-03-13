@@ -15,8 +15,8 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { TagList } from '@/components/ui/tag'
 import { DatePickerField } from '@/components/video-form/date-picker-field'
+import { TagInput } from '@/components/video-form/tag-input'
 import { useTags } from '@/hooks/use-tags'
 import { formatDateToHKTString } from '@/lib/utils/hkt-date'
 
@@ -162,6 +162,11 @@ export function ComingSoonEditModal({
         )
         .slice(0, 5)
 
+    const selectSuggestedTag = (tag: { id: number }) => {
+        setValue('tagIds', [...formTagIds, tag.id])
+        setTagInput('')
+    }
+
     const onSubmit = async (data: EditFormData) => {
         if (!item?.id) return
 
@@ -288,62 +293,18 @@ export function ComingSoonEditModal({
                             Tags
                         </span>
 
-                        {selectedTags.length > 0 && (
-                            <TagList
-                                tags={selectedTags}
-                                onRemove={removeTag}
-                                size='sm'
-                            />
-                        )}
-
-                        <div className='flex gap-2'>
-                            <Input
-                                type='text'
-                                placeholder='Add a tag'
-                                value={tagInput}
-                                onChange={(e) => setTagInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ',') {
-                                        e.preventDefault()
-                                        addTag(tagInput.trim())
-                                    }
-                                }}
-                                disabled={isSubmitting || isLoadingTags}
-                                className='flex-1'
-                            />
-                            <Button
-                                type='button'
-                                onClick={() => addTag(tagInput.trim())}
-                                disabled={
-                                    !tagInput.trim() ||
-                                    isSubmitting ||
-                                    isLoadingTags
-                                }
-                            >
-                                Add
-                            </Button>
-                        </div>
-
-                        {filteredSuggestions.length > 0 && tagInput && (
-                            <div className='border rounded-md p-2 space-y-1'>
-                                {filteredSuggestions.map((tag) => (
-                                    <button
-                                        key={tag.id}
-                                        type='button'
-                                        onClick={() => {
-                                            setValue('tagIds', [
-                                                ...formTagIds,
-                                                tag.id,
-                                            ])
-                                            setTagInput('')
-                                        }}
-                                        className='w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm'
-                                    >
-                                        {tag.name}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+                        <TagInput
+                            value={tagInput}
+                            onChange={setTagInput}
+                            onTagAdd={addTag}
+                            onTagRemove={removeTag}
+                            selectedTags={selectedTags}
+                            suggestions={filteredSuggestions}
+                            showSuggestions={Boolean(tagInput)}
+                            onSelectSuggestion={selectSuggestedTag}
+                            isLoading={isSubmitting || isLoadingTags}
+                            placeholder='Add a tag'
+                        />
                     </div>
 
                     <div className='flex gap-2 justify-end pt-4 border-t'>
