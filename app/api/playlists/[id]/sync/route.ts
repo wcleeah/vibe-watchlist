@@ -1,7 +1,7 @@
-import { eq, inArray } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { playlists, playlistTags, tags, videos } from '@/lib/db/schema'
+import { playlists, videos } from '@/lib/db/schema'
 import { YouTubeApiService } from '@/lib/services/youtube-api-service'
 
 interface RouteParams {
@@ -71,147 +71,96 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             )
         }
 
-        // Fetch latest items from YouTube
         const youtubeItems = await YouTubeApiService.getPlaylistItems(
             playlist.youtubePlaylistId,
         )
 
-        // Get current videos in database
         const currentVideos = await db
-            .select()
+            .select({
+                youtubeVideoId: videos.youtubeVideoId,
+                isWatched: videos.isWatched,
+                title: videos.title,
+                thumbnailUrl: videos.thumbnailUrl,
+            })
             .from(videos)
             .where(eq(videos.playlistId, playlistId))
 
-        // Create maps for comparison
         const currentVideoMap = new Map(
-            currentVideos.map((v) => [v.youtubeVideoId, v]),
+            currentVideos
+                .filter(
+                    (
+                        video,
+                    ): video is {
+                        youtubeVideoId: string
+                        isWatched: boolean | null
+                        title: string | null
+                        thumbnailUrl: string | null
+                    } => typeof video.youtubeVideoId === 'string',
+                )
+                .map((video) => [video.youtubeVideoId, video]),
         )
-        const youtubeVideoMap = new Map(
-            youtubeItems.map((item) => [item.videoId, item]),
+        const youtubeVideoIds = new Set(
+            youtubeItems.map((item) => item.videoId),
         )
 
-        // Find videos to add (in YouTube but not in DB)
-        const videosToAdd = youtubeItems.filter(
+        const added = youtubeItems.filter(
             (item) => !currentVideoMap.has(item.videoId),
-        )
+        ).length
+        const removed = currentVideos.filter(
+            (video) =>
+                video.youtubeVideoId &&
+                !youtubeVideoIds.has(video.youtubeVideoId),
+        ).length
 
-        // Find videos to remove (in DB but not in YouTube)
-        const videosToRemove = currentVideos.filter(
-            (v) => v.youtubeVideoId && !youtubeVideoMap.has(v.youtubeVideoId),
-        )
+        const rebuiltVideos = youtubeItems.map((item) => {
+            const existingVideo = currentVideoMap.get(item.videoId)
 
-        // Find videos to update position (if position changed)
-        const videosToUpdate: Array<{ id: number; playlistIndex: number }> = []
-        for (const video of currentVideos) {
-            if (!video.youtubeVideoId) continue
-            const youtubeItem = youtubeVideoMap.get(video.youtubeVideoId)
-            if (youtubeItem && youtubeItem.position !== video.playlistIndex) {
-                videosToUpdate.push({
-                    id: video.id,
-                    playlistIndex: youtubeItem.position,
-                })
-            }
-        }
-
-        // Remove videos no longer in playlist (must happen before
-        // inserts/updates to avoid potential URL conflicts and stale data)
-        if (videosToRemove.length > 0) {
-            const idsToRemove = videosToRemove.map((v) => v.id)
-            await db.delete(videos).where(inArray(videos.id, idsToRemove))
-        }
-
-        // Update positions sequentially to avoid intermittent query failures
-        // under high concurrency with neon-http.
-        if (videosToUpdate.length > 0) {
-            const now = new Date()
-            for (const update of videosToUpdate) {
-                try {
-                    await db
-                        .update(videos)
-                        .set({
-                            playlistIndex: update.playlistIndex,
-                            updatedAt: now,
-                        })
-                        .where(eq(videos.id, update.id))
-                } catch (error) {
-                    console.error('Playlist sync position update failed', {
-                        playlistId,
-                        update,
-                        now,
-                        error: toLoggableError(error),
-                    })
-                    throw error
-                }
-            }
-        }
-
-        // Add new videos (after removes/updates to avoid URL conflicts)
-        if (videosToAdd.length > 0) {
-            const videoValues = videosToAdd.map((item) => ({
+            return {
                 url: `https://www.youtube.com/watch?v=${item.videoId}`,
-                title: item.title,
+                title: existingVideo?.title ?? item.title,
                 platform: 'youtube',
-                thumbnailUrl: item.thumbnailUrl || null,
-                isWatched: false,
-                playlistId: playlistId,
+                thumbnailUrl:
+                    existingVideo?.thumbnailUrl ?? item.thumbnailUrl ?? null,
+                isWatched: existingVideo?.isWatched ?? false,
+                playlistId,
                 playlistIndex: item.position,
                 youtubeVideoId: item.videoId,
-            }))
+            }
+        })
 
-            await db.insert(videos).values(videoValues)
+        const now = new Date()
+        if (rebuiltVideos.length > 0) {
+            await db.batch([
+                db.delete(videos).where(eq(videos.playlistId, playlistId)),
+                db.insert(videos).values(rebuiltVideos),
+                db
+                    .update(playlists)
+                    .set({
+                        itemCount: youtubeItems.length,
+                        lastSyncedAt: now,
+                        updatedAt: now,
+                    })
+                    .where(eq(playlists.id, playlistId)),
+            ])
+        } else {
+            await db.batch([
+                db.delete(videos).where(eq(videos.playlistId, playlistId)),
+                db
+                    .update(playlists)
+                    .set({
+                        itemCount: youtubeItems.length,
+                        lastSyncedAt: now,
+                        updatedAt: now,
+                    })
+                    .where(eq(playlists.id, playlistId)),
+            ])
         }
-
-        // Update playlist sync bookkeeping (preserve existing metadata)
-        await db
-            .update(playlists)
-            .set({
-                itemCount: youtubeItems.length,
-                lastSyncedAt: new Date(),
-                updatedAt: new Date(),
-            })
-            .where(eq(playlists.id, playlistId))
-
-        // Get updated stats
-        const updatedVideos = await db
-            .select()
-            .from(videos)
-            .where(eq(videos.playlistId, playlistId))
-
-        const watchedCount = updatedVideos.filter((v) => v.isWatched).length
-        const unwatchedCount = updatedVideos.length - watchedCount
-
-        const playlistTagResults = await db
-            .select({
-                id: tags.id,
-                name: tags.name,
-                color: tags.color,
-            })
-            .from(playlistTags)
-            .innerJoin(tags, eq(playlistTags.tagId, tags.id))
-            .where(eq(playlistTags.playlistId, playlistId))
 
         return NextResponse.json({
             success: true,
             sync: {
-                added: videosToAdd.length,
-                removed: videosToRemove.length,
-                unchanged:
-                    youtubeItems.length -
-                    videosToAdd.length -
-                    videosToUpdate.length,
-                positionsUpdated: videosToUpdate.length,
-            },
-            playlist: {
-                id: playlistId,
-                youtubePlaylistId: playlist.youtubePlaylistId,
-                title: playlist.title,
-                thumbnailUrl: playlist.thumbnailUrl,
-                channelTitle: playlist.channelTitle,
-                itemCount: youtubeItems.length,
-                watchedCount,
-                unwatchedCount,
-                tags: playlistTagResults,
-                lastSyncedAt: new Date(),
+                added,
+                removed,
             },
         })
     } catch (error) {

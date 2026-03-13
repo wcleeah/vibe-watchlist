@@ -95,51 +95,37 @@ export function usePlaylists(
     }, [filters])
 
     // Sync playlist from YouTube
-    const sync = useCallback(async (id: number) => {
-        try {
-            const response = await fetch(`/api/playlists/${id}/sync`, {
-                method: 'POST',
-            })
+    const sync = useCallback(
+        async (id: number) => {
+            try {
+                const response = await fetch(`/api/playlists/${id}/sync`, {
+                    method: 'POST',
+                })
 
-            if (response.ok) {
-                const data = await response.json()
-                // Update only sync-related fields to avoid replacing
-                // unrelated UI data (e.g. tags from current list state).
-                setPlaylists((prev) =>
-                    prev.map((p) =>
-                        p.id === id
-                            ? {
-                                  ...p,
-                                  itemCount:
-                                      data.playlist?.itemCount ?? p.itemCount,
-                                  watchedCount:
-                                      data.playlist?.watchedCount ??
-                                      p.watchedCount,
-                                  unwatchedCount:
-                                      data.playlist?.unwatchedCount ??
-                                      p.unwatchedCount,
-                                  lastSyncedAt:
-                                      data.playlist?.lastSyncedAt ??
-                                      p.lastSyncedAt,
-                              }
-                            : p,
-                    ),
+                if (response.ok) {
+                    const data = await response.json()
+                    const added = data.sync?.added ?? 0
+                    const removed = data.sync?.removed ?? 0
+                    await fetchPlaylists()
+                    toast.success(`Synced: ${added} added, ${removed} removed`)
+                } else {
+                    const errorData = await response.json()
+                    throw new Error(
+                        errorData.error || 'Failed to sync playlist',
+                    )
+                }
+            } catch (err) {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : 'Failed to sync playlist',
                 )
-                const added = data.sync?.added ?? 0
-                const removed = data.sync?.removed ?? 0
-                toast.success(`Synced: ${added} added, ${removed} removed`)
-            } else {
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Failed to sync playlist')
+                console.error('Failed to sync playlist:', err)
+                toast.error('Failed to sync playlist')
             }
-        } catch (err) {
-            setError(
-                err instanceof Error ? err.message : 'Failed to sync playlist',
-            )
-            console.error('Failed to sync playlist:', err)
-            toast.error('Failed to sync playlist')
-        }
-    }, [])
+        },
+        [fetchPlaylists],
+    )
 
     // Delete playlist
     const deletePlaylist = useCallback(
