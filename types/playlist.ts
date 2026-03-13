@@ -53,8 +53,6 @@ export interface CreatePlaylistRequest {
 export interface SyncPlaylistResponse {
     added: number
     removed: number
-    unchanged: number
-    playlist: PlaylistSummary
 }
 
 // API response types
