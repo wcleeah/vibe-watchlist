@@ -1,6 +1,6 @@
 'use client'
 
-import { Loader2, Plus, Tag as TagIcon } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { forwardRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -87,7 +87,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
                 )}
 
                 <div className='relative'>
-                    <div className='flex gap-0'>
+                    <div className='flex gap-2'>
                         <Input
                             ref={ref}
                             type='text'
@@ -97,10 +97,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
                             onKeyDown={handleKeyDown}
                             onFocus={() => setIsFocused(true)}
                             onBlur={handleBlur}
-                            className={cn(
-                                'flex-1 h-12 text-base rounded-r-none border-r-0',
-                                className,
-                            )}
+                            className={cn('flex-1', className)}
                             disabled={isLoading}
                             aria-label='Tag input'
                             aria-describedby={
@@ -120,7 +117,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
                             aria-autocomplete='list'
                         />
                         {isLoading ? (
-                            <div className='flex items-center justify-center w-1/5 h-12 rounded-l-none border border-l-0 bg-gray-50 dark:bg-gray-800'>
+                            <div className='flex h-9 min-h-0 items-center justify-center rounded-md border border-input bg-muted px-4'>
                                 <Loader2 className='w-4 h-4 animate-spin text-gray-400' />
                             </div>
                         ) : (
@@ -128,10 +125,9 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
                                 type='button'
                                 onClick={() => onTagAdd(value.trim())}
                                 disabled={!value.trim()}
-                                className='w-1/5 h-12 rounded-l-none text-sm font-bold'
+                                className='h-9 min-h-0'
                             >
-                                <Plus className='w-5 h-5 sm:hidden' />
-                                <span className='hidden sm:inline'>Add</span>
+                                Add
                             </Button>
                         )}
                     </div>
@@ -148,14 +144,10 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(
                                     type='button'
                                     key={tag.id}
                                     onClick={() => handleSuggestionClick(tag)}
-                                    className='w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none'
+                                    className='w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700'
                                     role='option'
                                     aria-selected={false}
                                 >
-                                    <TagIcon
-                                        className='w-4 h-4 text-gray-400'
-                                        aria-hidden='true'
-                                    />
                                     <span>{tag.name}</span>
                                 </button>
                             ))}
