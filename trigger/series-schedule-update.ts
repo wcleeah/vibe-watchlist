@@ -5,7 +5,7 @@ import { SeriesUpdateService } from '@/lib/services/series-update-service'
 export const updateSeriesSchedules = schedules.task({
     id: 'update-series-schedules',
     cron: {
-        pattern: '*/5 * * * *',
+        pattern: '0 0 * * *',
         timezone: 'Asia/Hong_Kong',
     },
     run: async ({ timestamp }) => {
