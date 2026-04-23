@@ -1,6 +1,8 @@
 # Vibe Watchlist
 Vibe Watchlist is a place where you can store all you good vibes, aka to-watch media content from different platform. It combines official platform APIs, HTML metadata scraping, and AI-assisted detection so you can add a URL once, choose the right content mode, keep everything organized in one place, and... enjoy the good vibes!
 
+https://github.com/user-attachments/assets/631baf6a-51fb-40e2-85e1-f94f478c826c
+
 ## Feature Overview
 - Track standalone videos with active and watched states.
 - Import YouTube playlists and keep per-item progress in sync.
