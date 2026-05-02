@@ -22,7 +22,7 @@ https://github.com/user-attachments/assets/631baf6a-51fb-40e2-85e1-f94f478c826c
 - URL validation and normalization, including canonical cleanup for YouTube links.
 - Dynamic platform detection backed by database-driven platform configs.
 - AI-assisted platform discovery for unknown but valid URLs.
-- Metadata extraction pipeline that combines official YouTube and Twitch APIs, HTML/meta scraping, Google Custom Search, and OpenRouter structured-output prompts.
+- Metadata extraction pipeline that combines official YouTube and Twitch APIs, HTML/meta scraping, Exa-backed web search tools, and OpenRouter-based AI analysis.
 - Tagging, filtering, custom ordering, watched-state management, and metadata refresh actions.
 - Playlist preview, import, sync, reordering, and progress tracking.
 - Series tracking with daily, weekly, custom interval, fixed-date, and backlog scheduling modes.
@@ -36,7 +36,7 @@ https://github.com/user-attachments/assets/631baf6a-51fb-40e2-85e1-f94f478c826c
 - Frontend (the hipster stack): Next.js, Tailwind, shadcn/ui, Radix UI.
 - Backend: Next.js App Router with route handlers under `app/api`.
 - Database: PostgreSQL with Drizzle ORM.
-- AI and metadata: OpenRouter, Google Custom Search, YouTube Data API v3, Twitch Helix, Cheerio, and fallback HTML metadata extraction.
+- AI and metadata: LangChain, OpenRouter, Exa, YouTube Data API v3, Twitch Helix, Cheerio, and fallback HTML metadata extraction.
 - Scheduling: Trigger.dev.
 - Deployment: OpenNext.js for Cloudflare, Neon as Postgres provider.
 

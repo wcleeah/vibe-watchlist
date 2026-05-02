@@ -391,7 +391,9 @@ export class AIMetadataService {
         logger.log(
             '🤖 AI PLATFORM HANDLER: Fetching HTML content for AI analysis',
         )
-        const htmlContent = await Promise.allSettled([this.fetchHtmlContent(url)])
+        const htmlContent = await Promise.allSettled([
+            this.fetchHtmlContent(url),
+        ])
         const htmlResult = htmlContent[0]
         const html = htmlResult.status === 'fulfilled' ? htmlResult.value : ''
 

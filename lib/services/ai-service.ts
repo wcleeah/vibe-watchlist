@@ -158,7 +158,9 @@ function sumUsage(messages: AIMessage[]): {
     )
 }
 
-function extractMessageText(message: AIMessage | undefined): string | undefined {
+function extractMessageText(
+    message: AIMessage | undefined,
+): string | undefined {
     if (!message) {
         return undefined
     }
