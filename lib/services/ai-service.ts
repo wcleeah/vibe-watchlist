@@ -1,4 +1,9 @@
+import { AIMessage, HumanMessage } from '@langchain/core/messages'
+import { ChatOpenRouter } from '@langchain/openrouter'
 import { inArray } from 'drizzle-orm'
+import { createAgent, toolStrategy } from 'langchain'
+import { z } from 'zod'
+
 import { db } from '@/lib/db'
 import { userConfig } from '@/lib/db/schema'
 import type { AIModelConfig, AIPromptConfig } from '@/lib/services/ai-config'
@@ -12,7 +17,9 @@ import {
     DEFAULT_TITLE_SUGGESTION_SYSTEM_PROMPT,
     DEFAULT_TITLE_SUGGESTION_USER_PROMPT_TEMPLATE,
 } from '@/lib/services/ai-config'
+
 import { APIUsageService } from './api-usage-service'
+import { getExaTools } from './exa-mcp-service'
 
 export interface PlatformSuggestion {
     platform: string
@@ -33,80 +40,84 @@ export interface TitleSuggestions {
     alternatives: string[]
 }
 
-// ── JSON Schemas for structured output ──────────────────────────────────────
+const platformSuggestionSchema = z.object({
+    platform: z.string(),
+    confidence: z.number().min(0).max(1),
+    patterns: z.array(z.string()),
+    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+    icon: z.string(),
+})
 
-const platformSuggestionSchema = {
-    type: 'object',
-    properties: {
-        platform: { type: 'string' },
-        confidence: { type: 'number', minimum: 0, maximum: 1 },
-        patterns: { type: 'array', items: { type: 'string' } },
-        color: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$' },
-        icon: { type: 'string' },
-    },
-    required: ['platform', 'confidence', 'patterns', 'color', 'icon'],
-    additionalProperties: false,
-}
+const titleSuggestionsSchema = z.object({
+    suggestions: z
+        .array(
+            z.object({
+                title: z.string(),
+                confidence: z.number().min(0).max(1),
+                source: z.string(),
+                language: z
+                    .string()
+                    .describe(
+                        'Language code of the title, e.g. "en", "zh-TW", "ja", "ko", or "unknown"',
+                    ),
+            }),
+        )
+        .min(1)
+        .max(5),
+    bestGuess: z.string(),
+    alternatives: z.array(z.string()),
+})
 
-const titleSuggestionsSchema = {
-    type: 'object',
-    properties: {
-        suggestions: {
-            type: 'array',
-            items: {
-                type: 'object',
-                properties: {
-                    title: { type: 'string' },
-                    confidence: { type: 'number', minimum: 0, maximum: 1 },
-                    source: { type: 'string' },
-                    language: {
-                        type: 'string',
-                        description:
-                            'Language code of the title, e.g. "en", "zh-TW", "ja", "ko", or "unknown"',
-                    },
-                },
-                required: ['title', 'confidence', 'source', 'language'],
-                additionalProperties: false,
-            },
-            minItems: 1,
-            maxItems: 5,
-        },
-        bestGuess: { type: 'string' },
-        alternatives: { type: 'array', items: { type: 'string' } },
-    },
-    required: ['suggestions', 'bestGuess', 'alternatives'],
-    additionalProperties: false,
-}
+function collectAIMessageUsage(message: AIMessage): {
+    prompt: number
+    completion: number
+    total: number
+} {
+    const usage = message.usage_metadata
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function extractMessages(body: unknown): string {
-    const b = body as { messages?: Array<{ role: string; content: string }> }
-    if (b.messages) {
-        return JSON.stringify(b.messages)
+    return {
+        prompt: usage?.input_tokens || 0,
+        completion: usage?.output_tokens || 0,
+        total: usage?.total_tokens || 0,
     }
-    return ''
 }
 
-// ── AIService ───────────────────────────────────────────────────────────────
+function sumUsage(messages: AIMessage[]): {
+    prompt: number
+    completion: number
+    total: number
+} {
+    return messages.reduce(
+        (totals, message) => {
+            const usage = collectAIMessageUsage(message)
+
+            return {
+                prompt: totals.prompt + usage.prompt,
+                completion: totals.completion + usage.completion,
+                total: totals.total + usage.total,
+            }
+        },
+        {
+            prompt: 0,
+            completion: 0,
+            total: 0,
+        },
+    )
+}
+
+function isAIMessageWithText(message: unknown): message is AIMessage {
+    return AIMessage.isInstance(message)
+}
 
 export class AIService {
-    private apiKey: string
-    private baseUrl = 'https://openrouter.ai/api/v1'
-
     constructor() {
-        this.apiKey = process.env.OPENROUTER_API_KEY!
-        if (!this.apiKey) {
+        if (!process.env.OPENROUTER_API_KEY) {
             throw new Error(
                 'OPENROUTER_API_KEY environment variable is required',
             )
         }
     }
 
-    /**
-     * Fetch all AI-related config from user_config in one query.
-     * Falls back to exported defaults when no DB config exists.
-     */
     private async getAIConfig(): Promise<{
         modelId: string
         platformDetection: AIPromptConfig
@@ -180,122 +191,59 @@ export class AIService {
         return defaults
     }
 
+    private createChatModel(model: string): ChatOpenRouter {
+        return new ChatOpenRouter({
+            model,
+            temperature: 0.2,
+            siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+            siteName: 'Video Watchlist App',
+        })
+    }
+
     async detectPlatform(url: string): Promise<PlatformSuggestion> {
         try {
             console.log('AI PLATFORM DETECTION: Analyzing URL:', url)
 
             const config = await this.getAIConfig()
             const modelName = config.modelId
-            const userContent =
-                config.platformDetection.userPromptTemplate.replace(
-                    '{url}',
-                    url,
-                )
+            const model = this.createChatModel(modelName)
+            const tools = await getExaTools()
+            const agent = createAgent({
+                model,
+                tools,
+                systemPrompt: [
+                    config.platformDetection.systemPrompt,
+                    'Use the available Exa web tools to identify unfamiliar domains, confirm the hosting platform, and gather external evidence for the patterns you return whenever that improves confidence.',
+                ].join(' '),
+                responseFormat: toolStrategy(platformSuggestionSchema),
+            })
 
-            const requestBody = {
-                model: modelName,
-                messages: [
-                    {
-                        role: 'system',
-                        content: config.platformDetection.systemPrompt,
-                    },
-                    {
-                        role: 'user',
-                        content: userContent,
-                    },
-                ],
-                provider: {
-                    require_parameters: true,
-                },
-                response_format: {
-                    type: 'json_schema',
-                    json_schema: {
-                        name: 'platform_suggestion',
-                        schema: platformSuggestionSchema,
-                        strict: true,
-                    },
-                },
-            }
+            const userContent = `${config.platformDetection.userPromptTemplate.replace(
+                '{url}',
+                url,
+            )}\n\nUse the available Exa web tools whenever outside evidence helps identify or confirm the platform.`
 
             const startTime = Date.now()
-            const response = await fetch(`${this.baseUrl}/chat/completions`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${this.apiKey}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
+            const result = await agent.invoke({
+                messages: [new HumanMessage(userContent)],
             })
             const durationMs = Date.now() - startTime
 
-            if (!response.ok) {
-                console.log(
-                    'AI PLATFORM DETECTION: API request failed with status:',
-                    response.status,
-                    response.statusText,
-                )
-
-                try {
-                    const errorBody = await response.text()
-                    console.log(
-                        'AI PLATFORM DETECTION: Error response body:',
-                        errorBody.substring(0, 500),
-                    )
-                } catch (bodyError) {
-                    console.log(
-                        'AI PLATFORM DETECTION: Could not read error response body:',
-                        bodyError,
-                    )
-                }
-
-                throw new Error(
-                    `AI service error: ${response.status} ${response.statusText}`,
-                )
-            }
-
-            const data = await response.json()
-            console.log(
-                'AI PLATFORM DETECTION: API response:',
-                JSON.stringify(data, null, 2),
-            )
-
-            if (!data.choices?.[0]?.message?.content) {
-                throw new Error('Invalid AI response format')
-            }
-
-            const suggestion: PlatformSuggestion = JSON.parse(
-                data.choices[0].message.content,
-            )
-
-            if (
-                !suggestion.platform ||
-                typeof suggestion.confidence !== 'number' ||
-                !Array.isArray(suggestion.patterns)
-            ) {
-                console.error(
-                    'AI PLATFORM DETECTION: Invalid response structure:',
-                    suggestion,
-                )
-                throw new Error('Invalid AI response structure')
-            }
+            const aiMessages = result.messages.filter(isAIMessageWithText)
+            const suggestion = result.structuredResponse
 
             console.log(
                 'AI PLATFORM DETECTION: Successfully parsed structured response:',
                 suggestion,
             )
 
-            const usage = data.usage
-            if (usage) {
+            if (aiMessages.length > 0) {
                 await APIUsageService.log(
                     'platform_detection',
-                    {
-                        prompt: usage.prompt_tokens || 0,
-                        completion: usage.completion_tokens || 0,
-                        total: usage.total_tokens || 0,
-                    },
+                    sumUsage(aiMessages),
                     modelName,
-                    extractMessages(requestBody),
-                    data.choices[0].message.content,
+                    userContent,
+                    JSON.stringify(suggestion, null, 2),
                     durationMs,
                 )
             }
@@ -309,155 +257,86 @@ export class AIService {
 
     async generateTitleSuggestions(
         metadata: { url?: string; title?: string; platform?: string },
-        searchResults: unknown[] = [],
-        languages?: string[],
+        context: {
+            extractedMetadata?: Record<string, unknown>
+            htmlSnippet?: string
+            searchLanguages?: string[]
+        } = {},
     ): Promise<TitleSuggestions> {
         try {
-            const context = {
-                url: metadata.url,
-                existingTitle: metadata.title,
-                searchResults: searchResults,
-                platform: metadata.platform,
-                ...(languages && languages.length > 0
-                    ? { searchLanguages: languages }
-                    : {}),
-            }
-            console.log(
-                'AI TITLE SUGGESTIONS: context:',
-                JSON.stringify(context, null, 2),
-            )
-
             const aiConfig = await this.getAIConfig()
             const modelName = aiConfig.modelId
+            const model = this.createChatModel(modelName)
+            const tools = await getExaTools()
+            const agent = createAgent({
+                model,
+                tools,
+                systemPrompt: aiConfig.titleSuggestion.systemPrompt,
+                responseFormat: toolStrategy(titleSuggestionsSchema),
+            })
+
+            const agentContext = {
+                url: metadata.url,
+                existingTitle: metadata.title,
+                platform: metadata.platform,
+                extractedMetadata: context.extractedMetadata,
+                htmlSnippet: context.htmlSnippet,
+                ...(context.searchLanguages &&
+                context.searchLanguages.length > 0
+                    ? { searchLanguages: context.searchLanguages }
+                    : {}),
+            }
+
+            console.log(
+                'AI TITLE SUGGESTIONS: context:',
+                JSON.stringify(agentContext, null, 2),
+            )
+
             const userContent =
                 aiConfig.titleSuggestion.userPromptTemplate.replace(
                     '{context}',
-                    JSON.stringify(context, null, 2),
+                    JSON.stringify(agentContext, null, 2),
                 )
-
-            const requestBody = {
-                model: modelName,
-                temperature: 0.2,
-                messages: [
-                    {
-                        role: 'system',
-                        content: aiConfig.titleSuggestion.systemPrompt,
-                    },
-                    {
-                        role: 'user',
-                        content: userContent,
-                    },
-                ],
-                provider: {
-                    require_parameters: true,
-                },
-                response_format: {
-                    type: 'json_schema',
-                    json_schema: {
-                        name: 'title_suggestions',
-                        schema: titleSuggestionsSchema,
-                        strict: true,
-                    },
-                },
-            }
-
             const startTime = Date.now()
-            const response = await fetch(`${this.baseUrl}/chat/completions`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${this.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer':
-                        process.env.NEXT_PUBLIC_APP_URL ||
-                        'http://localhost:3000',
-                    'X-Title': 'Video Watchlist App',
-                },
-                body: JSON.stringify(requestBody),
+            const result = await agent.invoke({
+                messages: [new HumanMessage(userContent)],
             })
             const durationMs = Date.now() - startTime
 
-            if (!response.ok) {
-                console.log(
-                    'AI TITLE SUGGESTIONS: API request failed with status:',
-                    response.status,
-                )
-
-                try {
-                    const errorBody = await response.text()
-                    console.log(
-                        'AI TITLE SUGGESTIONS: Error response body:',
-                        errorBody.substring(0, 500),
-                    )
-                } catch (bodyError) {
-                    console.log(
-                        'AI TITLE SUGGESTIONS: Could not read error response body:',
-                        bodyError,
-                    )
-                }
-
-                throw new Error(`AI service error: ${response.status}`)
-            }
-
-            const data = await response.json()
-            console.log(
-                'AI TITLE SUGGESTIONS: API response:',
-                JSON.stringify(data, null, 2),
-            )
-
-            if (!data.choices?.[0]?.message?.content) {
-                throw new Error('Invalid AI response format')
-            }
-
-            const suggestions: TitleSuggestions = JSON.parse(
-                data.choices[0].message.content,
-            )
-
-            if (
-                !suggestions.suggestions ||
-                !Array.isArray(suggestions.suggestions) ||
-                suggestions.suggestions.length === 0
-            ) {
-                console.error(
-                    'AI TITLE SUGGESTIONS: Invalid response structure:',
-                    suggestions,
-                )
-                throw new Error('Invalid suggestions format')
-            }
+            const aiMessages = result.messages.filter(isAIMessageWithText)
+            const structuredResponse = result.structuredResponse
 
             console.log(
-                'AI TITLE SUGGESTIONS: Successfully parsed structured response:',
-                JSON.stringify(suggestions, null, 2),
+                'AI TITLE SUGGESTIONS: Structured response:',
+                JSON.stringify(structuredResponse, null, 2),
             )
 
-            const usage = data.usage
-            if (usage) {
+            if (aiMessages.length > 0) {
                 await APIUsageService.log(
                     'title_suggestion',
-                    {
-                        prompt: usage.prompt_tokens || 0,
-                        completion: usage.completion_tokens || 0,
-                        total: usage.total_tokens || 0,
-                    },
+                    sumUsage(aiMessages),
                     modelName,
-                    extractMessages(requestBody),
-                    data.choices[0].message.content,
+                    userContent,
+                    JSON.stringify(structuredResponse, null, 2),
                     durationMs,
                 )
             }
 
-            return suggestions
+            return structuredResponse
         } catch (error) {
             console.error('AI TITLE SUGGESTIONS: Failed:', error)
+            const fallbackTitle = metadata.title || 'Untitled Video'
+
             return {
                 suggestions: [
                     {
-                        title: metadata.title || 'Untitled Video',
+                        title: fallbackTitle,
                         confidence: 0.5,
                         source: 'fallback',
                         language: 'unknown',
                     },
                 ],
-                bestGuess: metadata.title || 'Untitled Video',
+                bestGuess: fallbackTitle,
                 alternatives: [],
             }
         }

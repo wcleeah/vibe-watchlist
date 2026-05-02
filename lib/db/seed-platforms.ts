@@ -49,7 +49,7 @@ const presetPlatforms = [
         addedBy: 'system',
         confidenceScore: '0.8',
         metadata: {
-            description: 'Meta tag extraction with Google search fallback',
+            description: 'Meta tag extraction with AI search fallback',
             supportedFormats: ['movie', 'series'],
         },
     },
@@ -66,7 +66,7 @@ const presetPlatforms = [
         addedBy: 'system',
         confidenceScore: '0.8',
         metadata: {
-            description: 'Meta tag extraction with Google search fallback',
+            description: 'Meta tag extraction with AI search fallback',
             supportedFormats: ['video', 'channel'],
         },
     },

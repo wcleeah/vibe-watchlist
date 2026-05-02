@@ -10,7 +10,6 @@ import {
 import { YouTubeApiService } from '@/lib/services/youtube-api-service'
 import type {
     AIMetadataConfig,
-    GoogleSearchResult,
     HtmlMetadata,
     MetadataCacheEntry,
     MetadataExtractionResponse,
@@ -22,7 +21,7 @@ import { PlatformDataService } from './platform-data-service'
 
 /**
  * Main orchestration service for AI-powered metadata extraction
- * Coordinates Google Search, HTML scraping, and AI analysis
+ * Coordinates HTML scraping, AI analysis, and caching
  */
 export class AIMetadataService {
     private config: AIMetadataConfig
@@ -387,41 +386,26 @@ export class AIMetadataService {
             url,
         )
 
-        // Google Search + HTML + Metascraper + AI Analysis
+        // HTML + Metascraper + AI Analysis
         logger.log(
-            '🤖 AI PLATFORM HANDLER: Starting parallel operations - Google Search and HTML fetch',
+            '🤖 AI PLATFORM HANDLER: Fetching HTML content for AI analysis',
         )
-        const [searchResults, htmlContent] = await Promise.allSettled([
-            this.performGoogleSearch(url),
+        const htmlContent = await Promise.allSettled([
             this.fetchHtmlContent(url),
         ])
+        const htmlResult = htmlContent[0]
+        const html = htmlResult.status === 'fulfilled' ? htmlResult.value : ''
 
-        const googleResults =
-            searchResults.status === 'fulfilled' ? searchResults.value : []
-        const html = htmlContent.status === 'fulfilled' ? htmlContent.value : ''
-
-        logger.log('🤖 AI PLATFORM HANDLER: Parallel operations complete')
-        logger.log(
-            '🤖 AI PLATFORM HANDLER: Google search results:',
-            googleResults.length,
-            'items',
-        )
         logger.log(
             '🤖 AI PLATFORM HANDLER: HTML content length:',
             html.length,
             'characters',
         )
 
-        if (searchResults.status === 'rejected') {
-            logger.warn(
-                '! AI PLATFORM HANDLER: Google search failed:',
-                searchResults.reason,
-            )
-        }
-        if (htmlContent.status === 'rejected') {
+        if (htmlResult.status === 'rejected') {
             logger.warn(
                 '! AI PLATFORM HANDLER: HTML fetch failed:',
-                htmlContent.reason,
+                htmlResult.reason,
             )
         }
 
@@ -444,28 +428,25 @@ export class AIMetadataService {
             JSON.stringify(extractedMetadata, null, 2),
         )
 
-        // AI analysis with Google context
-        logger.log('🤖 AI PLATFORM HANDLER: Starting AI analysis with context')
-        const suggestions = await this.performAIAnalysis(
+        logger.log('🤖 AI PLATFORM HANDLER: Starting AI analysis')
+        const analysis = await this.performAIAnalysis(
             url,
-            googleResults,
             html,
             extractedMetadata,
             platform,
         )
         logger.log(
             '🤖 AI PLATFORM HANDLER: AI analysis complete, generated',
-            suggestions.length,
+            analysis.suggestions.length,
             'suggestions',
         )
-
         // Cache the results
         logger.log('🤖 AI PLATFORM HANDLER: Caching results')
-        await this.cacheResults(url, googleResults, html, suggestions)
+        await this.cacheResults(url, html, analysis.suggestions)
 
         const response = {
             success: true,
-            suggestions,
+            suggestions: analysis.suggestions,
             fallback: {
                 title: extractedMetadata.title,
                 thumbnailUrl:
@@ -475,7 +456,7 @@ export class AIMetadataService {
 
         logger.log(
             '🤖 AI PLATFORM HANDLER: Returning AI platform response with',
-            suggestions.length,
+            analysis.suggestions.length,
             'suggestions',
         )
         return response
@@ -486,11 +467,12 @@ export class AIMetadataService {
      */
     private async performAIAnalysis(
         url: string,
-        searchResults: GoogleSearchResult[],
         htmlContent: string,
         extractedMetadata: HtmlMetadata,
         platform: string,
-    ): Promise<MetadataSuggestion[]> {
+    ): Promise<{
+        suggestions: MetadataSuggestion[]
+    }> {
         logger.log('🧠 AI ANALYSIS: Starting AI analysis for URL:', url)
 
         try {
@@ -504,11 +486,6 @@ export class AIMetadataService {
 
             const context = {
                 url,
-                searchResults: searchResults.slice(0, 4).map((r) => ({
-                    title: r.title,
-                    snippet: r.snippet,
-                    hasImage: !!r.pagemap?.cse_image?.[0]?.src,
-                })),
                 htmlSnippet: htmlContent.slice(0, 2000), // First 2KB of HTML
                 extractedMetadata: {
                     title: extractedMetadata.title,
@@ -523,11 +500,6 @@ export class AIMetadataService {
                 ...(htmlLang ? { htmlLanguage: htmlLang } : {}),
             }
 
-            logger.log(
-                '🧠 AI ANALYSIS: Context prepared with',
-                context.searchResults.length,
-                'search results',
-            )
             logger.log(
                 '🧠 AI ANALYSIS: HTML snippet length:',
                 context.htmlSnippet.length,
@@ -558,8 +530,9 @@ export class AIMetadataService {
                 metadata: {
                     url,
                     title: extractedMetadata.title,
+                    platform,
                 },
-                searchResults: searchResults,
+                context,
             }
             logger.log(
                 '🧠 AI ANALYSIS: Request parameters to AIService:',
@@ -573,8 +546,11 @@ export class AIMetadataService {
                         title: extractedMetadata.title,
                         platform,
                     },
-                    searchResults,
-                    ['en', 'zh-TW'],
+                    {
+                        extractedMetadata: context.extractedMetadata,
+                        htmlSnippet: context.htmlSnippet,
+                        searchLanguages: ['en', 'zh-TW'],
+                    },
                 )
 
             logger.log(
@@ -603,7 +579,6 @@ export class AIMetadataService {
                     const thumbnailUrl = this.inferThumbnail(
                         url,
                         htmlContent,
-                        searchResults,
                         extractedMetadata,
                     )
 
@@ -649,120 +624,18 @@ export class AIMetadataService {
                 JSON.stringify(limitedSuggestions, null, 2),
             )
 
-            return limitedSuggestions
+            return {
+                suggestions: limitedSuggestions,
+            }
         } catch (error) {
             logger.error('❌ AI ANALYSIS: AI analysis failed:', error)
             logger.error(
                 '❌ AI ANALYSIS: Error details:',
                 error instanceof Error ? error.stack : 'Unknown error type',
             )
-            return []
-        }
-    }
-
-    /**
-     * Perform Google Custom Search for context
-     */
-    private async performGoogleSearch(
-        url: string,
-    ): Promise<GoogleSearchResult[]> {
-        logger.log('🔍 GOOGLE SEARCH: Starting Google search for URL:', url)
-        const aggregatedResults: GoogleSearchResult[] = []
-
-        try {
-            const languages = ['lang_en', 'lang_zh-TW']
-            for (const lr of languages) {
-                const urlObj = new URL(url)
-                const domain = urlObj.hostname
-                const path = urlObj.pathname.slice(1, 50) // first 50 chars of path
-
-                logger.log(
-                    '🔍 GOOGLE SEARCH: Parsed URL - domain:',
-                    domain,
-                    'path:',
-                    path,
-                    'language:',
-                    lr,
-                )
-
-                // Create smart search query
-                const query = `site:${domain} ${path}`.trim()
-                logger.log('🔍 GOOGLE SEARCH: Generated search query:', query)
-
-                // Extract hl param: 'lang_en' -> 'en', 'lang_zh-TW' -> 'zh-TW'
-                const hl = lr.replace('lang_', '')
-                const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?key=${this.config.googleSearchApiKey}&gl=HK&cx=${this.config.googleSearchEngineId}&q=${encodeURIComponent(query)}&num=3&hl=${hl}&lr=${lr}`
-                logger.log(
-                    '🔍 GOOGLE SEARCH: Making API request to Google Custom Search',
-                )
-
-                const response = await fetch(searchUrl, {
-                    signal: AbortSignal.timeout(this.config.timeout),
-                })
-
-                logger.log(
-                    '🔍 GOOGLE SEARCH: API response status:',
-                    response.status,
-                )
-
-                if (!response.ok) {
-                    logger.log(
-                        '🔍 GOOGLE SEARCH: API request failed with status:',
-                        response.status,
-                    )
-
-                    // Log response body for debugging
-                    try {
-                        const errorBody = await response.text()
-                        logger.log(
-                            '🔍 GOOGLE SEARCH: Error response body:',
-                            errorBody.substring(0, 500),
-                        )
-                    } catch (bodyError) {
-                        logger.log(
-                            '🔍 GOOGLE SEARCH: Could not read error response body:',
-                            bodyError,
-                        )
-                    }
-
-                    throw new Error(
-                        `Google Search API error: ${response.status}`,
-                    )
-                }
-
-                const data = await response.json()
-                logger.log(
-                    '🔍 GOOGLE SEARCH: Full API response body:',
-                    JSON.stringify(data, null, 2),
-                )
-
-                const results = data.items || []
-                logger.log(
-                    '🔍 GOOGLE SEARCH: Successfully retrieved',
-                    results.length,
-                    'search results',
-                )
-
-                if (results.length > 0) {
-                    logger.log(
-                        '🔍 GOOGLE SEARCH: First result title:',
-                        results[0].title?.substring(0, 50),
-                    )
-                }
-
-                aggregatedResults.push(...results)
+            return {
+                suggestions: [],
             }
-            return aggregatedResults
-        } catch (error) {
-            logger.error('❌ GOOGLE SEARCH: Google search failed:', error)
-            logger.error(
-                '❌ GOOGLE SEARCH: Error details:',
-                error instanceof Error ? error.message : 'Unknown error',
-            )
-            logger.log(
-                '🔍 GOOGLE SEARCH: Returning empty results, continuing without search context',
-            )
-            return [] // Continue without search results
         }
     }
 
@@ -919,7 +792,6 @@ export class AIMetadataService {
     private inferThumbnail(
         url: string,
         _htmlContent: string,
-        searchResults: GoogleSearchResult[],
         extractedMetadata: HtmlMetadata,
     ): string | undefined {
         logger.log('🖼 THUMBNAIL INFERENCE: Inferring thumbnail for URL:', url)
@@ -933,24 +805,6 @@ export class AIMetadataService {
                 metaThumbnail,
             )
             return metaThumbnail
-        }
-
-        logger.log(
-            '🖼 THUMBNAIL INFERENCE: No meta tag thumbnails found, checking',
-            searchResults.length,
-            'search results for images',
-        )
-
-        // PRIORITY 2: Search results
-        for (const result of searchResults) {
-            if (result.pagemap?.cse_image?.[0]?.src) {
-                const thumbnailUrl = result.pagemap.cse_image[0].src
-                logger.log(
-                    '🖼 THUMBNAIL INFERENCE: Found thumbnail in search result:',
-                    thumbnailUrl,
-                )
-                return thumbnailUrl
-            }
         }
 
         logger.log('🖼 THUMBNAIL INFERENCE: No thumbnail found')
@@ -1010,7 +864,6 @@ export class AIMetadataService {
             const cachedEntry = {
                 id: cache.id,
                 url: cache.url,
-                searchResults: cache.searchResults as GoogleSearchResult[],
                 extractedMetadata: cache.extractedMetadata as HtmlMetadata,
                 aiAnalysis: cache.aiAnalysis as MetadataSuggestion[],
                 confidenceScore: Number(cache.confidenceScore),
@@ -1044,7 +897,6 @@ export class AIMetadataService {
      */
     private async cacheResults(
         url: string,
-        searchResults: GoogleSearchResult[],
         htmlContent: string,
         suggestions: MetadataSuggestion[],
     ): Promise<void> {
@@ -1086,7 +938,7 @@ export class AIMetadataService {
 
             const cacheData = {
                 url,
-                searchResults,
+                searchResults: [],
                 extractedMetadata,
                 aiAnalysis: suggestions,
                 confidenceScore: avgConfidence.toString(),
@@ -1117,9 +969,6 @@ export class AIMetadataService {
 
 // Export singleton instance
 const aiMetadataConfig: AIMetadataConfig = {
-    googleSearchApiKey: process.env.GOOGLE_SEARCH_API_KEY!,
-    googleSearchEngineId: process.env.GOOGLE_SEARCH_ENGINE_ID!,
-    openRouterApiKey: process.env.OPENROUTER_API_KEY!,
     cacheTtl: Number(process.env.METADATA_CACHE_TTL) || 7 * 24 * 60 * 60 * 1000, // 7 days
     timeout: Number(process.env.AI_ANALYSIS_TIMEOUT) || 15000, // 15 seconds
 }

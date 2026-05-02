@@ -6,30 +6,53 @@
 
 export const DEFAULT_MODEL_ID = 'arcee-ai/trinity-large-preview:free'
 
-export const DEFAULT_PLATFORM_DETECTION_SYSTEM_PROMPT =
-    'You are a helpful assistant that analyzes video URLs, metadatas, google search result. You can returns structured platform information. Always respond with valid JSON that matches the required schema.'
+export const DEFAULT_PLATFORM_DETECTION_SYSTEM_PROMPT = [
+    'You infer the hosting platform for a video URL.',
+    'Use the URL structure, any obvious metadata clues, and the available Exa web tools when outside evidence helps identify or confirm the host platform.',
+    'Prefer exact known platform and domain matches, but use external evidence when the domain is unfamiliar, generic, embedded, or ambiguous.',
+    'If the platform is unclear, return "unknown" with lower confidence instead of guessing.',
+    'Put the most concrete clues you used into "patterns", such as domains, path shapes, brand names, or evidence from search results.',
+    '"color" must be a valid 6-digit hex color.',
+    '"icon" should be a short lowercase icon keyword that fits the platform, or "globe" if generic.',
+    'Return only valid JSON matching the required schema.',
+].join(' ')
 
-export const DEFAULT_PLATFORM_DETECTION_USER_PROMPT_TEMPLATE =
-    'Analyze this URL and suggest platform details: {url}'
+export const DEFAULT_PLATFORM_DETECTION_USER_PROMPT_TEMPLATE = `Analyze this video URL and return the most likely platform details.
 
-export const DEFAULT_TITLE_SUGGESTION_SYSTEM_PROMPT =
-    'You are a video title extraction assistant. You analyze video page metadata, HTML tags, and Google search results to determine the actual video title. Metadata titles often contain extra text like site names, platform names, channel names, or decorative markers (e.g. "Video Title - SiteName", "Video Title | ChannelName - Platform"). Your job is to extract the clean video title, stripping away these suffixes and prefixes. When the same video title appears in multiple languages across the provided data, return each language variant as a separate suggestion. Do NOT translate titles \u2014 only return language variants you find evidence for in the data. Always respond with valid JSON matching the required schema.'
+URL: {url}
 
-export const DEFAULT_TITLE_SUGGESTION_USER_PROMPT_TEMPLATE = `Analyze the context below and extract the actual video title(s).
+Use the available Exa web tools whenever outside evidence helps identify or confirm the platform.`
 
-For each title found:
-- Extract the clean video title, removing site names, platform suffixes, channel names, and decorative text (e.g. "Video Title - SiteName" should become "Video Title")
-- Identify the language code (e.g. "en", "zh-TW", "ja", "ko", or "unknown" if uncertain)
-- Rate your confidence (0-1) that this is the actual video title
-- Note the source where you found evidence (e.g. "og:title", "google search", "page title")
+export const DEFAULT_TITLE_SUGGESTION_SYSTEM_PROMPT = [
+    'You extract canonical video titles from noisy page metadata and HTML context.',
+    'Start with the provided context.',
+    'If the title is missing, ambiguous, inconsistent, or clearly decorated with site branding, use the available Exa web tools to verify the canonical title.',
+    'Remove only non-title noise such as site names, platform names, channel or uploader suffixes, and decorative separators when they are clearly not part of the actual title.',
+    'Preserve original language and spelling.',
+    'Do not translate, summarize, or invent titles.',
+    'If strong evidence shows multiple language variants for the same video, return each as a separate suggestion.',
+    'Prefer evidence from the target URL, canonical pages, and official platform pages.',
+    'Return only valid JSON matching the required schema.',
+].join(' ')
+
+export const DEFAULT_TITLE_SUGGESTION_USER_PROMPT_TEMPLATE = `Analyze the JSON context below and return the clean video title suggestion set.
+
+Instructions:
+- Start with the provided metadata and HTML snippet.
+- Use the available Exa web tools only when the existing evidence is missing, ambiguous, inconsistent, or heavily decorated.
+- Prefer evidence from the target URL, canonical pages, official platform pages, and strong exact-match results.
+- Clean titles by removing site branding, platform names, channel or uploader names, and decorative separators only when they are clearly not part of the title.
+- Keep language variants only when they are supported by evidence.
+- Deduplicate equivalent cleaned titles.
+- "source" should be short and concrete, such as "og:title", "title tag", "meta", "html", "official page", or "exa search".
+- "bestGuess" must be the single most likely clean title.
+- If evidence is weak, lower confidence instead of guessing.
 
 Rules:
-- Cross-reference metadata titles with Google search result titles to identify the common video title portion
-- Strip site names, platform names, channel names, and other suffixes/prefixes that are not part of the video title
-- Do NOT translate or fabricate titles not present in the data
-- Deduplicate titles that are identical after cleaning and trimming
-- If multiple languages are found in the data, return each as a separate suggestion
-- bestGuess should be the most likely clean video title
+- Do not translate titles.
+- Do not fabricate titles, languages, or sources.
+- Do not return unrelated page headings.
+- If only one credible cleaned title exists, return one suggestion.
 
 Context:
 {context}`
