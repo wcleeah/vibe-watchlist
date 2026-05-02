@@ -1,25 +1,10 @@
 'use client'
 
-import { Check, ChevronsUpDown, Loader2, RotateCcw, Save } from 'lucide-react'
+import { Loader2, RotateCcw, Save } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import type { OpenRouterModel } from '@/app/api/openrouter/models/route'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command'
 import { Label } from '@/components/ui/label'
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover'
 import type { AIModelConfig, AIPromptConfig } from '@/lib/services/ai-config'
 import {
     CONFIG_KEY_AI_MODEL,
@@ -31,41 +16,10 @@ import {
     DEFAULT_TITLE_SUGGESTION_SYSTEM_PROMPT,
     DEFAULT_TITLE_SUGGESTION_USER_PROMPT_TEMPLATE,
 } from '@/lib/services/ai-config'
-import { cn } from '@/lib/utils'
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatContextLength(length: number | null): string {
-    if (!length) return '?'
-    if (length >= 1_000_000) return `${(length / 1_000_000).toFixed(0)}M`
-    if (length >= 1_000) return `${(length / 1_000).toFixed(0)}K`
-    return String(length)
-}
-
-function formatPricing(model: OpenRouterModel): string {
-    const prompt = Number(model.pricing.prompt)
-    const completion = Number(model.pricing.completion)
-    if (prompt === 0 && completion === 0) return 'Free'
-    // Pricing is per token, display per 1M tokens
-    const promptPer1M = (prompt * 1_000_000).toFixed(2)
-    const completionPer1M = (completion * 1_000_000).toFixed(2)
-    return `$${promptPer1M} / $${completionPer1M} per 1M tokens`
-}
-
-function isModelFree(model: OpenRouterModel): boolean {
-    return (
-        Number(model.pricing.prompt) === 0 &&
-        Number(model.pricing.completion) === 0
-    )
-}
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 export function AISettings() {
-    // Model state
-    const [models, setModels] = useState<OpenRouterModel[]>([])
-    const [modelsLoading, setModelsLoading] = useState(true)
-    const [modelOpen, setModelOpen] = useState(false)
     const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL_ID)
 
     // Prompt state
@@ -129,26 +83,6 @@ export function AISettings() {
         loadConfig()
     }, [])
 
-    // ── Load models from OpenRouter ─────────────────────────────────────
-
-    useEffect(() => {
-        async function loadModels() {
-            try {
-                const res = await fetch('/api/openrouter/models')
-                const json = await res.json()
-                if (json.success) {
-                    setModels(json.data)
-                }
-            } catch (error) {
-                console.error('Failed to load models:', error)
-                toast.error('Failed to load models from OpenRouter')
-            } finally {
-                setModelsLoading(false)
-            }
-        }
-        loadModels()
-    }, [])
-
     // ── Save config ─────────────────────────────────────────────────────
 
     const handleSave = useCallback(async () => {
@@ -201,11 +135,6 @@ export function AISettings() {
         titleUserPrompt,
     ])
 
-    // ── Split models into free / paid ───────────────────────────────────
-
-    const freeModels = models.filter(isModelFree)
-    const paidModels = models.filter((m) => !isModelFree(m))
-
     // ── Loading state ───────────────────────────────────────────────────
 
     if (configLoading) {
@@ -227,8 +156,8 @@ export function AISettings() {
                     <div>
                         <h3 className='text-lg font-semibold'>AI Model</h3>
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            Select the OpenRouter model used for AI operations.
-                            Only models supporting tool calling are shown.
+                            Enter the OpenRouter model ID used for AI
+                            operations.
                         </p>
                     </div>
                     <Button
@@ -242,138 +171,20 @@ export function AISettings() {
                     </Button>
                 </div>
 
-                <Popover open={modelOpen} onOpenChange={setModelOpen}>
-                    <PopoverTrigger asChild>
-                        <Button
-                            variant='outline'
-                            aria-expanded={modelOpen}
-                            className='w-full justify-between font-mono text-sm h-auto py-2'
-                        >
-                            <span className='truncate'>{selectedModelId}</span>
-                            <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                        className='w-[var(--radix-popover-trigger-width)] p-0'
-                        align='start'
-                    >
-                        <Command>
-                            <CommandInput placeholder='Search models...' />
-                            <CommandList className='max-h-[400px]'>
-                                {modelsLoading ? (
-                                    <div className='flex items-center justify-center py-6'>
-                                        <Loader2 className='w-4 h-4 animate-spin text-gray-400' />
-                                        <span className='ml-2 text-sm text-gray-500'>
-                                            Loading models...
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <CommandEmpty>
-                                            No models found.
-                                        </CommandEmpty>
-
-                                        {freeModels.length > 0 && (
-                                            <CommandGroup heading='Free Models'>
-                                                {freeModels.map((model) => (
-                                                    <CommandItem
-                                                        key={model.id}
-                                                        value={`${model.id} ${model.name}`}
-                                                        onSelect={() => {
-                                                            setSelectedModelId(
-                                                                model.id,
-                                                            )
-                                                            setModelOpen(false)
-                                                        }}
-                                                        className='flex flex-col items-start gap-0.5 py-2'
-                                                    >
-                                                        <div className='flex items-center w-full'>
-                                                            <Check
-                                                                className={cn(
-                                                                    'mr-2 h-4 w-4 shrink-0',
-                                                                    selectedModelId ===
-                                                                        model.id
-                                                                        ? 'opacity-100'
-                                                                        : 'opacity-0',
-                                                                )}
-                                                            />
-                                                            <span className='font-mono text-sm truncate'>
-                                                                {model.id}
-                                                            </span>
-                                                        </div>
-                                                        <div className='ml-6 flex items-center gap-2 text-xs text-gray-500'>
-                                                            <span>
-                                                                Context:{' '}
-                                                                {formatContextLength(
-                                                                    model.contextLength,
-                                                                )}
-                                                            </span>
-                                                            <Badge
-                                                                variant='secondary'
-                                                                className='text-xs px-1.5 py-0'
-                                                            >
-                                                                Free
-                                                            </Badge>
-                                                        </div>
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        )}
-
-                                        {paidModels.length > 0 && (
-                                            <CommandGroup heading='Paid Models'>
-                                                {paidModels.map((model) => (
-                                                    <CommandItem
-                                                        key={model.id}
-                                                        value={`${model.id} ${model.name}`}
-                                                        onSelect={() => {
-                                                            setSelectedModelId(
-                                                                model.id,
-                                                            )
-                                                            setModelOpen(false)
-                                                        }}
-                                                        className='flex flex-col items-start gap-0.5 py-2'
-                                                    >
-                                                        <div className='flex items-center w-full'>
-                                                            <Check
-                                                                className={cn(
-                                                                    'mr-2 h-4 w-4 shrink-0',
-                                                                    selectedModelId ===
-                                                                        model.id
-                                                                        ? 'opacity-100'
-                                                                        : 'opacity-0',
-                                                                )}
-                                                            />
-                                                            <span className='font-mono text-sm truncate'>
-                                                                {model.id}
-                                                            </span>
-                                                        </div>
-                                                        <div className='ml-6 text-xs text-gray-500'>
-                                                            <span>
-                                                                Context:{' '}
-                                                                {formatContextLength(
-                                                                    model.contextLength,
-                                                                )}
-                                                            </span>
-                                                            <span className='mx-1'>
-                                                                &middot;
-                                                            </span>
-                                                            <span>
-                                                                {formatPricing(
-                                                                    model,
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        )}
-                                    </>
-                                )}
-                            </CommandList>
-                        </Command>
-                    </PopoverContent>
-                </Popover>
+                <div className='space-y-1.5'>
+                    <Label htmlFor='ai-model-id'>Model ID</Label>
+                    <input
+                        id='ai-model-id'
+                        type='text'
+                        value={selectedModelId}
+                        onChange={(e) => setSelectedModelId(e.target.value)}
+                        placeholder='openai/gpt-4o-mini'
+                        className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+                    />
+                    <p className='text-xs text-gray-500 dark:text-gray-400'>
+                        Example: <code>anthropic/claude-sonnet-4.5</code>
+                    </p>
+                </div>
             </section>
 
             {/* ── Platform Detection Prompts ──────────────────────── */}
