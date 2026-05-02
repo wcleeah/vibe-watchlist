@@ -14,7 +14,6 @@ import type {
     MetadataCacheEntry,
     MetadataExtractionResponse,
     MetadataSuggestion,
-    SearchResultContext,
 } from '@/lib/types/ai-metadata'
 import { logger } from '@/lib/utils/logger'
 import { parseVideoUrlWithPlatforms } from '@/lib/utils/url-parser'
@@ -22,7 +21,7 @@ import { PlatformDataService } from './platform-data-service'
 
 /**
  * Main orchestration service for AI-powered metadata extraction
- * Coordinates HTML scraping, search-backed AI analysis, and caching
+ * Coordinates HTML scraping, AI analysis, and caching
  */
 export class AIMetadataService {
     private config: AIMetadataConfig
@@ -429,9 +428,7 @@ export class AIMetadataService {
             JSON.stringify(extractedMetadata, null, 2),
         )
 
-        logger.log(
-            '🤖 AI PLATFORM HANDLER: Starting AI analysis with search tool context',
-        )
+        logger.log('🤖 AI PLATFORM HANDLER: Starting AI analysis')
         const analysis = await this.performAIAnalysis(
             url,
             html,
@@ -443,20 +440,9 @@ export class AIMetadataService {
             analysis.suggestions.length,
             'suggestions',
         )
-        logger.log(
-            '🤖 AI PLATFORM HANDLER: Search context captured:',
-            analysis.searchResults.length,
-            'items',
-        )
-
         // Cache the results
         logger.log('🤖 AI PLATFORM HANDLER: Caching results')
-        await this.cacheResults(
-            url,
-            analysis.searchResults,
-            html,
-            analysis.suggestions,
-        )
+        await this.cacheResults(url, html, analysis.suggestions)
 
         const response = {
             success: true,
@@ -486,7 +472,6 @@ export class AIMetadataService {
         platform: string,
     ): Promise<{
         suggestions: MetadataSuggestion[]
-        searchResults: SearchResultContext[]
     }> {
         logger.log('🧠 AI ANALYSIS: Starting AI analysis for URL:', url)
 
@@ -594,7 +579,6 @@ export class AIMetadataService {
                     const thumbnailUrl = this.inferThumbnail(
                         url,
                         htmlContent,
-                        titleSuggestions.searchResults,
                         extractedMetadata,
                     )
 
@@ -636,17 +620,12 @@ export class AIMetadataService {
                 'suggestions after limiting',
             )
             logger.log(
-                '🧠 AI ANALYSIS: Returning search context items:',
-                titleSuggestions.searchResults.length,
-            )
-            logger.log(
                 '🧠 AI ANALYSIS: Final suggestions array:',
                 JSON.stringify(limitedSuggestions, null, 2),
             )
 
             return {
                 suggestions: limitedSuggestions,
-                searchResults: titleSuggestions.searchResults,
             }
         } catch (error) {
             logger.error('❌ AI ANALYSIS: AI analysis failed:', error)
@@ -656,7 +635,6 @@ export class AIMetadataService {
             )
             return {
                 suggestions: [],
-                searchResults: [],
             }
         }
     }
@@ -814,7 +792,6 @@ export class AIMetadataService {
     private inferThumbnail(
         url: string,
         _htmlContent: string,
-        searchResults: SearchResultContext[],
         extractedMetadata: HtmlMetadata,
     ): string | undefined {
         logger.log('🖼 THUMBNAIL INFERENCE: Inferring thumbnail for URL:', url)
@@ -828,24 +805,6 @@ export class AIMetadataService {
                 metaThumbnail,
             )
             return metaThumbnail
-        }
-
-        logger.log(
-            '🖼 THUMBNAIL INFERENCE: No meta tag thumbnails found, checking',
-            searchResults.length,
-            'search results for images',
-        )
-
-        // PRIORITY 2: Search results
-        for (const result of searchResults) {
-            if (result.image) {
-                const thumbnailUrl = result.image
-                logger.log(
-                    '🖼 THUMBNAIL INFERENCE: Found thumbnail in search result:',
-                    thumbnailUrl,
-                )
-                return thumbnailUrl
-            }
         }
 
         logger.log('🖼 THUMBNAIL INFERENCE: No thumbnail found')
@@ -905,7 +864,6 @@ export class AIMetadataService {
             const cachedEntry = {
                 id: cache.id,
                 url: cache.url,
-                searchResults: cache.searchResults as SearchResultContext[],
                 extractedMetadata: cache.extractedMetadata as HtmlMetadata,
                 aiAnalysis: cache.aiAnalysis as MetadataSuggestion[],
                 confidenceScore: Number(cache.confidenceScore),
@@ -939,7 +897,6 @@ export class AIMetadataService {
      */
     private async cacheResults(
         url: string,
-        searchResults: SearchResultContext[],
         htmlContent: string,
         suggestions: MetadataSuggestion[],
     ): Promise<void> {
@@ -981,7 +938,7 @@ export class AIMetadataService {
 
             const cacheData = {
                 url,
-                searchResults,
+                searchResults: [],
                 extractedMetadata,
                 aiAnalysis: suggestions,
                 confidenceScore: avgConfidence.toString(),

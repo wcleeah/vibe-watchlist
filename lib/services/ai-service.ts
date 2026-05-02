@@ -5,12 +5,7 @@ import {
 } from '@langchain/core/messages'
 import { ChatOpenRouter } from '@langchain/openrouter'
 import { inArray } from 'drizzle-orm'
-import {
-    createAgent,
-    tool,
-    toolCallLimitMiddleware,
-    toolStrategy,
-} from 'langchain'
+import { createAgent, toolStrategy } from 'langchain'
 import { z } from 'zod'
 
 import { db } from '@/lib/db'
@@ -26,10 +21,9 @@ import {
     DEFAULT_TITLE_SUGGESTION_SYSTEM_PROMPT,
     DEFAULT_TITLE_SUGGESTION_USER_PROMPT_TEMPLATE,
 } from '@/lib/services/ai-config'
-import type { SearchResultContext } from '@/lib/types/ai-metadata'
 
 import { APIUsageService } from './api-usage-service'
-import { SearchToolService } from './search-tool-service'
+import { getExaTools } from './exa-mcp-service'
 
 export interface PlatformSuggestion {
     platform: string
@@ -77,49 +71,6 @@ const titleSuggestionsSchema = z.object({
     bestGuess: z.string(),
     alternatives: z.array(z.string()),
 })
-
-const searchWebToolSchema = z.object({
-    query: z
-        .string()
-        .min(1)
-        .describe('Search query used to find the canonical title for a URL'),
-    domain: z
-        .string()
-        .optional()
-        .describe('Optional domain restriction such as example.com'),
-    language: z
-        .string()
-        .optional()
-        .describe('Optional preferred language code such as en or zh-TW'),
-    maxResults: z
-        .number()
-        .int()
-        .min(1)
-        .max(5)
-        .optional()
-        .describe('Maximum number of search results to fetch'),
-})
-
-const searchWebTool = tool(
-    async ({ query, domain, language, maxResults }) => {
-        const results = await SearchToolService.searchWeb({
-            query,
-            domain,
-            language,
-            maxResults,
-        })
-
-        return {
-            results,
-        }
-    },
-    {
-        name: 'search_web',
-        description:
-            'Search the web for pages that can confirm a clean canonical video title and language variants.',
-        schema: searchWebToolSchema,
-    },
-)
 
 function collectAIMessageUsage(message: AIMessage): {
     prompt: number
@@ -327,38 +278,29 @@ export class AIService {
     async generateTitleSuggestions(
         metadata: { url?: string; title?: string; platform?: string },
         context: {
-            searchResults?: SearchResultContext[]
             extractedMetadata?: Record<string, unknown>
             htmlSnippet?: string
             searchLanguages?: string[]
         } = {},
-    ): Promise<TitleSuggestions & { searchResults: SearchResultContext[] }> {
+    ): Promise<TitleSuggestions> {
         try {
             const aiConfig = await this.getAIConfig()
             const modelName = aiConfig.modelId
             const model = this.createChatModel(modelName)
+            const tools = await getExaTools()
             const agent = createAgent({
                 model,
-                tools: [searchWebTool],
-                middleware: [
-                    toolCallLimitMiddleware({
-                        toolName: 'search_web',
-                        runLimit: 2,
-                        exitBehavior: 'error',
-                    }),
-                ],
+                tools,
                 systemPrompt: aiConfig.titleSuggestion.systemPrompt,
                 responseFormat: toolStrategy(titleSuggestionsSchema),
             })
 
-            const seedSearchResults = context.searchResults || []
             const agentContext = {
                 url: metadata.url,
                 existingTitle: metadata.title,
                 platform: metadata.platform,
                 extractedMetadata: context.extractedMetadata,
                 htmlSnippet: context.htmlSnippet,
-                searchResults: seedSearchResults,
                 ...(context.searchLanguages &&
                 context.searchLanguages.length > 0
                     ? { searchLanguages: context.searchLanguages }
@@ -389,11 +331,6 @@ export class AIService {
                 JSON.stringify(structuredResponse, null, 2),
             )
 
-            const searchResults = this.collectSearchResultsFromMessages(
-                result.messages,
-                seedSearchResults,
-            )
-
             if (aiMessages.length > 0) {
                 await APIUsageService.log(
                     'title_suggestion',
@@ -405,10 +342,7 @@ export class AIService {
                 )
             }
 
-            return {
-                ...structuredResponse,
-                searchResults,
-            }
+            return structuredResponse
         } catch (error) {
             console.error('AI TITLE SUGGESTIONS: Failed:', error)
             const fallbackTitle = metadata.title || 'Untitled Video'
@@ -424,54 +358,8 @@ export class AIService {
                 ],
                 bestGuess: fallbackTitle,
                 alternatives: [],
-                searchResults: context.searchResults || [],
             }
         }
-    }
-
-    private collectSearchResultsFromMessages(
-        messages: Array<unknown>,
-        fallbackResults: SearchResultContext[],
-    ): SearchResultContext[] {
-        for (const message of messages) {
-            if (!message || typeof message !== 'object') {
-                continue
-            }
-
-            const candidate = message as {
-                name?: string
-                content?: unknown
-                getType?: () => string
-            }
-
-            if (
-                candidate.getType?.() !== 'tool' ||
-                candidate.name !== 'search_web'
-            ) {
-                continue
-            }
-
-            if (typeof candidate.content !== 'string') {
-                continue
-            }
-
-            try {
-                const parsed = JSON.parse(candidate.content) as {
-                    results?: SearchResultContext[]
-                }
-
-                if (Array.isArray(parsed.results)) {
-                    return parsed.results
-                }
-            } catch (error) {
-                console.warn(
-                    'AI TITLE SUGGESTIONS: Failed to parse search tool result:',
-                    error,
-                )
-            }
-        }
-
-        return fallbackResults
     }
 }
 

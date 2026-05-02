@@ -37,21 +37,11 @@ export interface AIMetadataConfig {
 export interface MetadataCacheEntry {
     id: number
     url: string
-    searchResults: SearchResultContext[]
     extractedMetadata: HtmlMetadata
     aiAnalysis: MetadataSuggestion[]
     confidenceScore: number
     createdAt: Date
     expiresAt: Date
-}
-
-// Search result used as AI title-extraction context
-export interface SearchResultContext {
-    title: string
-    link: string
-    snippet: string
-    image?: string
-    highlights?: string[]
 }
 
 // HTML metadata extracted from page
