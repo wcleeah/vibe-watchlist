@@ -75,9 +75,8 @@ Open `http://localhost:3000`.
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | PostgreSQL connection string used by the app and Drizzle. |
 | `YOUTUBE_API_KEY` | Yes for YouTube features | Required for playlist preview/import/sync and official YouTube metadata fetches. |
-| `OPENROUTER_API_KEY` | Yes for AI features | Required for AI platform detection, AI title suggestions, and OpenRouter model loading in Settings. |
-| `GOOGLE_SEARCH_API_KEY` | Yes for AI metadata | Used by the metadata extraction pipeline. |
-| `GOOGLE_SEARCH_ENGINE_ID` | Yes for AI metadata | Used with Google Custom Search. |
+| `OPENROUTER_API_KEY` | Yes for AI features | Required for AI platform detection, AI title suggestions, LangChain OpenRouter agent calls, and model loading in Settings. |
+| `EXA_API_KEY` | Yes for AI metadata | Used by the Exa-backed `search_web` agent tool during metadata extraction. |
 | `TWITCH_CLIENT_ID` | Optional | Required for official Twitch metadata lookups. |
 | `TWITCH_CLIENT_SECRET` | Optional | Required for official Twitch metadata lookups. |
 | `NEXT_PUBLIC_APP_URL` | Recommended | Sent to OpenRouter as the `HTTP-Referer`. Falls back to `http://localhost:3000`. |

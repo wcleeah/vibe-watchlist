@@ -75,7 +75,7 @@ export async function GET() {
             data: OpenRouterAPIModel[]
         }
 
-        // Filter: text input + text output + response_format + structured_outputs
+        // Filter: text input + text output + tool calling support
         const filtered = data.data.filter((model) => {
             const input = model.architecture?.input_modalities ?? []
             const output = model.architecture?.output_modalities ?? []
@@ -83,8 +83,7 @@ export async function GET() {
             return (
                 input.includes('text') &&
                 output.includes('text') &&
-                params.includes('response_format') &&
-                params.includes('structured_outputs')
+                params.includes('tools')
             )
         })
 

@@ -228,7 +228,7 @@ export function AISettings() {
                         <h3 className='text-lg font-semibold'>AI Model</h3>
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
                             Select the OpenRouter model used for AI operations.
-                            Only models supporting structured output are shown.
+                            Only models supporting tool calling are shown.
                         </p>
                     </div>
                     <Button
@@ -454,7 +454,7 @@ export function AISettings() {
                         </h3>
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
                             Prompts used when extracting video titles from
-                            metadata and search results.
+                            metadata and agent-provided search context.
                         </p>
                     </div>
                     <Button

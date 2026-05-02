@@ -29,9 +29,6 @@ export type MetadataExtractionResponse = z.infer<
 
 // AI service configuration
 export interface AIMetadataConfig {
-    googleSearchApiKey: string
-    googleSearchEngineId: string
-    openRouterApiKey: string
     cacheTtl: number
     timeout: number
 }
@@ -40,7 +37,7 @@ export interface AIMetadataConfig {
 export interface MetadataCacheEntry {
     id: number
     url: string
-    searchResults: GoogleSearchResult[]
+    searchResults: SearchResultContext[]
     extractedMetadata: HtmlMetadata
     aiAnalysis: MetadataSuggestion[]
     confidenceScore: number
@@ -48,15 +45,13 @@ export interface MetadataCacheEntry {
     expiresAt: Date
 }
 
-// Search result from Google Custom Search
-export interface GoogleSearchResult {
+// Search result used as AI title-extraction context
+export interface SearchResultContext {
     title: string
     link: string
     snippet: string
-    pagemap?: {
-        cse_image?: Array<{ src: string }>
-        metatags?: Array<Record<string, string>>
-    }
+    image?: string
+    highlights?: string[]
 }
 
 // HTML metadata extracted from page
