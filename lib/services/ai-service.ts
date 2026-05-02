@@ -292,11 +292,10 @@ export class AIService {
                 JSON.stringify(agentContext, null, 2),
             )
 
-            const userContent =
-                aiConfig.titleSuggestion.userPromptTemplate.replace(
-                    '{context}',
-                    JSON.stringify(agentContext, null, 2),
-                )
+            const userContent = `${aiConfig.titleSuggestion.userPromptTemplate.replace(
+                '{context}',
+                JSON.stringify(agentContext, null, 2),
+            )}\n\nIf Chinese-language titles may exist, actively use Exa to look for zh-Hant, zh-HK, and zh-TW variants before finalizing the result.`
             const startTime = Date.now()
             const result = await agent.invoke({
                 messages: [new HumanMessage(userContent)],

@@ -9,7 +9,10 @@
         "binding": "ASSETS"
     },
     "vars": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "LANGSMITH_TRACING": "true",
+        "LANGSMITH_ENDPOINT": "https://api.smith.langchain.com",
+        "LANGSMITH_PROJECT": "vibe watch list"
     },
     "observability": {
         "enabled": false,
