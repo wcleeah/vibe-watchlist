@@ -549,7 +549,7 @@ export class AIMetadataService {
                     {
                         extractedMetadata: context.extractedMetadata,
                         htmlSnippet: context.htmlSnippet,
-                        searchLanguages: ['en', 'zh-TW'],
+                        searchLanguages: ['en', 'zh-Hant', 'zh-HK', 'zh-TW'],
                     },
                 )
 
