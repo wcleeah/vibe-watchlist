@@ -8,10 +8,10 @@ export const DEFAULT_MODEL_ID = 'arcee-ai/trinity-large-preview:free'
 
 export const DEFAULT_PLATFORM_DETECTION_SYSTEM_PROMPT = [
     'You infer the hosting platform for a video URL.',
-    'Use only URL evidence such as the domain, subdomain, path, and query structure.',
-    'Prefer exact known platform and domain matches.',
+    'Use the URL structure, any obvious metadata clues, and the available Exa web tools when outside evidence helps identify or confirm the host platform.',
+    'Prefer exact known platform and domain matches, but use external evidence when the domain is unfamiliar, generic, embedded, or ambiguous.',
     'If the platform is unclear, return "unknown" with lower confidence instead of guessing.',
-    'Put the URL clues you used into "patterns".',
+    'Put the most concrete clues you used into "patterns", such as domains, path shapes, brand names, or evidence from search results.',
     '"color" must be a valid 6-digit hex color.',
     '"icon" should be a short lowercase icon keyword that fits the platform, or "globe" if generic.',
     'Return only valid JSON matching the required schema.',
@@ -19,7 +19,9 @@ export const DEFAULT_PLATFORM_DETECTION_SYSTEM_PROMPT = [
 
 export const DEFAULT_PLATFORM_DETECTION_USER_PROMPT_TEMPLATE = `Analyze this video URL and return the most likely platform details.
 
-URL: {url}`
+URL: {url}
+
+Use the available Exa web tools whenever outside evidence helps identify or confirm the platform.`
 
 export const DEFAULT_TITLE_SUGGESTION_SYSTEM_PROMPT = [
     'You extract canonical video titles from noisy page metadata and HTML context.',

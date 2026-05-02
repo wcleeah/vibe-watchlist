@@ -1,8 +1,4 @@
-import {
-    AIMessage,
-    HumanMessage,
-    SystemMessage,
-} from '@langchain/core/messages'
+import { AIMessage, HumanMessage } from '@langchain/core/messages'
 import { ChatOpenRouter } from '@langchain/openrouter'
 import { inArray } from 'drizzle-orm'
 import { createAgent, toolStrategy } from 'langchain'
@@ -109,20 +105,6 @@ function sumUsage(messages: AIMessage[]): {
     )
 }
 
-function extractMessageText(
-    message: AIMessage | undefined,
-): string | undefined {
-    if (!message) {
-        return undefined
-    }
-
-    if (typeof message.content === 'string') {
-        return message.content
-    }
-
-    return JSON.stringify(message.content)
-}
-
 function isAIMessageWithText(message: unknown): message is AIMessage {
     return AIMessage.isInstance(message)
 }
@@ -225,45 +207,43 @@ export class AIService {
             const config = await this.getAIConfig()
             const modelName = config.modelId
             const model = this.createChatModel(modelName)
-            const structuredModel = model.withStructuredOutput(
-                platformSuggestionSchema,
-                {
-                    name: 'platform_suggestion',
-                    method: 'functionCalling',
-                    includeRaw: true,
-                },
-            )
+            const tools = await getExaTools()
+            const agent = createAgent({
+                model,
+                tools,
+                systemPrompt: [
+                    config.platformDetection.systemPrompt,
+                    'Use the available Exa web tools to identify unfamiliar domains, confirm the hosting platform, and gather external evidence for the patterns you return whenever that improves confidence.',
+                ].join(' '),
+                responseFormat: toolStrategy(platformSuggestionSchema),
+            })
 
-            const userContent =
-                config.platformDetection.userPromptTemplate.replace(
-                    '{url}',
-                    url,
-                )
-
-            const messages = [
-                new SystemMessage(config.platformDetection.systemPrompt),
-                new HumanMessage(userContent),
-            ]
+            const userContent = `${config.platformDetection.userPromptTemplate.replace(
+                '{url}',
+                url,
+            )}\n\nUse the available Exa web tools whenever outside evidence helps identify or confirm the platform.`
 
             const startTime = Date.now()
-            const response = await structuredModel.invoke(messages)
+            const result = await agent.invoke({
+                messages: [new HumanMessage(userContent)],
+            })
             const durationMs = Date.now() - startTime
 
-            const suggestion = response.parsed
-            const raw = isAIMessageWithText(response.raw) ? response.raw : null
+            const aiMessages = result.messages.filter(isAIMessageWithText)
+            const suggestion = result.structuredResponse
 
             console.log(
                 'AI PLATFORM DETECTION: Successfully parsed structured response:',
                 suggestion,
             )
 
-            if (raw) {
+            if (aiMessages.length > 0) {
                 await APIUsageService.log(
                     'platform_detection',
-                    collectAIMessageUsage(raw),
+                    sumUsage(aiMessages),
                     modelName,
-                    JSON.stringify(messages, null, 2),
-                    extractMessageText(raw),
+                    userContent,
+                    JSON.stringify(suggestion, null, 2),
                     durationMs,
                 )
             }
