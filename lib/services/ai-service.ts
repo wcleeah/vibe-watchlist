@@ -1,3 +1,4 @@
+import { awaitAllCallbacks } from '@langchain/core/callbacks/promises'
 import { AIMessage, HumanMessage } from '@langchain/core/messages'
 import { ChatOpenRouter } from '@langchain/openrouter'
 import { inArray } from 'drizzle-orm'
@@ -107,6 +108,14 @@ function sumUsage(messages: AIMessage[]): {
 
 function isAIMessageWithText(message: unknown): message is AIMessage {
     return AIMessage.isInstance(message)
+}
+
+async function flushTracingCallbacks(): Promise<void> {
+    try {
+        await awaitAllCallbacks()
+    } catch (error) {
+        console.warn('AIService: Failed to flush tracing callbacks', error)
+    }
 }
 
 export class AIService {
@@ -228,6 +237,7 @@ export class AIService {
                 messages: [new HumanMessage(userContent)],
             })
             const durationMs = Date.now() - startTime
+            await flushTracingCallbacks()
 
             const aiMessages = result.messages.filter(isAIMessageWithText)
             const suggestion = result.structuredResponse
@@ -301,6 +311,7 @@ export class AIService {
                 messages: [new HumanMessage(userContent)],
             })
             const durationMs = Date.now() - startTime
+            await flushTracingCallbacks()
 
             const aiMessages = result.messages.filter(isAIMessageWithText)
             const structuredResponse = result.structuredResponse
